@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- FB Pixel: 由 .env 注入 VITE_FB_PIXEL_ID；本地开发可留空，下面的 fbq() 会变 no-op -->
+  <script>
+    !function (f, b, e, v, n, t, s) {
+      if (f.fbq) return; n = f.fbq = function () {
+        n.callMethod ?
+          n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+      };
+      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+      n.queue = []; t = b.createElement(e); t.async = !0;
+      t.src = v; s = b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t, s)
+    }(window, document, 'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+    // PLACEHOLDER：模板里留空，集成进主项目时由主项目 index.html 的真实 pixel id 接管
+    fbq('init', '__FB_PIXEL_ID__');
+    fbq('track', 'PageView');
+  </script>
+  <noscript></noscript>
+  <!-- Google Analytics: 占位，部署时替换 __GA_ID__ -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=__GA_ID__"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', '__GA_ID__');
+  </script>
+  <!-- FBInstant SDK：浏览器里加载失败也无妨，devMock.ts 兜底 -->
+  <script src="https://connect.facebook.net/en_US/fbinstant.8.0.js"></script>
+  <title>Game Template</title>
+  <script>
+    // 初始化全局变量（AdService 使用）
+    window.adsFirstRequest = 0;
+    window.showinitadssuccess = undefined;
+    window.loadadfail = undefined;
+    window.isFisrtshowads = 0;
+  </script>
+</head>
+
+<body>
+  <div id="root-container"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

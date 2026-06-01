@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "new-game": "node scripts/new-game.mjs",
+    "delete-game": "node scripts/delete-game.mjs",
     "export-migration": "node scripts/export-migration.mjs",
     "integrate": "node scripts/integrate.mjs"
   },

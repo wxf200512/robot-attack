@@ -9,6 +9,12 @@
 // 可选 flags（写在最后即可）:
 //   --dry-run     只打印要做什么，不真改文件
 //   --no-backup   不备份原文件（默认会备份成 .bak）
+//   --force       游戏已集成过时，用模板里的新版**替换**旧版（删旧拷新；
+//                 替换前整目录备份成 .bak）。别名：--update / --overwrite。
+//                 不加此 flag 时，已存在的游戏目录会被安全跳过（原行为）。
+//                 注意：--force 只更新「游戏文件夹 + public 资源」；4 处共享文件的
+//                 插入（路由/首页卡片/广告/i18n 标题）是按 manifest 元信息幂等插入的，
+//                 若你改了 manifest 的 route/payloadKey/adType/title/homeCard，需手动同步。
 //
 // 工作内容：
 //   1. 校验主项目结构
@@ -19,7 +25,7 @@
 //   6. patch newgameI18n.ts（追加）
 //   7. 任一处 patch 失败则全部回滚
 
-import { readFile, writeFile, mkdir, readdir, copyFile, access, stat, cp } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir, copyFile, access, stat, cp, rm } from 'node:fs/promises';
 import { resolve, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -33,13 +39,15 @@ const flags = new Set(rawArgs.filter((a) => a.startsWith('--')));
 const positional = rawArgs.filter((a) => !a.startsWith('--'));
 const DRY_RUN = flags.has('--dry-run');
 const NO_BACKUP = flags.has('--no-backup');
+const FORCE = flags.has('--force') || flags.has('--update') || flags.has('--overwrite');
 
 if (positional.length < 2) {
   console.error(`
-用法:  npm run integrate -- <id> <main-project-path> [--dry-run] [--no-backup]
+用法:  npm run integrate -- <id> <main-project-path> [--dry-run] [--no-backup] [--force]
 
 例:    npm run integrate -- test-game F:/business/framework-project/boredday/project
        npm run integrate -- spaceship ../boredday/project --dry-run
+       npm run integrate -- hamster ../boredday/project --force   # 用模板新版替换已集成的旧版
 `);
   process.exit(1);
 }
@@ -434,6 +442,43 @@ for (const lang of Object.keys(${upper}_HOME_TITLE)) {
 }
 
 // ===== 拷贝文件夹 =====
+// 拷贝一个目录到主项目。
+// - 目标不存在：直接拷贝。
+// - 目标已存在 且 无 --force：安全跳过（原行为）。
+// - 目标已存在 且 --force：先整目录备份成 .bak（除非 --no-backup），再删旧、拷新。
+//   「删旧拷新」而非直接覆盖 → 旧版里已删除的文件不会残留。
+async function syncDir(src, dst, label) {
+  const dstExists = await exists(dst);
+
+  if (DRY_RUN) {
+    if (dstExists && !FORCE) {
+      console.log(`  [dry-run] ${label} 已存在 → 跳过（加 --force 可替换）`);
+    } else {
+      console.log(`  [dry-run] ${dstExists ? '替换' : '拷贝'} ${label}`);
+      if (dstExists && FORCE && !NO_BACKUP) console.log(`  [dry-run]   先备份旧目录 → ${label}.bak`);
+    }
+    return;
+  }
+
+  if (dstExists && !FORCE) {
+    console.log(`  ⚠ ${label} 已存在，跳过（要替换为模板新版请加 --force）`);
+    return;
+  }
+
+  if (dstExists) {
+    if (!NO_BACKUP) {
+      const bak = dst + '.bak';
+      await rm(bak, { recursive: true, force: true });
+      await cp(dst, bak, { recursive: true });
+      console.log(`  · 已备份旧 ${label} → ${relative(MAIN, bak)}`);
+    }
+    await rm(dst, { recursive: true, force: true });
+  }
+
+  await cp(src, dst, { recursive: true });
+  console.log(`  · 已${dstExists ? '更新' : '拷贝'} ${label}`);
+}
+
 async function copyGameFolder(manifest) {
   const id = manifest.id;
   const srcSrc = resolve(TEMPLATE_ROOT, 'src/games', id);
@@ -441,27 +486,82 @@ async function copyGameFolder(manifest) {
   const pubSrc = resolve(TEMPLATE_ROOT, 'public/games', id);
   const pubDst = resolve(MAIN, 'public/games', id);
 
-  if (DRY_RUN) {
-    console.log(`  [dry-run] cp -r ${srcSrc} ${srcDst}`);
-    if (await exists(pubSrc)) console.log(`  [dry-run] cp -r ${pubSrc} ${pubDst}`);
-    return;
-  }
-
-  if (await exists(srcDst)) {
-    console.log(`  ⚠ ${srcDst} 已存在，跳过拷贝（避免覆盖；若要更新请手动删除）`);
-  } else {
-    await cp(srcSrc, srcDst, { recursive: true });
-    console.log(`  · 已拷贝 src/games/${id}/`);
-  }
-
+  await syncDir(srcSrc, srcDst, `src/games/${id}/`);
   if (await exists(pubSrc)) {
-    if (await exists(pubDst)) {
-      console.log(`  ⚠ ${pubDst} 已存在，跳过拷贝`);
-    } else {
-      await cp(pubSrc, pubDst, { recursive: true });
-      console.log(`  · 已拷贝 public/games/${id}/`);
+    await syncDir(pubSrc, pubDst, `public/games/${id}/`);
+  }
+}
+
+// ===== 依赖检查 =====
+// 扫描游戏源码 import 的外部包，对比主项目 package.json，
+// 列出「游戏用到、但主项目没装」的依赖，并给出带版本的安装命令。
+// 纯只读，不写文件（dry-run 也会跑）。返回 { missing, installCmd }。
+const NODE_BUILTINS = new Set([
+  'fs', 'path', 'url', 'os', 'crypto', 'http', 'https', 'stream', 'util',
+  'events', 'child_process', 'zlib', 'buffer', 'process', 'assert', 'net', 'tls',
+]);
+
+function pkgNameOf(spec) {
+  // '@scope/name/sub' → '@scope/name'；'name/sub' → 'name'
+  if (spec.startsWith('@')) return spec.split('/').slice(0, 2).join('/');
+  return spec.split('/')[0];
+}
+
+async function checkDependencies(manifest) {
+  const gameSrc = resolve(TEMPLATE_ROOT, 'src/games', manifest.id);
+
+  // 主项目已知依赖（deps + devDeps）
+  let mainPkg;
+  try {
+    mainPkg = JSON.parse(await readFile(resolve(MAIN, 'package.json'), 'utf8'));
+  } catch {
+    console.log('  ⚠ 读不到主项目 package.json，跳过依赖检查');
+    return { missing: [], installCmd: null };
+  }
+  const known = new Set([
+    ...Object.keys(mainPkg.dependencies || {}),
+    ...Object.keys(mainPkg.devDependencies || {}),
+  ]);
+
+  // 模板依赖（给出版本建议）
+  let tplDeps = {};
+  try {
+    const tplPkg = JSON.parse(await readFile(resolve(TEMPLATE_ROOT, 'package.json'), 'utf8'));
+    tplDeps = { ...(tplPkg.dependencies || {}), ...(tplPkg.devDependencies || {}) };
+  } catch {
+    /* ignore */
+  }
+
+  // 扫描游戏源码里的外部 import / export-from / dynamic import / require
+  const files = (await listFiles(gameSrc)).filter((f) => /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(f));
+  const specRe = /(?:from|import|require\s*\()\s*['"]([^'"]+)['"]/g;
+  const used = new Set();
+  for (const f of files) {
+    const src = await readFile(f, 'utf8');
+    let m;
+    while ((m = specRe.exec(src)) !== null) {
+      const spec = m[1];
+      if (spec.startsWith('.') || spec.startsWith('/')) continue; // 相对/绝对路径，非包
+      if (spec.startsWith('node:')) continue; // node 内置（显式前缀）
+      const pkg = pkgNameOf(spec);
+      if (NODE_BUILTINS.has(pkg)) continue; // node 内置（无前缀）
+      used.add(pkg);
     }
   }
+
+  const missing = [...used].filter((p) => !known.has(p)).sort();
+  if (missing.length === 0) {
+    console.log('  · 游戏依赖均已在主项目 package.json 中，无需额外安装');
+    return { missing: [], installCmd: null };
+  }
+
+  const installArgs = missing.map((p) => (tplDeps[p] ? `${p}@${tplDeps[p]}` : p));
+  const installCmd = `npm install ${installArgs.join(' ')}`;
+  console.log('  ⚠ 该游戏用到、但主项目未安装的依赖：');
+  for (const p of missing) {
+    console.log(`      - ${p}${tplDeps[p] ? `  (模板版本 ${tplDeps[p]})` : '  (模板 package.json 未列，版本自定)'}`);
+  }
+  return { missing, installCmd };
 }
 
 // ===== 主流程 =====
@@ -506,20 +606,37 @@ async function main() {
   console.log('\n[5/5] Patch src/newgameI18n.ts');
   await patchNewgameI18n(manifest, patchSet);
 
+  // 4.5 依赖检查（只读）
+  console.log('\n[依赖检查] 对比游戏 import 与主项目 package.json');
+  const { missing, installCmd } = await checkDependencies(manifest);
+
   // 5. commit
   console.log('\n=== 提交所有改动 ===');
   await patchSet.commit();
 
   console.log(`\n✅ 集成完成！\n`);
+  if (FORCE) {
+    console.log(
+      '🔁 --force：游戏文件夹 + public 资源已替换为模板新版。\n' +
+        '   注意：4 处共享文件插入（路由/首页卡片/广告/i18n 标题）是幂等的，本次未改动。\n' +
+        '   若你改了 manifest 的 route / payloadKey / adType / title / homeCard，需手动同步这些插入。\n',
+    );
+  }
   if (!DRY_RUN && !NO_BACKUP) {
     console.log('原文件已备份为 *.bak。验证无误后可删除：');
     for (const op of patchSet.ops) {
       console.log(`  rm ${relative(MAIN, op.file)}.bak`);
     }
   }
+  if (missing.length > 0) {
+    console.log('\n📦 该游戏需要、但主项目尚未安装的依赖（先装再启动，否则会白屏/报错）：');
+    console.log(`   cd ${mainProjectArg}`);
+    console.log(`   ${installCmd}\n`);
+  }
+
   console.log(`
 下一步验证：
-  cd ${mainProjectArg}
+  cd ${mainProjectArg}${missing.length > 0 ? `\n  ${installCmd}   # ← 先装缺失依赖` : ''}
   npm run dev
   # 首页看到 "${manifest.title.en || gameId}" 卡片，点进 ${manifest.route} 能玩
 `);

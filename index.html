@@ -33,6 +33,11 @@
   </script>
   <!-- FBInstant SDK：浏览器里加载失败也无妨，devMock.ts 兜底 -->
   <script src="https://connect.facebook.net/en_US/fbinstant.8.0.js"></script>
+  <!-- vConsole：移动端实机调试用（FB Instant 没有 devtools）。本地 vconsole.js，不走外网 -->
+  <script src="/vconsole.js"></script>
+  <script>
+    if (window.VConsole) { new window.VConsole(); }
+  </script>
   <title>Game Template</title>
   <script>
     // 初始化全局变量（AdService 使用）

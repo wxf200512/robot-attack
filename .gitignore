@@ -9,6 +9,10 @@ dist-ssr
 build
 fb-package.zip
 
+# CDN 上传产物（本地打包用，不进仓库/主项目）
+cdn-upload/
+cdn-upload-new/
+
 # Vite / cache
 .vite
 *.local

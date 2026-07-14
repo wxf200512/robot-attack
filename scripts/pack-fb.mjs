@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // scripts/pack-fb.mjs
 // 把模板构建成可上传到 Facebook Instant Games 的 .zip 包。
-// 用法：npm run package:fb
+// 用法：
+//   npm run package:fb              # 打包全部游戏
+//   npm run package:fb -- <gameId>  # 只打包指定游戏
 //
 // 做两件事：
 //   1. vite build（vite.config 里 base 已是 './'，产物用相对路径，符合 FB CDN）
@@ -17,7 +19,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = resolve(ROOT, 'dist');
-const OUT = resolve(ROOT, 'fb-package.zip');
+const GAME_ID_RE = /^[a-z0-9_-]+$/;
+const VITE_CLI = resolve(ROOT, 'node_modules/vite/bin/vite.js');
 
 function run(cmd, args, opts = {}) {
   const r = spawnSync(cmd, args, { stdio: 'inherit', ...opts });
@@ -36,13 +39,67 @@ async function exists(p) {
   }
 }
 
+function parseArgs() {
+  const args = process.argv.slice(2);
+  if (args.length > 1) {
+    console.error('\n❌ 参数过多。用法：npm run package:fb -- <gameId>');
+    process.exit(1);
+  }
+
+  const gameId = args[0]?.trim();
+  if (!gameId) return null;
+
+  if (!GAME_ID_RE.test(gameId)) {
+    console.error(`\n❌ gameId 非法：${gameId}（必须匹配 [a-z0-9_-]）`);
+    process.exit(1);
+  }
+
+  return gameId;
+}
+
+async function validateSingleGame(gameId) {
+  const manifestPath = resolve(ROOT, 'src/games', gameId, 'manifest.ts');
+  if (!(await exists(manifestPath))) {
+    console.error(`\n❌ 没找到游戏 manifest：${manifestPath}`);
+    process.exit(1);
+  }
+}
+
+async function keepOnlySingleGamePublicAssets(gameId) {
+  const gamesDir = join(DIST, 'games');
+  if (!(await exists(gamesDir))) return;
+
+  const entries = await readdir(gamesDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.name === gameId) continue;
+    await rm(join(gamesDir, entry.name), { recursive: true, force: true });
+  }
+}
+
 async function main() {
-  console.log('\n=== [1/2] 构建生产包 (vite build) ===\n');
-  run('npx', ['vite', 'build'], { cwd: ROOT, shell: true });
+  const gameId = parseArgs();
+  if (gameId) await validateSingleGame(gameId);
+
+  const out = resolve(ROOT, gameId ? `fb-package-${gameId}.zip` : 'fb-package.zip');
+
+  console.log(
+    `\n=== [1/2] 构建生产包 (vite build${gameId ? `: ${gameId}` : ': all games'}) ===\n`,
+  );
+  run(process.execPath, [VITE_CLI, 'build'], {
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      FB_PACKAGE_GAME_ID: gameId || '',
+    },
+  });
 
   if (!(await exists(DIST))) {
     console.error(`\n❌ 没找到构建产物：${DIST}`);
     process.exit(1);
+  }
+
+  if (gameId) {
+    await keepOnlySingleGamePublicAssets(gameId);
   }
 
   // 删掉 sourcemap：生产包不需要，且避免暴露源码
@@ -54,8 +111,8 @@ async function main() {
     }
   }
 
-  console.log('\n=== [2/2] 打包成 fb-package.zip ===\n');
-  await rm(OUT, { force: true });
+  console.log(`\n=== [2/2] 打包成 ${gameId ? `fb-package-${gameId}.zip` : 'fb-package.zip'} ===\n`);
+  await rm(out, { force: true });
 
   const entries = await readdir(DIST);
   if (process.platform === 'win32') {
@@ -63,16 +120,17 @@ async function main() {
     // 不用 Compress-Archive / .NET ZipFile —— PowerShell 5.1 底层会写反斜杠路径，FB 可能解析异常。
     // 用绝对路径，避免 git-bash 的 GNU tar（不支持 -a 生成 zip）被优先解析。
     const tarExe = join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe');
-    run(tarExe, ['-a', '-c', '-f', OUT, '-C', DIST, ...entries]);
+    run(tarExe, ['-a', '-c', '-f', out, '-C', DIST, ...entries]);
   } else {
     // zip 在 dist/ 内执行，'.' 让内容落在 zip 根目录
-    run('zip', ['-r', OUT, '.'], { cwd: DIST });
+    run('zip', ['-r', out, '.'], { cwd: DIST });
   }
 
   console.log(`
-✅ 完成：fb-package.zip
+✅ 完成：${gameId ? `fb-package-${gameId}.zip` : 'fb-package.zip'}
 
   · zip 根目录即 index.html + assets/（FB Instant Games 要求）
+  · ${gameId ? `本包只注册并构建游戏：${gameId}` : '本包注册并构建所有游戏'}
   · 上传到 FB 开发者后台 → 你的应用 → Instant Games → 上传版本
 
 提醒（FB 线上联调）：

@@ -317,10 +317,29 @@ ${coverSnippet}
 `;
 
   // 锚点：'{/* 内容区域 - 根据banner...' 注释（在 hamster 卡片之后、游戏列表之前）
-  const anchor = `      {/* 内容区域 - 根据banner是否显示动态调整顶部内边距 */}`;
-  const after = newCard + anchor;
+  const anchors = [
+    `      {/* 内容区域 - 根据banner是否显示动态调整顶部内边距 */}`,
+    `      {/* tree-quiz 入口 */}`,
+    `      {/* hamster 入口 */}`,
+    `      {/* newgame 入口 */}`,
+  ];
 
-  next = applyReplace(next, anchor, after, 'Home.tsx 卡片');
+  let inserted = false;
+  for (const anchor of anchors) {
+    if (alreadyContains(next, `{/* ${id} 入口 */}`)) {
+      inserted = true;
+      break;
+    }
+    if (next.includes(anchor)) {
+      next = applyReplace(next, anchor, newCard + anchor, "Home.tsx 卡片");
+      inserted = true;
+      break;
+    }
+  }
+
+  if (!inserted) {
+    throw new Error(`[Home.tsx 卡片] 找不到可用锚点，已尝试: ${anchors.join(" | ")}`);
+  }
   patchSet.add(file, orig, next, eol);
 }
 

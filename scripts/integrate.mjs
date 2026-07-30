@@ -195,6 +195,52 @@ function alreadyContains(content, marker) {
   return content.includes(marker);
 }
 
+function jsObjectKey(key) {
+  return /^[A-Za-z_$][\w$]*$/.test(key) ? key : `'${key.replace(/'/g, "\\'")}'`;
+}
+
+function jsString(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function insertIntoObjectLiteral(content, objectDecl, entry, fileLabel) {
+  const start = content.indexOf(objectDecl);
+  if (start < 0) {
+    throw new Error(`[${fileLabel}] 找不到对象声明锚点：${objectDecl}`);
+  }
+
+  const open = content.indexOf('{', start);
+  if (open < 0) {
+    throw new Error(`[${fileLabel}] 找不到对象开始：${objectDecl}`);
+  }
+
+  const close = content.indexOf('\n};', open);
+  if (close < 0) {
+    throw new Error(`[${fileLabel}] 找不到对象结束：${objectDecl}`);
+  }
+
+  return content.slice(0, open + 1) + `\n${entry}` + content.slice(open + 1);
+}
+
+function insertIntoArrayLiteral(content, arrayDecl, entry, fileLabel) {
+  const start = content.indexOf(arrayDecl);
+  if (start < 0) {
+    throw new Error(`[${fileLabel}] 找不到数组声明锚点：${arrayDecl}`);
+  }
+
+  const equal = content.indexOf('=', start);
+  if (equal < 0) {
+    throw new Error(`[${fileLabel}] 找不到数组赋值：${arrayDecl}`);
+  }
+
+  const open = content.indexOf('[', equal);
+  if (open < 0) {
+    throw new Error(`[${fileLabel}] 找不到数组开始：${arrayDecl}`);
+  }
+
+  return content.slice(0, open + 1) + `\n${entry}` + content.slice(open + 1);
+}
+
 // ===== 各文件的 patch 函数 =====
 
 async function patchAppTsx(manifest, patchSet) {
@@ -225,38 +271,70 @@ async function patchAppTsx(manifest, patchSet) {
     next = applyReplace(next, before, after, 'App.tsx <Route>');
   }
 
-  // ---- (3) payload nav switch：在 `} else { ... 进入首页2` 之前插入新的 else if ----
-  const navSig = `payload.game === '${payloadKey}'`;
-  const occur = (next.match(new RegExp(navSig.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
-  if (occur >= 1) {
-    console.log('  · App.tsx payload nav switch 已存在，跳过');
+  // ---- (3)(4) Current App.tsx uses payload config maps. Keep old switch patch as fallback. ----
+  if (next.includes('const PAYLOAD_ROUTES: Record')) {
+    const routeSig = `${jsObjectKey(payloadKey)}: () => ({ path: '${route}' })`;
+    if (alreadyContains(next, routeSig) || alreadyContains(next, `'${payloadKey}': () => ({ path: '${route}' })`)) {
+      console.log('  · App.tsx PAYLOAD_ROUTES already exists, skip');
+    } else {
+      const routeEntry = `  ${jsObjectKey(payloadKey)}: () => ({ path: '${route}' }),`;
+      next = insertIntoObjectLiteral(
+        next,
+        'const PAYLOAD_ROUTES: Record<string, (payload: EntryPayload) => PayloadRouteTarget> =',
+        routeEntry,
+        'App.tsx PAYLOAD_ROUTES'
+      );
+    }
+
+    if (adType === 'quiz') {
+      console.log('  · App.tsx PAYLOAD_AD_TYPES uses default quiz, skip');
+    } else {
+      const adSig = `${jsObjectKey(payloadKey)}: '${adType}'`;
+      if (alreadyContains(next, adSig) || alreadyContains(next, `'${payloadKey}': '${adType}'`)) {
+        console.log('  · App.tsx PAYLOAD_AD_TYPES already exists, skip');
+      } else {
+        const adEntry = `  ${jsObjectKey(payloadKey)}: '${adType}',`;
+        next = insertIntoObjectLiteral(
+          next,
+          'const PAYLOAD_AD_TYPES: Record<string, string> =',
+          adEntry,
+          'App.tsx PAYLOAD_AD_TYPES'
+        );
+      }
+    }
   } else {
-    const before = `          } else {
+    // ---- Legacy payload nav switch: insert before the final home fallback. ----
+    const navSig = `payload.game === '${payloadKey}'`;
+    const occur = (next.match(new RegExp(navSig.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+    if (occur >= 1) {
+      console.log('  · App.tsx payload nav switch already exists, skip');
+    } else {
+      const before = `          } else {
             console.log('==============进入首页2==============')`;
-    const after = `          } else if (payload.game === '${payloadKey}') {
+      const after = `          } else if (payload.game === '${payloadKey}') {
             console.log('==============进入${payloadKey}==============')
             navigate('${route}');
           } else {
             console.log('==============进入首页2==============')`;
-    next = applyReplace(next, before, after, 'App.tsx payload nav switch');
-  }
+      next = applyReplace(next, before, after, 'App.tsx payload nav switch');
+    }
 
-  // ---- (4) ad-init switch：在 `}\n          else {\n            console.log('正在初始化正常插页广告...')` 之前
-  //          插入新的 else-if 块。注意复用既有的尾 `}` 作为新 else-if 的开头 ----
-  if (occur >= 2) {
-    console.log('  · App.tsx ad-init switch 已存在，跳过');
-  } else {
-    const before = `          }
+    if (occur >= 2) {
+      console.log('  · App.tsx ad-init switch already exists, skip');
+    } else {
+      const before = `          }
           else {
             console.log('正在初始化正常插页广告...');`;
-    const after = `          }else if(payload.game === '${payloadKey}'){
+      const after = `          }else if(payload.game === '${payloadKey}'){
             await AdService.initInterstitialAd('${adType}');
             console.log('${id}广告初始化成功');
           }
           else {
             console.log('正在初始化正常插页广告...');`;
-    next = applyReplace(next, before, after, 'App.tsx ad-init switch');
+      next = applyReplace(next, before, after, 'App.tsx ad-init switch');
+    }
   }
+
 
   patchSet.add(file, orig, next, eol);
 }
@@ -274,6 +352,35 @@ async function patchHomeTsx(manifest, patchSet) {
 
   if (alreadyContains(next, cardId) || alreadyContains(next, legacyCardId)) {
     console.log('  · Home.tsx 卡片已存在，跳过');
+    patchSet.add(file, orig, next, eol);
+    return;
+  }
+
+  if (next.includes('const fixedHomeGamesAfterInsert: FixedHomeGame[] = [')) {
+    if (alreadyContains(next, `id: '${id}'`)) {
+      console.log('  · Home.tsx fixed home config already exists, skip');
+      patchSet.add(file, orig, next, eol);
+      return;
+    }
+
+    const title = manifest.title?.en || id;
+    const coverLine = homeCard.cover ? `    cover: '${jsString(homeCard.cover)}',\n` : '';
+    const colorLine = !homeCard.cover ? `    imageBackgroundColor: '${jsString(homeCard.color)}',\n` : '';
+    const gameConfig = `  // ${title}
+  {
+    id: '${jsString(id)}',
+    name: '${jsString(title)}',
+    route: '${jsString(route)}',
+    titleKey: '${jsString(id)}_home_title',
+${coverLine}${colorLine}  },
+`;
+
+    next = insertIntoArrayLiteral(
+      next,
+      'const fixedHomeGamesAfterInsert: FixedHomeGame[] =',
+      gameConfig,
+      'Home.tsx fixed home config'
+    );
     patchSet.add(file, orig, next, eol);
     return;
   }

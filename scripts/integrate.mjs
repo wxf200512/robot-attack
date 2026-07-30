@@ -269,9 +269,10 @@ async function patchHomeTsx(manifest, patchSet) {
   let next = content;
 
   const { id, route, homeCard } = manifest;
-  const cardId = `{/* ${id} 入口 */}`;
+  const cardId = `{/* ${id} */}`;
+  const legacyCardId = `{/* ${id} 入口 */}`;
 
-  if (alreadyContains(next, cardId)) {
+  if (alreadyContains(next, cardId) || alreadyContains(next, legacyCardId)) {
     console.log('  · Home.tsx 卡片已存在，跳过');
     patchSet.add(file, orig, next, eol);
     return;
@@ -292,7 +293,7 @@ async function patchHomeTsx(manifest, patchSet) {
               style={{ aspectRatio: '694 / 256', backgroundColor: '${homeCard.color}' }}
             />`;
 
-  const newCard = `      {/* ${id} 入口 */}
+  const newCard = `      {/* ${id} */}
       <div className="container mx-auto px-4 pt-[1rem]">
         <div
           className="bg-white w-full overflow-hidden rounded-2xl cursor-pointer transition-transform duration-200 hover:scale-[1.02] relative"
@@ -316,8 +317,9 @@ ${coverSnippet}
 
 `;
 
-  // 锚点：'{/* 内容区域 - 根据banner...' 注释（在 hamster 卡片之后、游戏列表之前）
-  const anchors = [
+  const preferredAnchor = `      {/* HOME_INSERT_AFTER_MY_LITTLE_ORCHARD */}`;
+  const fallbackAnchors = [
+    `      {/* Remote game list */}`,
     `      {/* 内容区域 - 根据banner是否显示动态调整顶部内边距 */}`,
     `      {/* tree-quiz 入口 */}`,
     `      {/* hamster 入口 */}`,
@@ -325,20 +327,21 @@ ${coverSnippet}
   ];
 
   let inserted = false;
-  for (const anchor of anchors) {
-    if (alreadyContains(next, `{/* ${id} 入口 */}`)) {
-      inserted = true;
-      break;
-    }
-    if (next.includes(anchor)) {
-      next = applyReplace(next, anchor, newCard + anchor, "Home.tsx 卡片");
-      inserted = true;
-      break;
+  if (next.includes(preferredAnchor)) {
+    next = applyReplace(next, preferredAnchor, `${preferredAnchor}\n\n${newCard}`, 'Home.tsx card');
+    inserted = true;
+  } else {
+    for (const anchor of fallbackAnchors) {
+      if (next.includes(anchor)) {
+        next = applyReplace(next, anchor, newCard + anchor, 'Home.tsx card');
+        inserted = true;
+        break;
+      }
     }
   }
 
   if (!inserted) {
-    throw new Error(`[Home.tsx 卡片] 找不到可用锚点，已尝试: ${anchors.join(" | ")}`);
+    throw new Error(`[Home.tsx card] No insertion anchor found. Tried: ${[preferredAnchor, ...fallbackAnchors].join(' | ')}`);
   }
   patchSet.add(file, orig, next, eol);
 }

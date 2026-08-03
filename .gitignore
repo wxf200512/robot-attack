@@ -46,3 +46,10 @@ pnpm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Integration backups
+.integration-backups/
+*.bak
+*.bak/
+**/*.bak
+**/*.bak/

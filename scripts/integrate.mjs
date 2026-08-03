@@ -8,9 +8,10 @@
 //
 // 可选 flags（写在最后即可）:
 //   --dry-run     只打印要做什么，不真改文件
-//   --no-backup   不备份原文件（默认会备份成 .bak）
+//   --backup      备份原文件/目录到主项目 .integration-backups/（默认不备份）
+//   --no-backup   兼容旧参数；现在默认就是不备份
 //   --force       游戏已集成过时，用模板里的新版**替换**旧版（删旧拷新；
-//                 替换前整目录备份成 .bak）。别名：--update / --overwrite。
+//                 如传 --backup，替换前整目录备份到 .integration-backups/）。别名：--update / --overwrite。
 //                 不加此 flag 时，已存在的游戏目录会被安全跳过（原行为）。
 //                 注意：--force 只更新「游戏文件夹 + public 资源」；4 处共享文件的
 //                 插入（路由/首页卡片/广告/i18n 标题）是按 manifest 元信息幂等插入的，
@@ -38,12 +39,12 @@ const rawArgs = process.argv.slice(2);
 const flags = new Set(rawArgs.filter((a) => a.startsWith('--')));
 const positional = rawArgs.filter((a) => !a.startsWith('--'));
 const DRY_RUN = flags.has('--dry-run');
-const NO_BACKUP = flags.has('--no-backup');
+const BACKUP = flags.has('--backup');
 const FORCE = flags.has('--force') || flags.has('--update') || flags.has('--overwrite');
 
 if (positional.length < 2) {
   console.error(`
-用法:  npm run integrate -- <id> <main-project-path> [--dry-run] [--no-backup] [--force]
+用法:  npm run integrate -- <id> <main-project-path> [--dry-run] [--backup] [--force]
 
 例:    npm run integrate -- test-game F:/business/framework-project/boredday/project
        npm run integrate -- spaceship ../boredday/project --dry-run
@@ -54,6 +55,8 @@ if (positional.length < 2) {
 
 const [gameId, mainProjectArg] = positional;
 const MAIN = resolve(mainProjectArg);
+const backupStamp = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
+const backupRoot = join(MAIN, '.integration-backups', `${gameId}-${backupStamp}`);
 
 // ===== 工具 =====
 async function exists(p) {
@@ -89,6 +92,25 @@ async function listFiles(dir) {
   }
   await walk(dir);
   return out;
+}
+
+function backupPathFor(target) {
+  return join(backupRoot, relative(MAIN, target));
+}
+
+async function backupFileRaw(file, raw) {
+  const dst = backupPathFor(file);
+  await mkdir(dirname(dst), { recursive: true });
+  await writeFile(dst, raw);
+  console.log(`  · 已备份 ${relative(MAIN, file)} → ${relative(MAIN, dst)}`);
+}
+
+async function backupDir(src) {
+  const dst = backupPathFor(src);
+  await rm(dst, { recursive: true, force: true });
+  await mkdir(dirname(dst), { recursive: true });
+  await cp(src, dst, { recursive: true });
+  console.log(`  · 已备份旧目录 ${relative(MAIN, src)} → ${relative(MAIN, dst)}`);
 }
 
 // 用正则解析 manifest.ts，与 export-migration.mjs 同源
@@ -166,9 +188,9 @@ class PatchSet {
       console.log('  [dry-run] 跳过实际写入');
       return;
     }
-    if (!NO_BACKUP) {
+    if (BACKUP) {
       for (const op of this.ops) {
-        await writeFile(op.file + '.bak', op.originalRaw);
+        await backupFileRaw(op.file, op.originalRaw);
       }
     }
     for (const op of this.ops) {
@@ -574,7 +596,7 @@ for (const lang of Object.keys(${upper}_HOME_TITLE)) {
 // 拷贝一个目录到主项目。
 // - 目标不存在：直接拷贝。
 // - 目标已存在 且 无 --force：安全跳过（原行为）。
-// - 目标已存在 且 --force：先整目录备份成 .bak（除非 --no-backup），再删旧、拷新。
+// - 目标已存在 且 --force：传 --backup 时先整目录备份到 .integration-backups，再删旧、拷新。
 //   「删旧拷新」而非直接覆盖 → 旧版里已删除的文件不会残留。
 async function syncDir(src, dst, label) {
   const dstExists = await exists(dst);
@@ -584,7 +606,9 @@ async function syncDir(src, dst, label) {
       console.log(`  [dry-run] ${label} 已存在 → 跳过（加 --force 可替换）`);
     } else {
       console.log(`  [dry-run] ${dstExists ? '替换' : '拷贝'} ${label}`);
-      if (dstExists && FORCE && !NO_BACKUP) console.log(`  [dry-run]   先备份旧目录 → ${label}.bak`);
+      if (dstExists && FORCE && BACKUP) {
+        console.log(`  [dry-run]   先备份旧目录 → ${relative(MAIN, backupPathFor(dst))}`);
+      }
     }
     return;
   }
@@ -595,11 +619,8 @@ async function syncDir(src, dst, label) {
   }
 
   if (dstExists) {
-    if (!NO_BACKUP) {
-      const bak = dst + '.bak';
-      await rm(bak, { recursive: true, force: true });
-      await cp(dst, bak, { recursive: true });
-      console.log(`  · 已备份旧 ${label} → ${relative(MAIN, bak)}`);
+    if (BACKUP) {
+      await backupDir(dst);
     }
     await rm(dst, { recursive: true, force: true });
   }
@@ -751,11 +772,8 @@ async function main() {
         '   若你改了 manifest 的 route / payloadKey / adType / title / homeCard，需手动同步这些插入。\n',
     );
   }
-  if (!DRY_RUN && !NO_BACKUP) {
-    console.log('原文件已备份为 *.bak。验证无误后可删除：');
-    for (const op of patchSet.ops) {
-      console.log(`  rm ${relative(MAIN, op.file)}.bak`);
-    }
+  if (!DRY_RUN && BACKUP) {
+    console.log(`原文件/目录已备份到 ${relative(MAIN, backupRoot)}。验证无误后可删除该目录。`);
   }
   if (missing.length > 0) {
     console.log('\n📦 该游戏需要、但主项目尚未安装的依赖（先装再启动，否则会白屏/报错）：');
@@ -773,7 +791,8 @@ async function main() {
 
 main().catch(async (err) => {
   console.error('\n❌ 集成失败:', err.message);
-  console.error('\n如已 patch 部分文件，可用 .bak 还原：');
-  console.error('  Get-ChildItem -Recurse -Filter *.bak | ForEach-Object { Move-Item $_.FullName ($_.FullName -replace ".bak$", "") -Force }');
+  if (BACKUP) {
+    console.error(`\n如已 patch 部分文件，可参考备份目录手动还原：${backupRoot}`);
+  }
   process.exit(1);
 });

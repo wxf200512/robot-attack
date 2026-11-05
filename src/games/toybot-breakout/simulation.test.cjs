@@ -810,7 +810,7 @@ test('interactive campaign completes all five sectors with both support routes a
 
 test('road encounter density grows by sector and introduces specialists gradually', () => {
   const totals = levels.LEVELS.map(l => l.hazards.length);
-  assert.deepEqual(totals, [14,18,23,26,29]);
+  assert.deepEqual(totals, [68,81,95,107,119]);
   assert.ok(totals.every((n,i) => i===0 || n>totals[i-1]));
   for(const [sector,l] of levels.LEVELS.entries()) {
     assert.equal(new Set(l.hazards.filter(h=>h.wave!==undefined).map(h=>h.wave)).size,3);
@@ -892,13 +892,13 @@ test('mixed road pressure is bounded to two attack lanes and safely cleans up on
       s=tick(s);assert.ok(new Set(s.enemyAttacks.map(a=>a.lane)).size<=2);assert.ok(s.enemyAttacks.length<=2);
       maxVisible=Math.max(maxVisible,spec.hazards.filter((h,j)=>s.hazardHps[j]>0&&s.progress>=h.progress-14&&s.progress<h.progress).length);
     }
-    assert.equal(s.status,'boss-intro');assert.deepEqual(s.enemyAttacks,[]);assert.ok(s.hazardHps.every(hp=>hp===-1));assert.ok(maxVisible<=12);
+    assert.equal(s.status,'boss-intro');assert.deepEqual(s.enemyAttacks,[]);assert.ok(s.hazardHps.every(hp=>hp===-1));assert.ok(maxVisible<=40,`visible crowd budget: ${maxVisible}`);
   }
 });
 
 test('enemy formation uses distinct horizontal muzzles and matched aiming positions without changing lanes', () => {
   const s={...initial(4),status:'running',progress:46},spec=levels.getLevel(4);
-  const group=spec.hazards.map((h,i)=>({h,i})).filter(e=>e.h.kind==='swarm'&&e.h.wave===1);
+  const group=spec.hazards.map((h,i)=>({h,i})).filter(e=>e.h.kind==='swarm'&&e.h.wave===1&&s.progress>=e.h.progress-14&&s.progress<e.h.progress);
   assert.equal(new Set(group.map(e=>[sim.roadEnemyX(s,e.i),sim.roadEnemyY(s,e.i)].join(':'))).size,group.length);
   for(const {i}of group) {
     assert.equal(sim.targetX(s,'hazard',i),sim.roadEnemyX(s,i));assert.equal(sim.targetY(s,'hazard',i),sim.roadEnemyY(s,i));
@@ -1084,7 +1084,7 @@ test('burst grants individual captured shots for all chassis without faster fire
   const base={...battle(),mechClass,lane:1,battleLane:1,bossStep:'warning',bots:3,weaponLevel:2,fireCooldown:0,burstEnergy:100};
   const normal=tick(base),activated=sim.gameReducer(base,{type:'ACTIVATE_BURST'}),powered=tick(activated);
   assert.equal(powered.fireCooldown,normal.fireCooldown);assert.equal(powered.pendingShots.length,3);assert.equal(powered.invulnerableTicks,normal.invulnerableTicks);
-  assert.ok(powered.pendingShots.every(p=>p.burst&&!p.charged&&p.damage>normal.pendingShots[0].damage*1.3&&p.origins.length===1));
+  assert.ok(powered.pendingShots.every(p=>p.burst&&!p.charged&&Math.abs(p.damage-normal.pendingShots[0].damage*load('mechs').coreSkill(mechClass).bossDamage)<.001&&p.origins.length===1));
   assert.deepEqual(powered.pendingShots.map(p=>p.origins),normal.pendingShots.map(p=>p.origins));
   const moved=sim.gameReducer(powered,{type:'MOVE_LANE',lane:2});assert.deepEqual(moved.pendingShots,powered.pendingShots);
   const struck={...powered,playerHp:100,armorPoints:0,shieldCharges:0,invulnerableTicks:0};sim.applySquadHit(struck,10);assert.equal(struck.playerHp,90);
@@ -1121,13 +1121,64 @@ test('burst gain cannot refill itself while active and existing flights do not g
  assert.equal(active.pendingShots[0].damage,10);
  const hit=tick(active);assert.equal(hit.burstEnergy,0);
  const expected=tick({...b,pendingShots:[shot],burstEnergy:0});assert.equal(hit.impactDamage,expected.impactDamage);
- const audio=load('audio');assert.ok(audio.gameSoundEvents(b,active).includes('burst'));
+ const audio=load('audio');assert.ok(audio.gameSoundEvents(b,active).includes('burst-pulse'));
  assert.ok(audio.gameSoundEvents({...b,burstEnergy:99},{...b,burstEnergy:100}).includes('burst-ready'));
  assert.ok(!audio.gameSoundEvents({...b,burstEnergy:100},{...b,burstEnergy:100}).includes('burst-ready'));
  const basic=roadSpecialist('swarm',0,4.9),tiny=incoming(b,{target:'hazard',targetIndex:basic.index,lane:basic.state.lane,damage:1.4,burst:true,weaponLevel:0});
  const basicHit=tick({...basic.state,pendingShots:[tiny]});assert.equal(basicHit.impactDamage,1.4,'base pulse burst must deal a real fractional bonus');
 });
 
+const burstObjective=(id,lane,y,hp=2)=>({id,kind:'egg',lane,ticks:90,duration:100,hp,maxHp:hp,damage:0,fromLane:lane,originY:y});
+test('pulse core beam pierces exactly three captured same-lane targets and stops',()=>{
+ let s={...battle(),mechClass:'pulse',lane:1,battleLane:0,bots:1,weaponLevel:0,fireCooldown:0,bossStep:'warning',burstEnergy:100,threats:[burstObjective(1,1,56,.4),burstObjective(2,1,51,.4),burstObjective(3,1,46,.4),burstObjective(4,1,41,9),burstObjective(5,2,54,9)]};
+ s=tick(sim.gameReducer(s,{type:'ACTIVATE_BURST'}));assert.equal(s.pendingShots[0].pierce,2);s.fireCooldown=1000;
+ for(let i=0;i<9;i++)s=tick(s);
+ for(const id of [1,2,3])assert.ok(!s.threats.some(t=>t.id===id&&t.hp>0));
+ assert.equal(s.threats.find(t=>t.id===4).hp,9);assert.equal(s.threats.find(t=>t.id===5).hp,9);assert.equal(s.shotSequence,3);
+});
+test('heavy core explosion applies real bounded same-lane area damage once',()=>{
+ let s={...battle(),mechClass:'heavy',lane:1,battleLane:0,bots:1,weaponLevel:0,fireCooldown:0,bossStep:'warning',burstEnergy:100,threats:[burstObjective(1,1,56),burstObjective(2,1,53),burstObjective(3,1,43,9),burstObjective(4,2,56,9)]};
+ s=tick(sim.gameReducer(s,{type:'ACTIVATE_BURST'}));const damage=s.pendingShots[0].damage;assert.equal(damage,4.5);s.fireCooldown=1000;
+ for(let i=0;i<3;i++)s=tick(s);
+ assert.ok(!s.threats.some(t=>[1,2].includes(t.id)&&t.hp>0));assert.equal(s.threats.find(t=>t.id===3).hp,9);assert.equal(s.threats.find(t=>t.id===4).hp,9);
+ assert.equal(s.coreDetonations.length,1);const frozen=sim.gameReducer(s,{type:'PAUSE'});assert.deepEqual(tick(frozen),frozen);
+ const victory=tick({...s,battleHp:1,pendingShots:[incoming(s,{damage:999})]});assert.equal(victory.status,'boss-victory');assert.deepEqual(victory.coreDetonations,[]);
+ for(let i=0;i<7;i++)s=tick(s);assert.equal(s.coreDetonations.length,0);
+});
+test('blade core extends melee range and cleaves three targets per mech with captured range',()=>{
+ const base={...battle(),mechClass:'blade',lane:1,battleLane:0,bots:2,weaponLevel:0,fireCooldown:0,bossStep:'warning',burstEnergy:100,threats:[burstObjective(1,1,48),burstObjective(2,1,47),burstObjective(3,1,46),burstObjective(4,1,45),burstObjective(5,2,48)]};
+ assert.equal(tick(base).pendingShots.length,0,'ordinary blade cannot reach these targets');
+ const fired=tick(sim.gameReducer(base,{type:'ACTIVATE_BURST'}));assert.equal(fired.pendingShots.length,6);assert.ok(fired.pendingShots.every(p=>p.range===14&&p.lane===1));
+ assert.equal(new Set(fired.pendingShots.map(p=>p.targetIndex)).size,3);
+ let s={...fired,burstTicks:1,fireCooldown:1000};for(let i=0;i<3;i++)s=tick(s);
+ for(const id of [1,2,3])assert.ok(!s.threats.some(t=>t.id===id&&t.hp>0));assert.equal(s.threats.find(t=>t.id===4).hp,2);assert.equal(s.threats.find(t=>t.id===5).hp,2);
+ let moved=sim.gameReducer(fired,{type:'MOVE_LANE',lane:2});moved.fireCooldown=1000;for(let i=0;i<3;i++)moved=tick(moved);
+ assert.ok(moved.threats.filter(t=>t.hp>0).every(t=>t.hp===2),'changing lanes cannot remotely complete sword strikes');
+});
+test('three chassis expose independent skill names mechanics and release sounds',()=>{
+ const mechs=load('mechs'),audio=load('audio');
+ assert.equal(new Set(['pulse','heavy','blade'].map(id=>mechs.coreSkill(id).name)).size,3);
+ for(const mechClass of ['pulse','heavy','blade']){
+  const s={...battle(),mechClass,burstEnergy:100},active=sim.gameReducer(s,{type:'ACTIVATE_BURST'});
+  assert.ok(audio.gameSoundEvents(s,active).includes('burst-'+mechClass));assert.equal(active.fireCooldown,s.fireCooldown);assert.equal(active.invulnerableTicks,s.invulnerableTicks);
+ }
+});
+test('each sector adds three weak horde waves and preserves final supply breathing room',()=>{
+ const old=[14,18,23,26,29];
+ for(const [sector,l]of levels.LEVELS.entries()){
+  assert.ok(l.hazards.length>=old[sector]*3);
+  const crowd=l.hazards.filter(h=>h.horde);assert.equal(crowd.length,3*(18+sector*3));
+  assert.ok(crowd.every(h=>h.hp<=3&&!h.armor&&h.progress<=80&&h.progress<l.encounters[0].progress-10));
+  for(let wave=0;wave<3;wave++)assert.equal(new Set(crowd.filter(h=>h.wave===wave).map(h=>Math.floor(h.slot%6/2))).size,3);
+ }
+});
+test('horde body contact is grouped by invulnerability and escaped fodder awards no free score',()=>{
+ const spec=levels.getLevel(0),index=spec.hazards.findIndex(h=>h.horde),mark=spec.hazards[index].progress,lane=levels.hazardLaneAt(0,index,mark,0);
+ const ids=spec.hazards.flatMap((h,i)=>h.horde&&h.progress===mark?[i]:[]);
+ const base={...initial(),status:'running',progress:mark-.1,lane,gate:spec.gateMarks.length,fireCooldown:1000,armorPoints:0,shieldCharges:0,hazardHps:spec.hazards.map((h,i)=>ids.includes(i)?h.hp:-1)};
+ const struck=tick(base);assert.equal(struck.playerHp,94);assert.equal(struck.damageSequence,1);
+ const escaped=tick({...base,lane:(lane+2)%3});assert.equal(escaped.playerHp,100);assert.equal(escaped.score,0);assert.ok(ids.every(i=>escaped.hazardHps[i]===-1));
+});
 test('player-triggered burst preserves five bosses and all chassis with real counterplay',()=>{
  const samples=[];
  for(const mechClass of ['pulse','heavy','blade'])for(let level=0;level<5;level++){

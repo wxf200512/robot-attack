@@ -31,12 +31,17 @@ const homeReview=process.argv.includes('--home'),pauseReview=process.argv.includ
 if(homeReview)preview=sim.createInitialState(garage,0,0);
 if(pauseReview)preview={...sim.createInitialState(garage,2,0),status:'paused',resumeStatus:'running',progress:62,gate:5,bots:3,playerHp:78};
 if(process.argv.includes('--final'))preview={...preview,levelIndex:4};
-const burstReview=process.argv.includes('--burst');
+const hordeReview=process.argv.includes('--horde');
+const burstReview=process.argv.includes('--burst')||hordeReview;
 if(burstReview){
  const mode=process.argv.find(a=>a.startsWith('--mode='))?.split('=')[1]||'ready';
- preview={...sim.createInitialState(garage,0,0),status:'running',progress:18,bots:Math.max(1,Math.min(11,Number(process.argv.find(a=>a.startsWith('--bots='))?.split('=')[1])||3)),gate:2,burstEnergy:mode==='charging'?48:100,weaponLevel:2,combo:6,bestCombo:6,kills:10,comboTicks:sim.COMBO_WINDOW_TICKS,comboHeal:4,comboRewardTicks:10};
+ const selectedSector=Number(process.argv.find(a=>a.startsWith('--sector='))?.split('=')[1]??4);
+ const sector=hordeReview?Math.max(0,Math.min(4,Number.isFinite(selectedSector)?selectedSector:4)):0;
+ const progress=hordeReview?48:18;
+ preview={...sim.createInitialState(garage,sector,0),status:'running',progress,bots:Math.max(1,Math.min(11,Number(process.argv.find(a=>a.startsWith('--bots='))?.split('=')[1])||3)),gate:sim.createInitialState(garage,sector,0).gateChoices.findIndex((_,i)=>load('level').getLevel(sector).gateMarks[i]>progress),burstEnergy:mode==='charging'?48:100,weaponLevel:2,combo:6,bestCombo:6,kills:10,comboTicks:sim.COMBO_WINDOW_TICKS,comboHeal:4,comboRewardTicks:10};
  if(mode==='active')preview=sim.gameReducer(preview,{type:'ACTIVATE_BURST'});
  preview=sim.gameReducer(preview,{type:'TICK'});
+ if(hordeReview&&mode==='active')for(let i=0;i<3;i++)preview=sim.gameReducer(preview,{type:'TICK'});
 }
 const App=load('index.tsx').default;
 const css=fs.readdirSync(path.resolve(__dirname,'../../../dist/assets')).find(n=>/^main-.*\.css$/.test(n));

@@ -6,3 +6,9 @@ export const MECH_CLASSES = [
 ];
 export const normalizeMechClass = (value: unknown): MechClass => value === 'heavy' || value === 'blade' ? value : 'pulse';
 export const mechSpec = (value: unknown) => MECH_CLASSES.find(m => m.id === normalizeMechClass(value))!;
+export const CORE_SKILLS = {
+  pulse: { name:'贯流光束', detail:'贯穿同轨3名敌人', damage:1.25, bossDamage:1.25, pierce:2, splash:0, cleave:1, range:Infinity, color:'#73eaff' },
+  heavy: { name:'震荡榴炮', detail:'同轨范围爆破', damage:1.5, bossDamage:1.2, pierce:0, splash:8, cleave:1, range:Infinity, color:'#ffc16a' },
+  blade: { name:'弧光剑阵', detail:'延长剑距 · 三目标横斩', damage:1.15, bossDamage:1.15, pierce:0, splash:0, cleave:3, range:14, color:'#c4a2ff' },
+} as const;
+export const coreSkill = (value:unknown) => CORE_SKILLS[normalizeMechClass(value)];

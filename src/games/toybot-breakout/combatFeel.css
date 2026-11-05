@@ -5,8 +5,10 @@
 .toybot-shell .toybot-burst-control:disabled{cursor:default;opacity:1}.toybot-shell .toybot-burst-control.is-ready{border-color:#f8dc9a;border-bottom-color:#986d33;background:linear-gradient(#ffe8ab,#e7ba66);color:#503c22;box-shadow:0 0 14px #f3bd4e44;animation:toybot-burst-ready 1.5s ease-in-out infinite alternate}
 .toybot-shell .toybot-burst-control.is-ready em{color:#715529}.toybot-shell .toybot-burst-control.is-ready .burst-symbol{color:#a86a25}.toybot-shell .toybot-burst-control.is-ready i{background:#fff0bb}.toybot-shell .toybot-burst-control.is-active{border-color:#f1d89d;background:linear-gradient(#62563f,#3c3a37);color:#ffe6af}.toybot-shell .toybot-burst-control.is-active em{color:#ffe6af}.toybot-shell .toybot-burst-control.is-active i{background:linear-gradient(90deg,#e7a647,#fff1bb)}
 .toybot-shell .toybot-burst-control:focus-visible{outline:2px solid #fff0b4;outline-offset:3px}.toybot-shell .toybot-burst-control.is-ready:active{translate:0 2px}
-.toybot-shell .toybot-robot.is-core-burst>.robot-player-art,.toybot-shell .toybot-robot.is-core-burst>.toybot-class-sprite,.toybot-shell .toybot-robot.is-core-burst>.robot-combat-sprite{filter:drop-shadow(0 0 7px #ffd66b)}
-.toybot-shell .toybot-shot.is-core-burst-shot .toybot-projectile-ai{filter:sepia(.55) saturate(1.9) drop-shadow(0 0 4px #ffd578)}
+.toybot-shell.core-style-pulse{--core-color:#73eaff}.toybot-shell.core-style-heavy{--core-color:#ffc16a}.toybot-shell.core-style-blade{--core-color:#c4a2ff}
+.toybot-shell .toybot-robot.is-core-burst>.robot-player-art{filter:drop-shadow(0 0 7px var(--core-color))}
+.toybot-shell.core-style-pulse .toybot-shot.is-core-burst-shot .toybot-projectile-ai{filter:hue-rotate(-20deg) saturate(1.4) drop-shadow(0 0 5px #73eaff)}
+.toybot-shell.core-style-heavy .toybot-shot.is-core-burst-shot .toybot-projectile-ai{filter:sepia(.6) saturate(2) drop-shadow(0 0 6px #ffba64)}
 .toybot-shell .effect-burst{border-color:#d8b874;background:#534328;color:#ffe6ad}.toybot-shell .toybot-combo.has-reward{border-color:#edd18d;box-shadow:0 0 11px #ffd46b33}.toybot-shell .toybot-combo.has-reward>span{color:#f6df9f}
 .toybot-shell.toybot-menu-system .toybot-run-highlights{margin:-5px 0 14px;color:#6c8492;font-size:10px;line-height:1.6}.toybot-shell.toybot-menu-system .toybot-run-highlights b{color:#365f76}
 @keyframes toybot-burst-ready{to{box-shadow:0 0 20px #f3bd4e88}}
@@ -20,4 +22,15 @@
 @media(max-height:680px){.toybot-shell .toybot-burst-control{left:12px}}
 
 .toybot-shell .toybot-shot.is-core-burst-shot{width:32px;height:44px;background:none;border:0;box-shadow:none}
-.toybot-shell .toybot-melee-slash.is-core-burst-slash{filter:sepia(.4) saturate(1.6) drop-shadow(0 0 5px #ffd578)}
+.toybot-shell .toybot-melee-slash.is-core-burst-slash{filter:hue-rotate(40deg) saturate(1.5) drop-shadow(0 0 6px #c4a2ff)}
+.toybot-shell .toybot-burst-control.is-active{border-color:var(--core-color);color:var(--core-color);background:linear-gradient(#33465b,#182d43)}
+.toybot-shell .toybot-burst-control.is-active i{background:linear-gradient(90deg,var(--core-color),#f6fbff)}
+.toybot-shell .toybot-core-detonation{position:absolute;pointer-events:none;width:90px;height:90px;translate:-50% -50%;background:url('/games/toybot-breakout/optimized/plasma-impact.png') center/contain no-repeat;filter:hue-rotate(145deg) saturate(1.3)}
+.toybot-shell .toybot-hazard.is-horde .toybot-drone-sprite{width:30px;animation:toybot-horde-march .7s ease-in-out infinite alternate;animation-delay:var(--enemy-offset)}
+.toybot-shell .is-horde:not(.is-damaged) .toybot-hazard-hp{opacity:0}.toybot-shell .is-horde .toybot-hazard-hp{width:20px;height:2px}
+@keyframes toybot-horde-march{to{translate:0 -2px;rotate:2deg}}
+.quality-low .toybot-hazard.is-horde .toybot-drone-sprite{animation:none}
+@media(prefers-reduced-motion:reduce){.toybot-shell .toybot-hazard.is-horde .toybot-drone-sprite{animation:none}}
+
+.toybot-shell .toybot-core-skill-label{display:block;margin-top:3px;font-size:8px;font-style:normal;font-weight:700;color:#bcddec}
+.toybot-shell .toybot-mech-picker button[aria-pressed=true] .toybot-core-skill-label{color:#775a31}

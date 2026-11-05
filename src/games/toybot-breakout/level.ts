@@ -1,6 +1,6 @@
 export type EnemyKind = 'drone' | 'swarm' | 'sniper' | 'bomber' | 'medic';
 export const ENEMY_NAMES: Record<EnemyKind, string> = { drone: '巡逻机', swarm: '突击蜂', sniper: '狙击哨', bomber: '轰炸机', medic: '维修机' };
-export type HazardSpec = { progress: number; hp: number; lane: number; armor?: number; moving?: boolean; kind?: EnemyKind; wave?: number; slot?: number };
+export type HazardSpec = { progress: number; hp: number; lane: number; armor?: number; moving?: boolean; kind?: EnemyKind; wave?: number; slot?: number; horde?: boolean };
 export type LevelSpec = {
   title: string; focus: string; gateMarks: number[]; hazards: HazardSpec[];
   encounters: { progress: number; reward: number; label: string }[];
@@ -37,6 +37,10 @@ LEVELS.forEach((level, sector) => {
     if (sector >= 1 || wave === 2) level.hazards.push({ progress: mark + 1.5, hp: 6 + sector * 2, lane: (lane + 1) % 3, kind: 'sniper', wave });
     if (sector >= 2 && wave !== 0) level.hazards.push({ progress: mark + 3, hp: 8 + sector * 2, lane, kind: 'bomber', wave });
     if (sector >= 3) level.hazards.push({ progress: mark + 4.5, hp: 5 + sector, lane, kind: 'medic', wave });
+    // Three columns in each of two lanes, alternating ranks. The third lane
+    // remains an escape route; the final supply follows a clear breathing gap.
+    const hordeCount=18+sector*3;
+    for(let i=0;i<hordeCount;i++)level.hazards.push({progress:mark+2+Math.floor(i/6)*1.5,hp:1+Math.floor(sector/2),lane:(lane+i%2)%3,kind:'swarm',wave,slot:i,horde:true});
   });
 });
 export const getLevel = (index: number): LevelSpec => LEVELS[Math.max(0, Math.min(LEVELS.length - 1, index))];

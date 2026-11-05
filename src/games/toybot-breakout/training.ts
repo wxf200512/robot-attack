@@ -7,7 +7,7 @@ export const TRAINING_LESSONS = [
   { title: '穿过奖励门', copy: '青色门是奖励，站在门所在的轨道，等门的地面线穿过小队才会领取。', goal: '切到左轨道，穿过机甲 +2 门。', explain: '每局从1台机甲开始，局内通过奖励门招募伙伴；伙伴越多，攻击数量越多。' },
   { title: '躲开危险', copy: '红色轨道正在预警。趁障碍接近前换到其他轨道，避免扣除核心生命。', goal: '避开当前红色危险轨道。', explain: '正式作战中，核心生命或小队数量归零会战败。训练有保护，可以反复练习。' },
   { title: '躲避后反击首领', copy: '首领先锁定轨道、再发射炮弹。先躲开橙色预警，炮弹结束后回到中轨反击。', goal: '成功躲避一次，再击破首领核心。', explain: '预警后不会继续追踪你。恢复窗口是输出机会；后续首领还有连射、横扫和逐列打击。' },
-  { title: '整备完成', copy: '你已经掌握基础操作。正式关卡需要击败首领并完成结算，才能解锁下一关。', goal: '完成训练，准备正式出击。', explain: '正式作战会回收零件，可在机库升级武器、装甲和动力核心。训练不消耗或发放零件。正式战斗中击破和成功闪避会为核心充能；满槽后点击金色爆发按钮，或聚焦战场按空格，获得5秒伤害强化并清除干扰。' },
+  { title: '整备完成', copy: '你已经掌握基础操作。正式关卡需要击败首领并完成结算，才能解锁下一关。', goal: '完成训练，准备正式出击。', explain: '正式作战会回收零件，可在机库升级武器、装甲和动力核心。训练不消耗或发放零件。正式战斗中击破和成功闪避会为核心充能；满槽后点击金色爆发按钮，或聚焦战场按空格，释放5秒机型专属技能并清除干扰：脉冲机贯穿敌群、力量机范围爆破、近战机延长剑距并横斩多目标。' },
 ];
 export const createTrainingState = (): TrainingState => ({ step:0,lane:1,clock:0,paused:false,done:false,visited:0,bots:1,health:100,enemyHp:6,lockedLane:1,dodged:false,shots:[],sequence:0,damageSequence:0,notice:'' });
 export const trainingGateY = (s: TrainingState) => Math.min(70,26+s.clock*1.2);

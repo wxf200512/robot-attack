@@ -1,0 +1,13 @@
+/* Raster VFX are independent from mech bobbing/weapon recoloring. */
+.toybot-shell .toybot-defense-vfx{position:absolute;z-index:5;left:50%;top:48%;width:190%;aspect-ratio:1;translate:-50% -50%;pointer-events:none;isolation:isolate}
+.toybot-shell .defense-layer{position:absolute;inset:0;display:block;background-repeat:no-repeat;background-size:200% 300%;opacity:.75;pointer-events:none}
+.toybot-shell .defense-armor{opacity:.8}
+.toybot-shell .is-wingman .defense-idle{opacity:.48}.toybot-shell .is-wingman .defense-armor{opacity:.58}
+.toybot-shell .defense-layer.is-impact{opacity:.95;z-index:2}
+.toybot-shell .is-wingman .defense-layer.is-impact{opacity:.55}
+.toybot-shell .defense-kind-armor.is-impact{filter:hue-rotate(225deg) saturate(.75)}
+.toybot-shell .defense-break{opacity:1}
+.toybot-shell .is-arena .toybot-defense-vfx{top:47%;width:200%}
+.toybot-shell .toybot-dodge-echo .toybot-defense-vfx{display:none}
+
+@media(prefers-reduced-motion:reduce){.toybot-shell .defense-layer.is-impact{opacity:.65}}

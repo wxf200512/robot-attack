@@ -20,9 +20,15 @@ if(bossReview){
  if(process.argv.includes('--dodge')){preview=sim.gameReducer(preview,{type:'MOVE_LANE',lane:2});preview=sim.gameReducer(preview,{type:'TICK'});preview=sim.gameReducer(preview,{type:'TICK'});}
  preview.fireCooldown=process.argv.includes('--attack')?sim.attackIntervalFor(preview):0;
 }
+const defenseReview=process.argv.includes('--defense');
+if(defenseReview){
+ const kind=process.argv.find(a=>a.startsWith('--mech='))?.split('=')[1]||'heavy',mode=process.argv.find(a=>a.startsWith('--mode='))?.split('=')[1]||'idle';
+ preview={...sim.createInitialState({...garage,mechClass:kind},0,0),status:'running',progress:18,bots:3,gate:2,weaponLevel:1,armorLevel:2,armorPoints:mode==='break'||mode==='empty'?0:4,shieldCharges:mode==='idle'?2:mode==='impact'?1:0,roadTicks:4,fireCooldown:1000,hazardHps:sim.createInitialState(garage).hazardHps.map(()=>-1)};
+ if(mode==='impact'||mode==='break')preview.defenseFx={kind:'shield',exhausted:mode==='break',ticks:Number(process.argv.find(a=>a.startsWith('--ticks='))?.split('=')[1])||5,id:1};
+}
 const App=load('index.tsx').default;
 const css=fs.readdirSync(path.resolve(__dirname,'../../../dist/assets')).find(n=>/^main-.*\.css$/.test(n));
 if(!css)throw Error('Run npm run build first');
 const html='<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>胜利页 · 只读布局验收</title><link rel="stylesheet" href="/dist/assets/'+css+'"></head><body>'+renderToStaticMarkup(React.createElement(MemoryRouter,null,React.createElement(App)))+'</body></html>';
-const output=bossReview?'boss-review.html':encounter?'encounter-review.html':defeat?'defeat-review.html':'victory-review.html';
+const output=defenseReview?'defense-review.html':bossReview?'boss-review.html':encounter?'encounter-review.html':defeat?'defeat-review.html':'victory-review.html';
 fs.writeFileSync(path.join(__dirname,output),html.replace(/<style>([\s\S]*?)<\/style>/g,(_,css)=>'<style>'+css.replaceAll('&#x27;',String.fromCharCode(39)).replaceAll('&quot;',String.fromCharCode(34)).replaceAll('&amp;','&').replaceAll('&lt;','<').replaceAll('&gt;','>')+'</style>'));console.log('Generated read-only '+output+' from actual component');

@@ -17,6 +17,7 @@ export const BOSS_RECOVERY_TICKS = 18;
 export const BOSS_ENRAGE_TICKS = 900;
 export const PLAYER_MAX_HP = 100;
 export const DODGE_TICKS = 4;
+export const DEFENSE_VFX_TICKS = 8;
 export const BOSS_MOVE_TICKS = 5;
 export const RUSH_WARNING_TICKS = 16;
 export const RUSH_CONTACT_TICK = 10;
@@ -44,6 +45,7 @@ export type GameState = {
   progress: number; bots: number; lane: number; laneMoveTicks: number; score: number;
   dodgeTicks: number; dodgeFromLane: number; dodgeDirection: number; dodgeSequence: number; evadeSequence: number; evadeTicks: number; queuedLane: number | null;
   playerHp: number; playerMaxHp: number; invulnerableTicks: number;
+  defenseFx: { kind:'shield'|'armor'; exhausted:boolean; ticks:number; id:number } | null;
   gate: number; gateResolved: boolean; gateCollected: boolean; gateChoices: GateOption[][];
   weaponLevel: number; armorLevel: number; coreLevel: number; armorPoints: number; shieldCharges: number;
   charge: number; chargedVolleys: number; overloadTicks: number; jamTicks: number; visitedZones: number[];
@@ -178,7 +180,7 @@ export const createInitialState = (garage: Garage, levelIndex = 0, layoutIndex =
   return {
     mechClass: normalizeMechClass(garage.mechClass), garageDamageScale: bonuses.damageScale, garageCoreLevel: bonuses.core, garageArmorLevel: bonuses.armor, status: 'home', resumeStatus: null, levelIndex, layoutIndex, runId: 0, progress: 0, bots: 1, lane: 1, laneMoveTicks: 0, score: 0,
     dodgeTicks: 0, dodgeFromLane: 1, dodgeDirection: 1, dodgeSequence: 0, evadeSequence: 0, evadeTicks: 0, queuedLane: null,
-    playerHp: bonuses.maxHp, playerMaxHp: bonuses.maxHp, invulnerableTicks: 0,
+    playerHp: bonuses.maxHp, playerMaxHp: bonuses.maxHp, invulnerableTicks: 0, defenseFx:null,
     gate: 0, gateResolved: false, gateCollected: false, gateChoices: createGateChoices(levelIndex, layoutIndex), weaponLevel: Number(bonuses.weapon > 0), armorLevel, armorPoints: bonuses.armorPoints, coreLevel: 0,
     shieldCharges: 0, charge: 0, chargedVolleys: 0, overloadTicks: 0, jamTicks: 0, visitedZones: [],
     hazard: 0, hazardHp: level.hazards[0].hp, hazardMaxHp: level.hazards[0].hp, hazardHps: level.hazards.map(h => h.hp),
@@ -217,8 +219,9 @@ export const applyGateEffect = (state: GameState, option: GateOption): GameState
 export const applySquadHit = (state: GameState, damage: number): number => {
   if (damage <= 0 || state.invulnerableTicks > 0 || state.playerHp <= 0) return 0;
   state.damageSequence++; state.damageLane = playerLaneFor(state); state.invulnerableTicks = 6;
-  if (state.shieldCharges > 0) { state.shieldCharges--; state.damageLoss = 0; state.damageAbsorbed = damage; state.damageKind = 'shield'; return 0; }
+  if (state.shieldCharges > 0) { state.shieldCharges--; state.damageLoss = 0; state.damageAbsorbed = damage; state.damageKind = 'shield'; state.defenseFx={kind:'shield',exhausted:state.shieldCharges===0,ticks:DEFENSE_VFX_TICKS,id:state.damageSequence}; return 0; }
   const absorbed = Math.min(state.armorPoints * 4, damage); state.armorPoints -= Math.ceil(absorbed / 4);
+  state.defenseFx=absorbed>0?{kind:'armor',exhausted:state.armorPoints===0,ticks:DEFENSE_VFX_TICKS,id:state.damageSequence}:null;
   const loss = Math.min(state.playerHp, damage - absorbed); state.playerHp -= loss;
   state.damageLoss = loss; state.damageAbsorbed = absorbed; state.damageKind = loss > 0 ? 'health' : 'armor';
   if (state.playerHp <= 0) state.bots = 0;
@@ -229,7 +232,7 @@ const syncHazard = (s: GameState) => {
   s.hazard = index < 0 ? level.hazards.length : index;
   s.hazardHp = s.hazardHps[s.hazard] ?? 0; s.hazardMaxHp = level.hazards[s.hazard]?.hp ?? 0;
 };
-const fail = (s: GameState, reason: GameState['defeatReason']): GameState => ({ ...s, status: 'defeat', playerHp: 0, bots: 0, defeatReason: reason ?? 'squad-wipe', defeatTicks: 0, won: false, pendingShots: [], burns: [], threats: [], enemyAttacks: [], killEffects: [] });
+const fail = (s: GameState, reason: GameState['defeatReason']): GameState => ({ ...s, status: 'defeat', playerHp: 0, bots: 0, defeatReason: reason ?? 'squad-wipe', defeatTicks: 0, won: false, defenseFx:null, pendingShots: [], burns: [], threats: [], enemyAttacks: [], killEffects: [] });
 const targetLane = (s: GameState, target: Target, index: number) => target === 'boss' ? s.battleLane : target === 'threat' ? s.threats.find(t => t.id === index)?.lane ?? -1 : hazardLaneAt(s.layoutIndex, index, s.progress, s.levelIndex);
 export const roadEnemyY = (s: GameState, index: number) => {
   const dash = s.enemyAttacks.find(a => a.source === 'hazard' && a.sourceId === index && a.kind === 'charge' && a.phase === 'flight');
@@ -288,7 +291,7 @@ const damageTarget = (s: GameState, target: Target, index: number, raw: number, 
   if (threat && threat.hp === 0) { s.score += threat.kind === 'minion' ? 20 : 15; s.playerHp = Math.min(s.playerMaxHp, s.playerHp + 2); }
   if (target === 'boss' && s.battleHp === 0) {
     s.score += level.encounters[index].reward; s.bossDefeated = true; s.status = 'boss-victory'; s.bossPhaseTicks = 0;
-    s.dodgeTicks=0;s.queuedLane=null;
+    s.dodgeTicks=0;s.queuedLane=null;s.defenseFx=null;
     s.bossAttackLanes = []; s.threats = []; s.enemyAttacks = []; s.pendingShots = []; s.burns = []; s.bossSalvos = 0;
   }
   return damage;
@@ -504,7 +507,7 @@ const advanceBoss = (s: GameState): GameState => {
 };
 const enterArena = (s: GameState) => {
   s.status = 'boss-intro'; s.battleTime = 0; s.bossPhaseTicks = 0; s.bossMoveTicks = 0;
-  s.dodgeTicks=0;s.queuedLane=null;
+  s.dodgeTicks=0;s.queuedLane=null;s.defenseFx=null;
   s.battleMaxHp = bossHealthFor(s); s.battleHp = s.battleMaxHp;
   s.hazardHps = s.hazardHps.map(() => -1); s.gate = getLevel(s.levelIndex).gateMarks.length;
   s.killEffects = []; s.combo = 0; s.comboTicks = 0; s.medicPulses = [];
@@ -557,7 +560,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
   if (!canMove(state.status)) return state;
   if (state.bots <= 0 || state.playerHp <= 0) return fail(state, isBossArena(state) ? 'boss-wipe' : null);
   const level = getLevel(state.levelIndex);
-  const s: GameState = { ...state, killEffects: state.killEffects.filter(e => e.ticks > 1).map(e => ({ ...e, ticks: e.ticks - 1 })), comboTicks: Math.max(0, state.comboTicks - 1), medicPulses: [], pendingShots: [], hazardHps: [...state.hazardHps], threats: state.threats.map(t => ({ ...t })), enemyAttacks: state.enemyAttacks.map(a => ({ ...a })), enemyAttackSources: [...state.enemyAttackSources], burns: [], visitedZones: [...state.visitedZones], bossAttackLanes: [...state.bossAttackLanes], laneMoveTicks: Math.max(0, state.laneMoveTicks - 1), bossMoveTicks: Math.max(0, state.bossMoveTicks - Number(canShoot(state.status))), invulnerableTicks: Math.max(0, state.invulnerableTicks - Number(canShoot(state.status))), overloadTicks: Math.max(0, state.overloadTicks - Number(canShoot(state.status))), jamTicks: Math.max(0, state.jamTicks - Number(canShoot(state.status))) };
+  const s: GameState = { ...state, defenseFx:state.defenseFx&&state.defenseFx.ticks>1?{...state.defenseFx,ticks:state.defenseFx.ticks-1}:null, killEffects: state.killEffects.filter(e => e.ticks > 1).map(e => ({ ...e, ticks: e.ticks - 1 })), comboTicks: Math.max(0, state.comboTicks - 1), medicPulses: [], pendingShots: [], hazardHps: [...state.hazardHps], threats: state.threats.map(t => ({ ...t })), enemyAttacks: state.enemyAttacks.map(a => ({ ...a })), enemyAttackSources: [...state.enemyAttackSources], burns: [], visitedZones: [...state.visitedZones], bossAttackLanes: [...state.bossAttackLanes], laneMoveTicks: Math.max(0, state.laneMoveTicks - 1), bossMoveTicks: Math.max(0, state.bossMoveTicks - Number(canShoot(state.status))), invulnerableTicks: Math.max(0, state.invulnerableTicks - Number(canShoot(state.status))), overloadTicks: Math.max(0, state.overloadTicks - Number(canShoot(state.status))), jamTicks: Math.max(0, state.jamTicks - Number(canShoot(state.status))) };
   if (s.comboTicks === 0) s.combo = 0;
   s.dodgeTicks=Math.max(0,state.dodgeTicks-1);s.evadeTicks=Math.max(0,state.evadeTicks-1);
   if(state.dodgeTicks===1&&s.queuedLane!==null&&s.queuedLane!==s.lane)Object.assign(s,sidestep(s,s.queuedLane));

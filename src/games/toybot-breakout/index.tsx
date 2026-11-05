@@ -1,6 +1,8 @@
 import PlayerSettingsPanel from './PlayerSettingsPanel';
 import StoryDialog from './StoryDialog';
 import CampaignStory, { StoryRadio, StoryRelay, StoryMission } from './CampaignStory';
+import DefenseVfx from './DefenseVfx';
+import { DEFENSE_ART } from './defenseArt';
 import { campaignReducer, createCampaign, CHAPTER_FILMS, RELAY_ART, type CampaignState } from './campaign';
 import { readStoryProgress, saveStoryProgress, finishStory, STORY_CHAPTERS } from './story';
 import { readSettings, saveSettings, resolveQuality } from './settings';
@@ -34,7 +36,6 @@ function Robot({ index, small = false, enemy = false, firing = false, weaponPhas
   if (enemy) return <div className="robot-boss-sprite" style={{ backgroundImage: `url(${bossArt})`, backgroundSize:(bossColumns*100)+'% 500%', backgroundPosition: (weaponPhase * 100 / (bossColumns-1)) + '% ' + (index * 25) + '%' }} aria-hidden="true" />;
   if (combat) return <div className={`robot-player-art battle-mech class-${mechClass} ${dodging ? 'is-dodging' : attacking ? 'is-attacking' : 'is-ready'} mech-w${Math.min(4,weaponLevel)}`} style={{ '--dodge-mirror': dodgeDirection > 0 ? -1 : 1 } as React.CSSProperties} aria-hidden="true">
     <span className="toybot-battle-body" style={{ backgroundImage:`url(${BATTLE_ART[mechClass]})`,backgroundPositionY:(dodging?100:attacking?50:0)+'%' }} />
-    {armorLevel>0&&<span className="robot-armor-aura" />}
     {weaponLevel>0&&<span className="toybot-battle-reactor" />}
     {firing&&!dodging&&mechClass!=='blade'&&<span className="toybot-battle-muzzle" />}
   </div>;
@@ -43,12 +44,10 @@ function Robot({ index, small = false, enemy = false, firing = false, weaponPhas
     const row = attacking ? 5 + weaponPhase : 1 + motionFrame;
     return <div className={'robot-player-art class-mech class-' + mechClass + (firing ? ' is-firing' : '') + (attacking ? ' is-attacking' : '') + (small ? ' robot-small' : '')} aria-hidden="true">
       <span className="toybot-class-sprite" style={mechSpriteStyle(mechClass, row, tier)} />
-      {armorLevel > 0 && <span className="robot-armor-aura" />}
     </div>;
   }
   return <div className={`robot-player-art mech-w${Math.min(4, weaponLevel)} mech-a${Math.min(4, armorLevel)} mech-c${Math.min(4, coreLevel)}${small ? ' robot-small' : ''}${firing ? ' is-firing' : ''}`} aria-hidden="true">
     <div className="robot-run-sprite" style={weaponLevel > 0 ? { backgroundImage: `url(${PLAYER_ART})`, backgroundSize: '400% 400%', backgroundPositionY: ((Math.min(4, weaponLevel) - 1) * 100 / 3) + '%' } : undefined} />
-    {armorLevel > 1 && <span className="robot-armor-aura" />}
     {weaponLevel > 0 && <span className="robot-weapon-ai" style={{ backgroundPosition: (weaponPhase * 100 / 3) + '% ' + ((Math.min(4, weaponLevel) - 1) * 100 / 3) + '%' }} />}
     {coreLevel > 0 && weaponLevel === 0 && <span className="robot-core-aura" />}
     {coreLevel > 0 && weaponLevel === 0 && <span className="robot-core-wings" />}
@@ -101,7 +100,8 @@ const ToybotBreakout: React.FC = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const audio = useRef<ReturnType<typeof createGameAudio> | null>(null);
   const audioSettings = useRef(settings);
-  const quality = resolveQuality(settings, navigator.hardwareConcurrency || 4, window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const quality = resolveQuality(settings, navigator.hardwareConcurrency || 4, reducedMotion);
   const [garage, setGarage] = useState<Garage>(readGarage);
   const [storyProgress,setStoryProgress]=useState(readStoryProgress);
   const [storyView,setStoryView]=useState<'comic'|'world'|null>(null);
@@ -173,6 +173,7 @@ const ToybotBreakout: React.FC = () => {
     return()=>{document.removeEventListener('visibilitychange',visibility);window.removeEventListener('blur',suspend);window.removeEventListener('pagehide',suspend);};
   },[game.status]);
   const warmRoadAssets=game.status==='running';
+  useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages(Object.values(DEFENSE_ART));},[game.status]);
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages([CHAPTER_FILMS[game.levelIndex],RELAY_ART]);},[game.status,game.levelIndex]);
   useEffect(() => { if(warmRoadAssets)void preloadImages([ENEMY_ART]); },[warmRoadAssets]);
   const warmBossAssets=game.status==='running'&&game.progress>=65;
@@ -324,7 +325,6 @@ const ToybotBreakout: React.FC = () => {
         .toybot-scene.formation-3{--squad-size:clamp(24px,7.4vw,32px)}
         .toybot-robot{position:absolute;width:var(--squad-size,44px);transform:translate(-50%,-50%);filter:drop-shadow(0 5px 3px #234c3b44);transition:left .09s ease-out,top .16s ease-out}
         .toybot-robot.lead{z-index:2;animation:toybot-bob .65s ease-in-out infinite alternate}
-        .toybot-robot.shielded:after{content:'';position:absolute;inset:-8px;border:2px solid #8cefff;border-radius:45% 45% 40% 40%;background:#6defff17;box-shadow:0 0 14px #64e9ff99,inset 0 0 12px #64e9ff66;pointer-events:none;animation:toybot-shield .7s ease-in-out infinite alternate}
         .toybot-obstacle{position:absolute;z-index:2;left:50%;width:66px;transform:translate(-50%,-50%) scale(var(--boss-scale,1));transform-origin:center;filter:drop-shadow(0 7px 3px #1026378c);animation:toybot-bob .8s ease-in-out infinite alternate;transition:top .1s linear}
         .toybot-obstacle.boss{width:118px}
         .toybot-obstacle .robot-art{display:block;width:100%;height:auto;filter:drop-shadow(0 0 10px #ff705f80)}
@@ -441,8 +441,6 @@ const ToybotBreakout: React.FC = () => {
         .toybot-drone-sprite{display:block;width:64px;aspect-ratio:128/115;background:url('/games/toybot-breakout/optimized/drone-motion-sheet.png?v=1') 0 0/300% 100% no-repeat;filter:drop-shadow(0 0 7px #5ce8ff66)}
         .toybot-scene.is-moving .toybot-drone-sprite{animation:toybot-enemy-frames .9s steps(3,end) infinite}
         .toybot-hazard{animation:toybot-drone-hover .9s ease-in-out infinite alternate}
-        .robot-armor-aura{position:absolute;inset:9% 8% 3%;border:2px solid #9edfff88;border-radius:38% 38% 25% 25%;box-shadow:0 0 12px #7ae9ff88,inset 0 0 10px #8cefff55;pointer-events:none}
-        .mech-a2 .robot-armor-aura,.mech-a3 .robot-armor-aura,.mech-a4 .robot-armor-aura{border-width:3px;box-shadow:0 0 18px #b8f5ff,inset 0 0 13px #b8f5ff88}
         .robot-armor-plate{position:absolute;z-index:1;top:29%;width:18%;height:19%;background:linear-gradient(140deg,#f6ffff,#7eabb9 62%,#304a5c);border:1px solid #d6f9ff;clip-path:polygon(0 0,100% 15%,82% 100%,10% 78%);filter:drop-shadow(0 0 4px #b4ecfa);pointer-events:none}
         .robot-armor-plate.left{left:13%;transform:rotate(-18deg)}.robot-armor-plate.right{right:13%;transform:scaleX(-1) rotate(-18deg)}
         .mech-a3 .robot-armor-plate,.mech-a4 .robot-armor-plate{height:26%;width:23%;background:linear-gradient(140deg,#fff,#b9eafa 55%,#47627a)}
@@ -656,7 +654,7 @@ const ToybotBreakout: React.FC = () => {
         @keyframes toybot-muzzle{12%{opacity:1;transform:scale(1.15)}55%{opacity:.8}100%{opacity:0;transform:scale(.65)}}
         @keyframes toybot-road-rush{to{background-position-y:78px}}
         @keyframes toybot-road-flow{to{background-position-y:138px}}
-        @keyframes toybot-shield{to{opacity:.55;scale:1.06}}
+
         @keyframes toybot-float{to{translate:25px -5px}}
         @media(max-height:680px){.toybot-shell{min-height:0;height:calc(100svh - 20px)}.toybot-page{padding:10px}.toybot-top{padding-top:12px}.toybot-back{top:47px}.toybot-stats{top:47px}.toybot-meter{top:98px}.toybot-bottom{bottom:10px}}
         @media(max-width:360px){.toybot-page{padding:7px}.toybot-shell{height:calc(100svh - 14px);border-width:3px;border-radius:25px}.toybot-pill{min-width:69px;padding:6px}.toybot-back{left:10px;padding:8px}.toybot-stats{gap:5px}.toybot-lane-controls button{width:22px;height:24px}.toybot-squad-avatars .robot-small{width:24px}}
@@ -704,8 +702,6 @@ const ToybotBreakout: React.FC = () => {
         .robot-weapon-ai{left:62%;top:-5%;width:48%}
         .robot-player-art.robot-small{width:26px;flex:0 0 26px}
         .weapon-tier-1{--mech-accent:#68eeff}.weapon-tier-2{--mech-accent:#6ca6ff}.weapon-tier-3{--mech-accent:#c29aff}.weapon-tier-4{--mech-accent:#ffdb8d}
-        .robot-armor-aura{border-color:var(--mech-accent,#a4e6ff);box-shadow:0 0 9px var(--mech-accent,#7ae9ff),inset 0 0 6px var(--mech-accent,#7ae9ff)}
-        .toybot-robot.shielded:after{border-color:var(--mech-accent,#8cefff);box-shadow:0 0 12px var(--mech-accent,#64e9ff)}
         .toybot-boss-threat{position:absolute;z-index:4;width:42px;height:42px;transform:translate(-50%,-50%) scale(var(--threat-scale));transition:top .1s linear,left .1s linear;pointer-events:none;filter:drop-shadow(0 4px 4px #05121a99)}
         .toybot-boss-threat.kind-shell{width:36px;height:42px;z-index:6}
         .toybot-boss-threat.kind-barrier{width:64px;height:64px}
@@ -950,10 +946,11 @@ const ToybotBreakout: React.FC = () => {
             {robotPositions.map((robot) => (
               <div
                 key={robot.index}
-                className={`toybot-robot ${game.dodgeTicks>0?'is-dodging':''} ${robot.index === 0 ? 'lead' : ''}${robot.index === 0 && game.shieldCharges > 0 ? ' shielded' : ''}`}
+                className={`toybot-robot ${game.dodgeTicks>0?'is-dodging':''} ${robot.index === 0 ? 'lead' : ''}`}
                 style={{ left: `${robot.x}%`, top: `${robot.y}%`, zIndex: Math.round((robot.y + 5) * 10) }}
               >
                 <Robot mechClass={game.mechClass} combat={arena} dodging={game.dodgeTicks > 0} dodgeDirection={game.dodgeDirection} motionFrame={(motionFrame + robot.index) % 4} attacking={attackActive && game.dodgeTicks === 0} index={robot.index} weaponPhase={weaponPhase} firing={canShoot(displayStatus ?? 'home') && weaponPhase === 2} weaponLevel={activeWeapon} armorLevel={game.armorLevel} coreLevel={visualCore} />
+                <DefenseVfx game={game} index={robot.index} reduced={quality==='low'||reducedMotion}/>
                 {robot.index === 0 && (game.weaponLevel > 0 || game.armorLevel > 0 || visualCore > 0) && (
                   <div className="toybot-equipment-tag" aria-hidden="true">
                     {game.weaponLevel > 0 && <span className="weapon-tag">⚡ W{game.weaponLevel}</span>}

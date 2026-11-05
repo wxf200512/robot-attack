@@ -1,0 +1,43 @@
+{
+  "generator": "ImageGen built-in",
+  "purpose": "护盾与装甲防御特效",
+  "layout": {
+    "columns": 2,
+    "rows": 3,
+    "source": [
+      1024,
+      1536
+    ],
+    "runtime": [
+      512,
+      768
+    ],
+    "frames": 6
+  },
+  "assets": [
+    {
+      "kind": "idle",
+      "prompt": "Game VFX sprite atlas, SIX frames in a strict TWO-column THREE-row equal grid. Portrait canvas 1024x1536, six SQUARE 512x512 cells, reading order left to right then downward. Each cell has the SAME fixed center, scale and framing, generous 12% transparent margin on all sides. GENUINELY transparent background AND transparent center of the effect; it will overlay an existing small toy mecha, so DO NOT include any robot or character. Reference image is only for polished toy sci-fi rendering language. No text, numbers, labels, watermark, background scene or contact-sheet borders. Fine premium rendered light effects, sparse elegant details, readable at 70px. Effects must not be a flat rectangular outline, magic rune, shield emblem, logo or solid filled disc. An upright volumetric cyan/aqua ENERGY BUBBLE around an invisible standing robot: gently curved oval shell slightly taller than wide, thin layered refractive rim, a few luminous hexagonal facets at sides, subtle elliptical ground reflection at its base, front center almost entirely clear. Six consecutive calm idle frames: soft energy travels up side arcs then returns to starting form, sparse tiny particles. A physically dimensional protective dome with rim depth, never a thick rectangular border. Moderate brightness, clean restrained glow.",
+      "source": "art-source/shield-idle-v13.png",
+      "runtime": "optimized/shield-idle-v13.png"
+    },
+    {
+      "kind": "impact",
+      "prompt": "Game VFX sprite atlas, SIX frames in a strict TWO-column THREE-row equal grid. Portrait canvas 1024x1536, six SQUARE 512x512 cells, reading order left to right then downward. Each cell has the SAME fixed center, scale and framing, generous 12% transparent margin on all sides. GENUINELY transparent background AND transparent center of the effect; it will overlay an existing small toy mecha, so DO NOT include any robot or character. Reference image is only for polished toy sci-fi rendering language. No text, numbers, labels, watermark, background scene or contact-sheet borders. Fine premium rendered light effects, sparse elegant details, readable at 70px. Effects must not be a flat rectangular outline, magic rune, shield emblem, logo or solid filled disc. An upright cyan/aqua energy bubble taking ONE impact, six successive animation frames. Same empty oval shell center and size throughout. 1: small concentrated spark on the upper front-right surface; 2: cyan-white contact flash; 3: circular ripples propagate across curved surface, nearby hexagons light; 4: ripple expands around rim; 5: energy dissipates; 6: quiet rim restored. Keep central character window transparent and avoid a solid white explosion. Elegant refractive light wave, no projectile or robot included.",
+      "source": "art-source/shield-impact-v13.png",
+      "runtime": "optimized/shield-impact-v13.png"
+    },
+    {
+      "kind": "break",
+      "prompt": "Game VFX sprite atlas, SIX frames in a strict TWO-column THREE-row equal grid. Portrait canvas 1024x1536, six SQUARE 512x512 cells, reading order left to right then downward. Each cell has the SAME fixed center, scale and framing, generous 12% transparent margin on all sides. GENUINELY transparent background AND transparent center of the effect; it will overlay an existing small toy mecha, so DO NOT include any robot or character. Reference image is only for polished toy sci-fi rendering language. No text, numbers, labels, watermark, background scene or contact-sheet borders. Fine premium rendered light effects, sparse elegant details, readable at 70px. Effects must not be a flat rectangular outline, magic rune, shield emblem, logo or solid filled disc. An upright cyan/aqua energy bubble BREAKING and dissipating in six successive frames. 1: thin oval shell begins to fracture; 2: luminous curved hexagonal tiles peel outward; 3: tiles spread around the EMPTY center; 4: smaller cyan shards with restrained trails; 5: scattered dim specks; 6: almost fully invisible remnants. Keep every shard within the frame margin, no robot, flames, smoke or giant flash. Readable premium sci-fi shield depletion VFX.",
+      "source": "art-source/shield-break-v13.png",
+      "runtime": "optimized/shield-break-v13.png"
+    },
+    {
+      "kind": "armor",
+      "prompt": "Game VFX sprite atlas, SIX frames in a strict TWO-column THREE-row equal grid. Portrait canvas 1024x1536, six SQUARE 512x512 cells, reading order left to right then downward. Each cell has the SAME fixed center, scale and framing, generous 12% transparent margin on all sides. GENUINELY transparent background AND transparent center of the effect; it will overlay an existing small toy mecha, so DO NOT include any robot or character. Reference image is only for polished toy sci-fi rendering language. No text, numbers, labels, watermark, background scene or contact-sheet borders. Fine premium rendered light effects, sparse elegant details, readable at 70px. Effects must not be a flat rectangular outline, magic rune, shield emblem, logo or solid filled disc. A subtle AMBER/GOLD armor reinforcement aura around an INVISIBLE standing robot, six consecutive gentle idle frames. Four small curved translucent holographic armor PLATES, two at shoulder sides and two near shins, plus a low elliptical energy glimmer at the base. Center and head area completely clear. Sparse beveled honeycomb panels hugging the silhouette, warm gold edge highlights, small flowing amber motes. Do NOT draw a complete oval, box or continuous outline. These are separate floating protective plates, suitable as armor status rather than the cyan consumable shield.",
+      "source": "art-source/shield-armor-v13.png",
+      "runtime": "optimized/shield-armor-v13.png"
+    }
+  ]
+}

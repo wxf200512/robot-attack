@@ -1,7 +1,7 @@
 import type { GameState } from './simulation';
 import { attackIntervalFor } from './simulation';
 import type { PlayerSettings } from './settings';
-export type AudioCue='pulse'|'heavy'|'blade'|'hit'|'destroy'|'shield'|'damage'|'warning'|'gate'|'upgrade'|'victory'|'defeat'|'dodge'|'evade';
+export type AudioCue='pulse'|'heavy'|'blade'|'hit'|'destroy'|'shield'|'shield-break'|'damage'|'warning'|'gate'|'upgrade'|'victory'|'defeat'|'dodge'|'evade';
 export function gameSoundEvents(previous:GameState,current:GameState):AudioCue[]{
  if(previous.runId!==current.runId||current.status==='paused'||previous.status==='paused')return [];
  const cues:AudioCue[]=[];
@@ -12,7 +12,7 @@ export function gameSoundEvents(previous:GameState,current:GameState):AudioCue[]
   const destroyed=current.hazardHps.some((hp,i)=>hp===0&&previous.hazardHps[i]>0)||current.threats.some(t=>t.hp===0&&previous.threats.some(p=>p.id===t.id&&p.hp>0));
   cues.push(destroyed?'destroy':'hit');
  }
- if(current.damageSequence>previous.damageSequence)cues.push(current.damageKind==='shield'||current.damageKind==='armor'?'shield':'damage');
+ if(current.damageSequence>previous.damageSequence)cues.push(current.damageKind==='shield'&&current.defenseFx?.exhausted?'shield-break':current.damageKind==='shield'||current.damageKind==='armor'?'shield':'damage');
  if(current.gateCollected&&!previous.gateCollected)cues.push('gate');
  if(current.status==='running'&&current.enemyAttackSequence>previous.enemyAttackSequence)cues.push('warning');
  if(current.status==='battle'&&current.bossStep==='warning'&&(previous.status!=='battle'||previous.bossStep!=='warning'||previous.bossWave!==current.bossWave))cues.push('warning');
@@ -47,6 +47,7 @@ export function createGameAudio(){
    case 'hit':tone(640,230,.045,'triangle',0,.3);break;
    case 'destroy':tone(210,40,.16,'sawtooth',0,.6);tone(720,190,.09,'triangle',0,.35);break;
    case 'shield':tone(1450,750,.16,'sine',0,.7);break;
+   case 'shield-break':tone(1900,390,.24,'triangle',0,.45);tone(2600,800,.14,'sine',.045,.3);tone(700,130,.25,'sine',.08,.35);break;
    case 'dodge':tone(680,140,.12,'triangle',0,.3);break;
    case 'evade':tone(1200,1800,.12,'sine',0,.4);break;
    case 'damage':tone(120,38,.2,'square',0,.55);break;

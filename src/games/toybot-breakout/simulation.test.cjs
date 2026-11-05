@@ -1034,3 +1034,36 @@ test('two-lane dodge requests are buffered into two continuous adjacent steps wi
   for(let i=0;i<4;i++)s=tick(s);
   assert.equal(s.dodgeTicks,0);assert.equal(s.queuedLane,null);assert.equal(sim.playerFormation(s)[0].x,73);
 });
+
+const defense=load('defenseArt');
+test('shield hit and final-charge break are distinct, once-only feedback without changing damage absorption',()=>{
+ const base={...initial(),status:'running',bots:3,shieldCharges:2,armorPoints:4};let s={...base};
+ assert.equal(sim.applySquadHit(s,20),0);assert.equal(s.playerHp,base.playerHp);assert.equal(s.armorPoints,4);assert.equal(s.shieldCharges,1);assert.deepEqual(s.defenseFx,{kind:'shield',exhausted:false,ticks:8,id:1});
+ assert.deepEqual(defense.defenseLayers(s,0).map(l=>l.art),['idle','impact']);assert.deepEqual(defense.defenseLayers(s,1).map(l=>l.art),['idle']);
+ const previous={...s};sim.applySquadHit(s,50);assert.deepEqual(s,previous,'invulnerable hits do not retrigger VFX or consume charges');
+ s={...s,invulnerableTicks:0};const before={...s};sim.applySquadHit(s,20);assert.equal(s.shieldCharges,0);assert.equal(s.playerHp,base.playerHp);assert.equal(s.armorPoints,4);assert.equal(s.defenseFx.exhausted,true);
+ assert.deepEqual(defense.defenseLayers(s,2).map(l=>l.art),['armor','break']);assert.ok(load('audio').gameSoundEvents(before,s).includes('shield-break'));
+});
+test('defense sprite timing freezes in pause and expires independently of immunity',()=>{
+ let s={...initial(),status:'running',shieldCharges:1,fireCooldown:1000};sim.applySquadHit(s,10);
+ assert.equal(defense.defenseLayers(s,0).at(-1).frame,0);
+ s=sim.gameReducer(s,{type:'PAUSE'});const frozen=s;assert.equal(tick(s),frozen);assert.equal(defense.defenseLayers(s,0).at(-1).frame,0);
+ s=sim.gameReducer(s,{type:'RESUME'});for(let i=0;i<6;i++)s=tick(s);assert.equal(s.invulnerableTicks,0,'VFX does not extend immunity');assert.ok(s.defenseFx);
+ s=tick(s);assert.equal(defense.defenseLayers(s,0).at(-1).frame,5);s=tick(s);assert.equal(s.defenseFx,null);assert.equal(defense.defenseLayers(s,0).some(l=>l.transient),false);
+});
+test('armor glow follows remaining protection, not upgrade level or weapon color',()=>{
+ let s={...initial(),status:'running',armorLevel:4,armorPoints:0};assert.deepEqual(defense.defenseLayers(s,0),[]);
+ s={...s,armorPoints:2};sim.applySquadHit(s,6);assert.equal(s.damageKind,'armor');assert.equal(s.armorPoints,0);assert.equal(s.defenseFx.kind,'armor');assert.equal(s.defenseFx.exhausted,true);assert.deepEqual(defense.defenseLayers(s,0).map(l=>l.art),['break']);
+ s={...s,invulnerableTicks:0};sim.applySquadHit(s,6);assert.equal(s.damageKind,'health');assert.equal(s.defenseFx,null);assert.deepEqual(defense.defenseLayers(s,0),[]);
+ const shield={...s,shieldCharges:1};assert.deepEqual(defense.defenseLayers({...shield,mechClass:'heavy'},0),defense.defenseLayers({...shield,mechClass:'blade'},0));assert.equal(defense.defenseLayers(shield,0,true)[0].frame,0);
+});
+test('stale defense impacts clear on arena entry, boss victory, restart and defeat',()=>{
+ let s={...initial(),status:'running',shieldCharges:1,progress:levels.getLevel(0).encounters[0].progress-.1,fireCooldown:1000};sim.applySquadHit(s,10);s=tick(s);assert.equal(s.status,'boss-intro');assert.equal(s.defenseFx,null);
+ s={...battle(),battleHp:1,shieldCharges:1};sim.applySquadHit(s,10);s.pendingShots=[incoming(s,{damage:9999})];s=tick(s);assert.equal(s.status,'boss-victory');assert.equal(s.defenseFx,null);
+ const reset=sim.gameReducer(s,{type:'RESTART',garage});assert.equal(reset.defenseFx,null);assert.deepEqual(defense.defenseLayers({...reset,status:'defeat',bots:0,playerHp:0},0),[]);assert.deepEqual(defense.defenseLayers({...reset,status:'running'},11),[]);
+ const dead=tick({...reset,status:'running',bots:0,playerHp:0,defenseFx:{kind:'shield',exhausted:true,ticks:8,id:1}});assert.equal(dead.status,'defeat');assert.equal(dead.defenseFx,null);
+});
+test('four defense atlases preserve alpha and six exact square cells',()=>{
+ assert.deepEqual([0,1,2,3,4,5].map(defense.defenseCell),['0% 0%','100% 0%','0% 50%','100% 50%','0% 100%','100% 100%']);
+ for(const url of Object.values(defense.DEFENSE_ART)){const data=fs.readFileSync(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(data.readUInt32BE(16),512);assert.equal(data.readUInt32BE(20),768);assert.equal(data[25],6);assert.ok(fs.existsSync(path.join(__dirname,'art-source',path.basename(url))));}
+});

@@ -21,7 +21,7 @@ import './enemies.css';
 import './bossCombat.css';
 import './menus.css';
 import './combatFeel.css';
-import { canActivateBurst, COMBO_WINDOW_TICKS, BURST_TICKS } from './simulation';
+import { MODULES, guardSourceFor, commanderFor, eliteRoleName, type RunModule, canActivateBurst, COMBO_WINDOW_TICKS, BURST_TICKS } from './simulation';
 import { OBJECTIVE_NAMES, SPECIAL_LABELS } from './bossSkills';
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -840,8 +840,8 @@ const ToybotBreakout: React.FC = () => {
               </>
             )}
             {visibleHazards.map(h => (
-              <div key={h.index} className={`toybot-hazard enemy-kind-${h.kind ?? 'drone'} ${h.horde?'is-horde':''} ${h.hp<LEVEL.hazards[h.index].hp?'is-damaged':''} ${game.medicPulses.includes(h.index) ? 'is-repairing' : ''} ${h.armor ? 'is-armored' : ''} ${game.enemyAttacks.some(a => a.source === 'hazard' && a.sourceId === h.index && a.phase === 'warning') ? 'enemy-charging' : ''}`} style={{ left: h.x + '%', top: h.y + '%', '--enemy-offset': (h.slot??h.index)*-97+'ms', '--hazard-scale': .72 + (h.y - 39) / 19 * .34, zIndex: Math.round((h.y + 4) * 10) } as React.CSSProperties} role="img" aria-label={ENEMY_NAMES[h.kind ?? 'drone']}>
-                <div className="toybot-drone-sprite" aria-hidden="true" />
+              <div key={h.index} className={`toybot-hazard enemy-kind-${h.kind ?? 'drone'} ${h.horde?'is-horde':''} elite-${h.eliteRole??'none'} ${guardSourceFor(game,h.index)>=0?'is-guarded':''} ${commanderFor(game,h.index)>=0?'is-commanded':''} ${h.hp<LEVEL.hazards[h.index].hp?'is-damaged':''} ${game.medicPulses.includes(h.index) ? 'is-repairing' : ''} ${h.armor ? 'is-armored' : ''} ${game.enemyAttacks.some(a => a.source === 'hazard' && a.sourceId === h.index && a.phase === 'warning') ? 'enemy-charging' : ''}`} style={{ left: h.x + '%', top: h.y + '%', '--enemy-offset': (h.slot??h.index)*-97+'ms', '--hazard-scale': .72 + (h.y - 39) / 19 * .34, zIndex: Math.round((h.y + 4) * 10) } as React.CSSProperties} role="img" aria-label={eliteRoleName(h.eliteRole)||ENEMY_NAMES[h.kind ?? 'drone']}>
+                <div className="toybot-drone-sprite" aria-hidden="true" />{h.eliteRole&&<small className="toybot-elite-tag">{eliteRoleName(h.eliteRole)}</small>}{guardSourceFor(game,h.index)>=0&&<span className="toybot-guard-link" aria-label="护卫减伤35%">⬡</span>}
                 {h.kind && h.kind !== 'swarm' && <small className="toybot-enemy-role">{ENEMY_NAMES[h.kind]}</small>}
                 {h.kind === 'medic' && <span className="toybot-medic-pulse" aria-hidden="true">✚</span>}
                 {h.armor && <span className="toybot-enemy-armor" aria-label={`装甲 ${h.armor}`}>⬡{h.armor}</span>}
@@ -850,7 +850,7 @@ const ToybotBreakout: React.FC = () => {
             ))}
             {game.comboTicks > 0 && game.combo >= 2 && !arena && <div className={'toybot-combo'+(game.comboRewardTicks>0?' has-reward':'')} role="status" aria-live="off"><b>{game.combo}<small> 连击</small></b><span>{game.comboRewardTicks>0?comboFeedback:`击破 ${game.kills} · 积分 ×${(1 + Math.min(3, Math.floor(game.combo / 3)) * .25).toFixed(2)}`}</span><i style={{ scale: `${game.comboTicks / COMBO_WINDOW_TICKS} 1` }} /></div>}
             {game.killEffects.map(effect => <div key={effect.id} className={'toybot-enemy-break kind-' + effect.kind} style={{ left: effect.x + '%', top: effect.y + '%', '--break-progress': (7 - effect.ticks) / 7, zIndex: Math.round((effect.y + 7) * 10) + 5 } as React.CSSProperties} aria-hidden="true"><span /><b>{effect.combo >= 3 ? effect.combo + ' 连击' : '击破'}</b></div>)}
-            {game.coreDetonations.map(effect=><span key={effect.id} className="toybot-core-detonation" style={{left:effect.x+'%',top:effect.y+'%',opacity:effect.ticks/6,scale:1+(6-effect.ticks)/6,zIndex:Math.round((effect.y+8)*10)}} aria-hidden="true"/>)}
+            {game.coreDetonations.map(effect=><span key={effect.id} className={'toybot-core-detonation reaction-'+(effect.kind??'blast')} style={{left:effect.x+'%',top:effect.y+'%',opacity:effect.ticks/6,scale:1+(6-effect.ticks)/6,zIndex:Math.round((effect.y+8)*10)}} aria-hidden="true"/>)}
             {game.enemyAttacks.map(attack => {
               const progress = attack.phase === 'flight' ? 1 - attack.ticks / attack.duration : 0;
               const fromX = attack.fromX ?? laneXAt(attack.fromLane, attack.fromY);
@@ -871,7 +871,7 @@ const ToybotBreakout: React.FC = () => {
                     if (!volley.target || game.lane !== volley.lane) return null;
                     const y = targetY(game, volley.target, volley.targetIndex);
                     const tier = Math.min(3, volley.weaponLevel + Math.min(1, game.armorLevel) + Math.min(1, visualCore));
-                    return <div key={origin.index} className={'toybot-melee-slash'+(volley.burst?' is-core-burst-slash':'')} style={{ left: (targetWorldX(game, volley.target, volley.targetIndex) + (origin.x - LANE_CENTERS[volley.lane]) * .22) + '%', top: y + '%', backgroundImage: 'url(' + BLADE_SLASH_ART + ')', backgroundPosition: ((volley.duration - volley.ticks) * 100 / 3) + '% ' + (tier * 100 / 3) + '%', zIndex: Math.round((y + 7) * 10) + 7 }} aria-hidden="true" />;
+                    return <div key={origin.index} className={'toybot-melee-slash'+(volley.burst?' is-core-burst-slash':'')+(volley.burn?' has-burn-module':'')+(volley.arc?' has-arc-module':'')} style={{ left: (targetWorldX(game, volley.target, volley.targetIndex) + (origin.x - LANE_CENTERS[volley.lane]) * .22) + '%', top: y + '%', backgroundImage: 'url(' + BLADE_SLASH_ART + ')', backgroundPosition: ((volley.duration - volley.ticks) * 100 / 3) + '% ' + (tier * 100 / 3) + '%', zIndex: Math.round((y + 7) * 10) + 7 }} aria-hidden="true" />;
                   }
                   const tier = volley.charged || volley.weaponLevel >= 4 ? 'weapon-ultimate' : volley.weaponLevel >= 3 ? 'weapon-heavy weapon-overdrive' : volley.weaponLevel >= 2 ? 'weapon-heavy' : volley.weaponLevel > 0 ? 'weapon-powered' : '';
                   const flightProgress = (volley.duration - volley.ticks) / volley.duration;
@@ -886,7 +886,7 @@ const ToybotBreakout: React.FC = () => {
                   const top = `calc(${origin.y + (destinationY - origin.y) * flightProgress}% - ${lift} * ${(1 - flightProgress) / 4})`;
                   return <React.Fragment key={`${volley.id}-${origin.index}`}>
                     {volley.muzzle && volley.ticks === volley.duration && volley.weaponLevel === 0 && <div className="toybot-muzzle-event" style={{ left: `${origin.x}%`, top: `calc(${origin.y}% - ${size} / 4)` }} aria-hidden="true"><span className="toybot-muzzle-flash center" /></div>}
-                    <div className={`toybot-shot in-flight ${volley.attackStyle === 'heavy' ? 'is-heavy-round' : ''} ${tier}${volley.count >= 5 ? ' is-swarm' : ''}${volley.charged ? ' is-charged' : ''}${volley.burst ? ' is-core-burst-shot' : ''}`} style={{ left: `${origin.x + (targetX - origin.x) * flightProgress}%`, top, '--flight-from-x': origin.x + '%', '--flight-to-x': targetX + '%', '--flight-from-y': `calc(${origin.y}% - ${lift} / 4)`, '--flight-to-y': destinationY + '%', '--flight-duration': volley.duration * STEP_MS + 'ms', '--flight-angle': angle + 'deg', '--flight-end-scale': volley.target ? '.65' : '.22', '--flight-end-opacity': volley.target ? '1' : '0', zIndex: depth } as React.CSSProperties} aria-hidden="true">
+                    <div className={`toybot-shot in-flight ${volley.attackStyle === 'heavy' ? 'is-heavy-round' : ''} ${tier}${volley.count >= 5 ? ' is-swarm' : ''}${volley.charged ? ' is-charged' : ''}${volley.burst ? ' is-core-burst-shot' : ''}${volley.arc?' has-arc-module':''}${volley.burn?' has-burn-module':''}`} style={{ left: `${origin.x + (targetX - origin.x) * flightProgress}%`, top, '--flight-from-x': origin.x + '%', '--flight-to-x': targetX + '%', '--flight-from-y': `calc(${origin.y}% - ${lift} / 4)`, '--flight-to-y': destinationY + '%', '--flight-duration': volley.duration * STEP_MS + 'ms', '--flight-angle': angle + 'deg', '--flight-end-scale': volley.target ? '.65' : '.22', '--flight-end-opacity': volley.target ? '1' : '0', zIndex: depth } as React.CSSProperties} aria-hidden="true">
                       <ProjectileArt heavy={volley.attackStyle === 'heavy'} level={volley.charged || volley.burst ? 4 : volley.weaponLevel} />
                     </div>
                   </React.Fragment>;
@@ -959,6 +959,7 @@ const ToybotBreakout: React.FC = () => {
                 style={{ left: `${robot.x}%`, top: `${robot.y}%`, zIndex: Math.round((robot.y + 5) * 10) }}
               >
                 <Robot mechClass={game.mechClass} combat={arena} dodging={game.dodgeTicks > 0} dodgeDirection={game.dodgeDirection} motionFrame={(motionFrame + robot.index) % 4} attacking={attackActive && game.dodgeTicks === 0} index={robot.index} weaponPhase={weaponPhase} firing={canShoot(displayStatus ?? 'home') && weaponPhase === 2} weaponLevel={activeWeapon} armorLevel={game.armorLevel} coreLevel={visualCore} />
+                {(Object.keys(MODULES) as RunModule[]).filter(key=>game.modules[key]>0).map(key=><span key={key} className={'toybot-mounted-module mounted-'+key} style={{'--module-size':(10+game.modules[key]*2)+'px'} as React.CSSProperties} aria-hidden="true"/>)}
                 <DefenseVfx game={game} index={robot.index} reduced={quality==='low'||reducedMotion}/>
                 {robot.index === 0 && (game.weaponLevel > 0 || game.armorLevel > 0 || visualCore > 0) && (
                   <div className="toybot-equipment-tag" aria-hidden="true">
@@ -1031,7 +1032,7 @@ const ToybotBreakout: React.FC = () => {
               <i className="toybot-health-trail" key={game.damageSequence} /><i className="toybot-health-fill" style={{ width: game.playerHp / game.playerMaxHp * 100 + '%' }} />
             </div>
           </div>
-          <div className="toybot-status-effects" aria-label="战斗状态">
+          <div className="toybot-status-effects" aria-label="战斗状态">{(Object.keys(MODULES) as RunModule[]).filter(key=>game.modules[key]>0).map(key=><span key={key} className={"toybot-module-chip module-"+key} title={MODULES[key].detail}>{MODULES[key].icon} {MODULES[key].name} {game.modules[key]}</span>)}
             {game.burstTicks>0&&<span className="effect-burst">{burstSkill.name} · {burstSkill.detail}</span>}
             {game.weaponLevel >= 4 && <span className="effect-charge">✹ <i style={{ width: game.charge / 4 * 100 + '%' }} />{game.charge}/4</span>}
             {game.chargedVolleys > 0 && <span className="effect-charge">✹ ×{game.chargedVolleys}</span>}

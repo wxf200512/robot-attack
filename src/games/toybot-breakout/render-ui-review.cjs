@@ -37,8 +37,9 @@ if(burstReview){
  const mode=process.argv.find(a=>a.startsWith('--mode='))?.split('=')[1]||'ready';
  const selectedSector=Number(process.argv.find(a=>a.startsWith('--sector='))?.split('=')[1]??4);
  const sector=hordeReview?Math.max(0,Math.min(4,Number.isFinite(selectedSector)?selectedSector:4)):0;
- const progress=hordeReview?48:18;
+ const progress=hordeReview?Number(process.argv.find(a=>a.startsWith('--progress='))?.split('=')[1]??48):18;
  preview={...sim.createInitialState(garage,sector,0),status:'running',progress,bots:Math.max(1,Math.min(11,Number(process.argv.find(a=>a.startsWith('--bots='))?.split('=')[1])||3)),gate:sim.createInitialState(garage,sector,0).gateChoices.findIndex((_,i)=>load('level').getLevel(sector).gateMarks[i]>progress),burstEnergy:mode==='charging'?48:100,weaponLevel:2,combo:6,bestCombo:6,kills:10,comboTicks:sim.COMBO_WINDOW_TICKS,comboHeal:4,comboRewardTicks:10};
+ if(process.argv.includes('--modules'))preview={...preview,modules:{arc:2,burn:1,recycle:1}};
  if(mode==='active')preview=sim.gameReducer(preview,{type:'ACTIVATE_BURST'});
  preview=sim.gameReducer(preview,{type:'TICK'});
  if(hordeReview&&mode==='active')for(let i=0;i<3;i++)preview=sim.gameReducer(preview,{type:'TICK'});

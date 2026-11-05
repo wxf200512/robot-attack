@@ -34,3 +34,25 @@
 
 .toybot-shell .toybot-core-skill-label{display:block;margin-top:3px;font-size:8px;font-style:normal;font-weight:700;color:#bcddec}
 .toybot-shell .toybot-mech-picker button[aria-pressed=true] .toybot-core-skill-label{color:#775a31}
+
+/* Readable run builds and squad roles; existing bitmap effects stay on the road. */
+.toybot-module-chip{border:1px solid #74dfff77!important;background:#0b3449e8!important;color:#a2f2ff!important;font-size:9px!important;padding:3px 6px!important}
+.toybot-module-chip.module-burn{color:#ffcb8d!important;border-color:#ffaa5a77!important}
+.toybot-module-chip.module-recycle{color:#adffc2!important;border-color:#8affab77!important}
+.toybot-elite-tag{position:absolute;left:50%;top:-9px;transform:translateX(-50%);white-space:nowrap;font-size:7px;font-weight:900;background:#123849ee;color:#9cfff0;padding:1px 3px;border-radius:3px;z-index:4}
+.elite-energy .toybot-drone-sprite{filter:drop-shadow(0 0 4px #5cffff) brightness(1.2)}
+.elite-guard .toybot-drone-sprite{filter:drop-shadow(0 0 5px #8ebaff) hue-rotate(20deg)}
+.elite-commander .toybot-drone-sprite{filter:drop-shadow(0 0 5px #ffb05c) sepia(.4)}
+.elite-commander .toybot-elite-tag{color:#ffcd8a}
+.toybot-guard-link{position:absolute;left:50%;top:15%;transform:translateX(-50%);color:#a8dfff;text-shadow:0 0 5px #50cfff;font-size:24px;pointer-events:none}
+.toybot-shell .toybot-hazard.is-horde[class*="elite-"]:not(.elite-none) .toybot-hazard-hp{opacity:1}
+.toybot-core-detonation.reaction-arc{width:48px;filter:hue-rotate(170deg) saturate(1.6);mix-blend-mode:screen}
+.toybot-core-detonation.reaction-energy{filter:hue-rotate(115deg) saturate(1.5);mix-blend-mode:screen}
+.toybot-shot.has-arc-module .toybot-projectile-ai{filter:drop-shadow(0 0 4px #8cfcff)}
+.toybot-shot.has-burn-module .toybot-projectile-ai,.toybot-melee-slash.has-burn-module{filter:hue-rotate(150deg) saturate(1.7) drop-shadow(0 0 4px #ff9d45)}
+.toybot-melee-slash.has-arc-module{filter:drop-shadow(0 0 5px #83f6ff)}
+
+.toybot-shell .toybot-status-effects{flex-wrap:wrap;row-gap:3px;max-width:100%}
+.toybot-mounted-module{position:absolute;width:var(--module-size);height:var(--module-size);background:url('/games/toybot-breakout/optimized/projectile-ai-atlas-v1.png') 0 100%/400% 400% no-repeat;pointer-events:none;z-index:3;left:8%;top:28%;filter:drop-shadow(0 0 3px #79eaff)}
+.toybot-mounted-module.mounted-burn{left:auto;right:8%;filter:hue-rotate(150deg) drop-shadow(0 0 3px #ffb36d)}
+.toybot-mounted-module.mounted-recycle{left:42%;top:38%;filter:hue-rotate(275deg) drop-shadow(0 0 3px #8dffb5)}

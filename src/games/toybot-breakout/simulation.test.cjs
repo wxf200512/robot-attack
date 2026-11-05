@@ -1168,7 +1168,7 @@ test('each sector adds three weak horde waves and preserves final supply breathi
  for(const [sector,l]of levels.LEVELS.entries()){
   assert.ok(l.hazards.length>=old[sector]*3);
   const crowd=l.hazards.filter(h=>h.horde);assert.equal(crowd.length,3*(18+sector*3));
-  assert.ok(crowd.every(h=>h.hp<=3&&!h.armor&&h.progress<=80&&h.progress<l.encounters[0].progress-10));
+  assert.ok(crowd.every(h=>(h.eliteRole?h.hp<=6:h.hp<=3)&&!h.armor&&h.progress<=80&&h.progress<l.encounters[0].progress-10));
   for(let wave=0;wave<3;wave++)assert.equal(new Set(crowd.filter(h=>h.wave===wave).map(h=>Math.floor(h.slot%6/2))).size,3);
  }
 });
@@ -1191,4 +1191,89 @@ test('player-triggered burst preserves five bosses and all chassis with real cou
   assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(s.burstSequence>0);assert.ok(ticks>=600&&ticks<=1800,mechClass+' L'+(level+1)+' '+ticks/10+'s');samples.push(ticks/10);
  }
  console.log('Burst boss sample seconds: '+samples.join(', '));
+});
+
+
+function moduleGate(effect){return {id:effect,icon:'x',title:effect,detail:'test',effect,amount:1,polarity:'reward',lane:1};}
+function eliteScene(){
+ const level=levels.getLevel(4), ids=level.hazards.flatMap((h,i)=>h.horde&&h.wave===0&&h.slot%2===0?[i]:[]);
+ const state={...initial(4),status:'running',progress:36,lane:levels.hazardLaneAt(0,ids[0],36,4),gate:level.gateMarks.length,fireCooldown:1000,hazardHps:level.hazards.map((h,i)=>ids.includes(i)?h.hp:-1)};
+ return {level,ids,state};
+}
+test('run modules are gate-earned, immutable, capped with fallback score and reset on restart',()=>{
+ let base=initial(),s=base;
+ for(let i=0;i<4;i++)s=sim.applyGateEffect(s,moduleGate('arc'));
+ assert.equal(base.modules.arc,0);assert.equal(s.modules.arc,3);assert.equal(s.score,40);
+ assert.match(sim.gateEffectDetail(s,moduleGate('arc')),/同轨/);
+ for(let level=0;level<5;level++)for(const rng of [()=>0,()=>.99])assert.ok(sim.createGateChoices(level,0,rng)[2][0].effect in sim.MODULES);
+ const restart=sim.gameReducer(s,{type:'RESTART',garage});assert.deepEqual(restart.modules,{arc:0,burn:0,recycle:0});
+});
+test('arc module hits only the captured nearby same-lane target and never recursively jumps',()=>{
+ const {level,ids,state}=eliteScene(),a=ids[2],b=ids[3],c=ids[5],other=level.hazards.findIndex(h=>h.horde&&h.wave===0&&h.slot===1);
+ const hp=level.hazards.map((h,i)=>[a,b,c,other].includes(i)?10:-1);
+ const s=tick({...state,hazardHps:hp,pendingShots:[incoming(state,{target:'hazard',targetIndex:a,lane:state.lane,damage:2,arc:1})]});
+ assert.equal(s.hazardHps[a],8);assert.equal(s.hazardHps[b],9);assert.equal(s.hazardHps[c],10);assert.equal(s.hazardHps[other],10);
+ assert.equal(s.coreDetonations.filter(e=>e.kind==='arc').length,1);
+ const paused=sim.gameReducer(s,{type:'PAUSE'});assert.deepEqual(tick(paused),paused);
+});
+test('burn module works before weapon tier three, persists on ticks and ends with its target',()=>{
+ const {ids,state}=eliteScene(),a=ids[2];
+ let s=tick({...state,hazardHps:state.hazardHps.map((hp,i)=>i===a?20:-1),pendingShots:[incoming(state,{target:'hazard',targetIndex:a,lane:state.lane,damage:2,weaponLevel:0,burn:2})]});
+ assert.equal(s.burns.length,1);const hp=s.hazardHps[a];s=tick(s);assert.ok(s.hazardHps[a]<hp);
+ s={...s,hazardHps:s.hazardHps.map(()=>-1)};s=tick(s);assert.equal(s.burns.length,0);
+});
+test('recycle improves actual kill energy but cannot recharge an active burst',()=>{
+ const {ids,state}=eliteScene(),a=ids[2];
+ const shot=incoming(state,{target:'hazard',targetIndex:a,lane:state.lane,damage:10});
+ const plain=tick({...state,pendingShots:[shot]}),enhanced=tick({...state,modules:{arc:0,burn:0,recycle:2},pendingShots:[shot]});
+ assert.equal(enhanced.burstEnergy-plain.burstEnergy,6);
+ assert.equal(tick({...state,modules:{arc:0,burn:0,recycle:3},burstTicks:20,pendingShots:[shot]}).burstEnergy,0);
+});
+test('energy carriers chain through nearby same-lane enemies once without hitting another lane',()=>{
+ const {level,ids,state}=eliteScene(),a=ids[0],other=level.hazards.findIndex(h=>h.horde&&h.wave===0&&h.slot===1);
+ const s=tick({...state,hazardHps:state.hazardHps.map((hp,i)=>ids.includes(i)?(i===a?1:3):i===other?3:-1),pendingShots:[incoming(state,{target:'hazard',targetIndex:a,lane:state.lane,damage:10})]});
+ assert.equal(s.hazardHps[a],0);assert.ok(s.kills>=3);assert.equal(s.hazardHps[other],3);assert.ok(s.coreDetonations.some(e=>e.kind==='energy'));assert.ok(s.coreDetonations.length<=6);
+});
+test('guard protection reduces incoming hits and disappears as soon as the guard dies',()=>{
+ const {level,ids,state}=eliteScene(),guard=ids.find(i=>level.hazards[i].eliteRole==='guard'),a=ids[1];
+ assert.equal(sim.guardSourceFor(state,a),guard);
+ const base={...state,hazardHps:state.hazardHps.map((hp,i)=>i===a?10:hp)};
+ const hit=incoming(state,{target:'hazard',targetIndex:a,lane:state.lane,damage:2,burst:true});
+ assert.equal(tick({...base,pendingShots:[hit]}).hazardHps[a],8.7);
+ const broken=tick({...base,pendingShots:[incoming(state,{target:'hazard',targetIndex:guard,lane:state.lane,damage:100}),hit]});
+ assert.equal(broken.hazardHps[a],8);assert.equal(sim.guardSourceFor(broken,a),-1);
+});
+test('commander buffs scheduled attacks and killing it cancels linked warnings only',()=>{
+ const {level,ids,state}=eliteScene(),leader=ids.find(i=>level.hazards[i].eliteRole==='commander'),a=ids[0];
+ const source={...state,progress:level.hazards[a].progress-4.9,hazardHps:state.hazardHps.map((hp,i)=>[a,leader].includes(i)?hp:-1)};
+ assert.equal(sim.commanderFor(source,a),leader);
+ const active=tick(source),alone=tick({...source,hazardHps:source.hazardHps.map((hp,i)=>i===leader?-1:hp)});
+ assert.ok(active.enemyAttacks.length);assert.equal(active.enemyAttacks[0].damage,alone.enemyAttacks[0].damage*1.25);
+ const linked={id:777,source:'hazard',sourceId:a,kind:'charge',lane:state.lane,fromLane:state.lane,fromY:45,phase:'warning',ticks:10,duration:10,damage:10,shotsRemaining:1};
+ const broken=tick({...source,enemyAttacks:[linked,{...linked,id:778,phase:'flight'}],pendingShots:[incoming(state,{target:'hazard',targetIndex:leader,lane:state.lane,damage:100})]});
+ assert.ok(!broken.enemyAttacks.some(a=>a.id===777));assert.ok(broken.enemyAttacks.some(a=>a.id===778));
+});
+test('all chassis capture module upgrades on their own shots, leaving old projectiles unchanged',()=>{
+ for(const mechClass of ['pulse','heavy','blade']){
+  const {ids,state}=eliteScene();const base={...state,mechClass,progress:39,fireCooldown:0,bots:3,hazardHps:state.hazardHps.map((hp,i)=>i===ids[2]?30:-1),modules:{arc:2,burn:1,recycle:0}};
+  const next=tick(base);assert.equal(next.pendingShots.length,3);assert.ok(next.pendingShots.every(p=>p.arc===2&&p.burn===1));
+  const upgraded=sim.applyGateEffect(next,moduleGate('arc'));assert.ok(upgraded.pendingShots.every(p=>p.arc===2));
+ }
+});
+
+test('fully combined modules complete every boss with all chassis and clear remaining reaction effects',()=>{
+ const samples=[];
+ for(const mechClass of ['pulse','heavy','blade'])for(let level=0;level<5;level++){
+  const spec=levels.getLevel(level);let s=tick({...initial(level),modules:{arc:3,burn:3,recycle:3},mechClass,status:'running',progress:spec.encounters[0].progress-.1,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3});let ticks=0;
+  while(sim.isActiveStatus(s.status)&&ticks<2400){s=sim.gameReducer(s,{type:'MOVE_LANE',lane:bossTactic(s)});if(sim.canActivateBurst(s)&&s.bossStep==='recovery')s=sim.gameReducer(s,{type:'ACTIVATE_BURST'});s=tick(s);ticks++;}
+  assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(ticks>=550&&ticks<=1800,mechClass+' L'+(level+1)+' '+ticks/10+'s');assert.equal(s.coreDetonations.length,0);samples.push(ticks/10);
+ }
+ console.log('Module boss sample seconds: '+samples.join(', '));
+});
+
+test('module doors resolve once at the ground contact line and only on their own lane',()=>{
+ const level=levels.getLevel(0),gate=2,mark=level.gateMarks[gate],base={...initial(),status:'running',progress:mark-1.6,lane:1,gate,gateChoices:sim.createGateChoices(0,0,()=>0),fireCooldown:1000,hazardHps:level.hazards.map(()=>-1)};
+ base.gateChoices[gate]=[moduleGate('burn')];
+ const collected=tick(base);assert.equal(collected.modules.burn,1);assert.equal(tick(collected).modules.burn,1);assert.equal(base.modules.burn,0);
+ assert.equal(tick({...base,lane:0}).modules.burn,0);
 });

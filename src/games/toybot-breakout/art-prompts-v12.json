@@ -1,0 +1,49 @@
+{
+  "generator": "ImageGen built-in",
+  "layout": {
+    "columns": 2,
+    "rows": 3,
+    "pairs": [
+      "进场",
+      "连接中继",
+      "守护者回收"
+    ]
+  },
+  "chapters": [
+    {
+      "chapter": 1,
+      "prompt": "Use case: illustration-story. Asset: SIX-FRAME cinematic animation atlas for chapter 工厂出口 of a mobile toy-mecha game. Square canvas, perfectly regular TWO columns by THREE rows, six equal LANDSCAPE 3:2 cells, no gutters, borders or labels. Reading order left-to-right then down. Reference 1 defines the cream/navy/cyan hero Spark with orange forehead stripe and the amber geometric holographic companion Miko; reference 2 is boss-design reference only, never copy the roster layout. Location: orange industrial foundry over clouds, conveyor rails and glowing furnace. Boss: orange stocky furnace guardian with twin shoulder exhausts, first row of reference roster. Row 1 frames 1 and 2: SAME CAMERA wide shot from behind Spark approaching this location, second frame takes one forward step as environmental energy changes. Row 2 frames 3 and 4: SAME CAMERA close-up of Spark extending one hand toward amber hologram Miko above a cyan maintenance relay, frame 3 dim relay then frame 4 it lights up. Row 3 frames 5 and 6: SAME CAMERA wide aftermath shot with this guardian safely powered down/kneeling, peaceful lights returning and small civilian robots, frame 6 more lights ignite as dawn brightens. Each pair should match composition closely to permit actual two-frame animated cuts. Cohesive crisp illustrated sci-fi toy comic art, no human people, expressive cinematic lighting, readable mobile silhouettes, original designs. NO lettering, text, speech bubbles, numbers, watermarks or UI. Make every one of six cells fully illustrated, no blank cells.",
+      "source": "art-source/chapter-film-1-v12.png",
+      "runtime": "optimized/chapter-film-1-v12.jpg"
+    },
+    {
+      "chapter": 2,
+      "prompt": "Use case: illustration-story. Asset: SIX-FRAME cinematic animation atlas for chapter 无人机走廊 of a mobile toy-mecha game. Square canvas, perfectly regular TWO columns by THREE rows, six equal LANDSCAPE 3:2 cells, no gutters, borders or labels. Reading order left-to-right then down. Reference 1 defines the cream/navy/cyan hero Spark with orange forehead stripe and the amber geometric holographic companion Miko; reference 2 is boss-design reference only, never copy the roster layout. Location: high blue sky cargo bridges and floating drone nests. Boss: silver blue angular flying queen with circular rotor halo, second row of reference roster. Row 1 frames 1 and 2: SAME CAMERA wide shot from behind Spark approaching this location, second frame takes one forward step as environmental energy changes. Row 2 frames 3 and 4: SAME CAMERA close-up of Spark extending one hand toward amber hologram Miko above a cyan maintenance relay, frame 3 dim relay then frame 4 it lights up. Row 3 frames 5 and 6: SAME CAMERA wide aftermath shot with this guardian safely powered down/kneeling, peaceful lights returning and small civilian robots, frame 6 more lights ignite as dawn brightens. Each pair should match composition closely to permit actual two-frame animated cuts. Cohesive crisp illustrated sci-fi toy comic art, no human people, expressive cinematic lighting, readable mobile silhouettes, original designs. NO lettering, text, speech bubbles, numbers, watermarks or UI. Make every one of six cells fully illustrated, no blank cells.",
+      "source": "art-source/chapter-film-2-v12.png",
+      "runtime": "optimized/chapter-film-2-v12.jpg"
+    },
+    {
+      "chapter": 3,
+      "prompt": "Use case: illustration-story. Asset: SIX-FRAME cinematic animation atlas for chapter 装甲封锁线 of a mobile toy-mecha game. Square canvas, perfectly regular TWO columns by THREE rows, six equal LANDSCAPE 3:2 cells, no gutters, borders or labels. Reading order left-to-right then down. Reference 1 defines the cream/navy/cyan hero Spark with orange forehead stripe and the amber geometric holographic companion Miko; reference 2 is boss-design reference only, never copy the roster layout. Location: red-grey fortress gate over floating city, huge armored blast doors. Boss: dark crimson broad heavy guardian carrying a huge shield, third row of reference roster. Row 1 frames 1 and 2: SAME CAMERA wide shot from behind Spark approaching this location, second frame takes one forward step as environmental energy changes. Row 2 frames 3 and 4: SAME CAMERA close-up of Spark extending one hand toward amber hologram Miko above a cyan maintenance relay, frame 3 dim relay then frame 4 it lights up. Row 3 frames 5 and 6: SAME CAMERA wide aftermath shot with this guardian safely powered down/kneeling, peaceful lights returning and small civilian robots, frame 6 more lights ignite as dawn brightens. Each pair should match composition closely to permit actual two-frame animated cuts. Cohesive crisp illustrated sci-fi toy comic art, no human people, expressive cinematic lighting, readable mobile silhouettes, original designs. NO lettering, text, speech bubbles, numbers, watermarks or UI. Make every one of six cells fully illustrated, no blank cells.",
+      "source": "art-source/chapter-film-3-v12.png",
+      "runtime": "optimized/chapter-film-3-v12.jpg"
+    },
+    {
+      "chapter": 4,
+      "prompt": "Use case: illustration-story. Asset: SIX-FRAME cinematic animation atlas for chapter 能量风暴区 of a mobile toy-mecha game. Square canvas, perfectly regular TWO columns by THREE rows, six equal LANDSCAPE 3:2 cells, no gutters, borders or labels. Reading order left-to-right then down. Reference 1 defines the cream/navy/cyan hero Spark with orange forehead stripe and the amber geometric holographic companion Miko; reference 2 is boss-design reference only, never copy the roster layout. Location: violet lightning energy towers and suspended crystal pylons. Boss: purple floating faceted prophet crystal with geometric wings, fourth row of reference roster. Row 1 frames 1 and 2: SAME CAMERA wide shot from behind Spark approaching this location, second frame takes one forward step as environmental energy changes. Row 2 frames 3 and 4: SAME CAMERA close-up of Spark extending one hand toward amber hologram Miko above a cyan maintenance relay, frame 3 dim relay then frame 4 it lights up. Row 3 frames 5 and 6: SAME CAMERA wide aftermath shot with this guardian safely powered down/kneeling, peaceful lights returning and small civilian robots, frame 6 more lights ignite as dawn brightens. Each pair should match composition closely to permit actual two-frame animated cuts. Cohesive crisp illustrated sci-fi toy comic art, no human people, expressive cinematic lighting, readable mobile silhouettes, original designs. NO lettering, text, speech bubbles, numbers, watermarks or UI. Make every one of six cells fully illustrated, no blank cells.",
+      "source": "art-source/chapter-film-4-v12.png",
+      "runtime": "optimized/chapter-film-4-v12.jpg"
+    },
+    {
+      "chapter": 5,
+      "prompt": "Use case: illustration-story. Asset: SIX-FRAME cinematic animation atlas for chapter 重装机甲基地 of a mobile toy-mecha game. Square canvas, perfectly regular TWO columns by THREE rows, six equal LANDSCAPE 3:2 cells, no gutters, borders or labels. Reading order left-to-right then down. Reference 1 defines the cream/navy/cyan hero Spark with orange forehead stripe and the amber geometric holographic companion Miko; reference 2 is boss-design reference only, never copy the roster layout. Location: gold and ivory central city palace at sunrise with radiant energy core. Boss: gold ivory regal winged mechanical emperor, fifth row of reference roster. Row 1 frames 1 and 2: SAME CAMERA wide shot from behind Spark approaching this location, second frame takes one forward step as environmental energy changes. Row 2 frames 3 and 4: SAME CAMERA close-up of Spark extending one hand toward amber hologram Miko above a cyan maintenance relay, frame 3 dim relay then frame 4 it lights up. Row 3 frames 5 and 6: SAME CAMERA wide aftermath shot with this guardian safely powered down/kneeling, peaceful lights returning and small civilian robots, frame 6 more lights ignite as dawn brightens. Each pair should match composition closely to permit actual two-frame animated cuts. Cohesive crisp illustrated sci-fi toy comic art, no human people, expressive cinematic lighting, readable mobile silhouettes, original designs. NO lettering, text, speech bubbles, numbers, watermarks or UI. Make every one of six cells fully illustrated, no blank cells.",
+      "source": "art-source/chapter-film-5-v12.png",
+      "runtime": "optimized/chapter-film-5-v12.jpg"
+    }
+  ],
+  "relay": {
+    "prompt": "Use case: stylized-concept. Single transparent-background game pickup sprite, no atlas, no scene. An original small ivory navy sci-fi toy maintenance relay terminal for a third-person three-lane runner: low round cyan luminous docking pad at bottom, short sturdy console, floating AMBER geometric octahedron hologram Miko over its center, two compact side antennae. View from elevated front 25 degrees, entirety visible, clear compact silhouette, matching cream/navy/cyan/orange toy mecha illustration in reference. Bright friendly non-hostile, soft cyan glow confined close to object, genuinely transparent surrounding canvas with alpha. No text, letters, numbers, watermark, checkerboard background. This is one in-world interactive beacon, not a HUD icon.",
+    "source": "art-source/story-relay-v12.png",
+    "runtime": "optimized/story-relay-v12.png"
+  }
+}

@@ -15,10 +15,11 @@ $totalBefore=0L;$totalAfter=0L
 foreach($file in $inputs){
  $original=[Drawing.Image]::FromFile($file.FullName)
  try{
-  $opaque=$file.BaseName -match '^(map-[1-5]-ai|ui-hangar|home-hangar|mech-road|story-comic-)'
-  $limit=if($file.BaseName -match '^story-comic-'){1200}elseif($file.BaseName -match '^mech-.*-combat-v10$'){1536}elseif($file.BaseName -eq 'boss-cast-v10'){1584}elseif($file.BaseName -eq 'boss-objectives-v10'){1024}elseif($file.BaseName -match '^upgrade-'){160}elseif($file.BaseName -match '^home-mech-'){480}else{768}
+  $opaque=$file.BaseName -match '^(map-[1-5]-ai|ui-hangar|home-hangar|mech-road|story-comic-|chapter-film-)'
+  $limit=if($file.BaseName -match '^chapter-film-'){1024}elseif($file.BaseName -eq 'story-relay-v12'){256}elseif($file.BaseName -match '^story-comic-'){1200}elseif($file.BaseName -match '^mech-.*-combat-v10$'){1536}elseif($file.BaseName -eq 'boss-cast-v10'){1584}elseif($file.BaseName -eq 'boss-objectives-v10'){1024}elseif($file.BaseName -match '^upgrade-'){160}elseif($file.BaseName -match '^home-mech-'){480}else{768}
   $width=[Math]::Min($original.Width,$limit);$height=[int][Math]::Round($original.Height*$width/$original.Width)
-  if($file.BaseName -match '^mech-.*-combat-v10$'){$height=576}
+  if($file.BaseName -match '^chapter-film-'){$height=[int]([Math]::Round($height/3)*3)}
+  elseif($file.BaseName -match '^mech-.*-combat-v10$'){$height=576}
   elseif($file.BaseName -eq 'boss-cast-v10'){$height=990}
   elseif($file.BaseName -eq 'boss-objectives-v10'){$height=512}
   $bitmap=[Drawing.Bitmap]::new($width,$height,[Drawing.Imaging.PixelFormat]::Format32bppArgb)
@@ -31,7 +32,7 @@ foreach($file in $inputs){
    $graphics.DrawImage($original,[Drawing.Rectangle]::new(0,0,$width,$height),0,0,$original.Width,$original.Height,[Drawing.GraphicsUnit]::Pixel)
    $extension=if($opaque){'.jpg'}else{'.png'}
    $destination=Join-Path $outputRoot ($file.BaseName+$extension)
-   if($opaque){$parameters=[Drawing.Imaging.EncoderParameters]::new(1);try{$parameters.Param[0]=[Drawing.Imaging.EncoderParameter]::new([Drawing.Imaging.Encoder]::Quality,[long]$(if($file.BaseName -match '^story-comic-'){88}else{86}));$bitmap.Save($destination,$jpegCodec,$parameters)}finally{$parameters.Dispose()}}
+   if($opaque){$parameters=[Drawing.Imaging.EncoderParameters]::new(1);try{$parameters.Param[0]=[Drawing.Imaging.EncoderParameter]::new([Drawing.Imaging.Encoder]::Quality,[long]$(if($file.BaseName -match '^(story-comic-|chapter-film-)'){88}else{86}));$bitmap.Save($destination,$jpegCodec,$parameters)}finally{$parameters.Dispose()}}
    else{$bitmap.Save($destination,[Drawing.Imaging.ImageFormat]::Png)}
   }finally{$graphics.Dispose();$bitmap.Dispose()}
  }finally{$original.Dispose()}

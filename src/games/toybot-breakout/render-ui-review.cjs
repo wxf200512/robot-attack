@@ -1,7 +1,7 @@
 /* Read-only layout fixture, rendered from the real component. No gameplay/save writes. */
 const fs=require('node:fs'),path=require('node:path'),ts=require('typescript'),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{MemoryRouter}=require('react-router-dom');
 const cache=new Map();let preview;
-const react={...React,useReducer(reducer,arg,init){return reducer.name==='gameReducer'?[preview,()=>{}]:React.useReducer(reducer,arg,init);}};
+const react={...React,useReducer(reducer,arg,init){return ['gameReducer','campaignReducer'].includes(reducer.name)?[load('campaign').createCampaign(preview),()=>{}]:React.useReducer(reducer,arg,init);}};
 function load(name){const file=path.resolve(__dirname,name+(name.endsWith('.tsx')||name.endsWith('.ts')?'':'.ts'));if(cache.has(file))return cache.get(file);const module={exports:{}};cache.set(file,module.exports);const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;new Function('require','module','exports',code)(id=>id==='react'?react:id.endsWith('.css')?{}:id.startsWith('./')?load(id+(fs.existsSync(path.resolve(__dirname,id+'.tsx'))?'.tsx':'')):require(id),module,module.exports);return module.exports;}
 const progression=load('progression'),sim=load('simulation');
 const garage=progression.normalizeGarage({mechClass:'pulse',parts:16,runs:5,wins:4,completedLevels:[true,true,true,true,false],tutorialCompleted:true,levels:{weapon:1,armor:1,core:1},equipped:{weapon:true,armor:true,core:true}});

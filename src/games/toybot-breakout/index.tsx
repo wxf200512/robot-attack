@@ -1,5 +1,7 @@
 import PlayerSettingsPanel from './PlayerSettingsPanel';
 import StoryDialog from './StoryDialog';
+import CampaignStory, { StoryRadio, StoryRelay, StoryMission } from './CampaignStory';
+import { campaignReducer, createCampaign, CHAPTER_FILMS, RELAY_ART, type CampaignState } from './campaign';
 import { readStoryProgress, saveStoryProgress, finishStory, STORY_CHAPTERS } from './story';
 import { readSettings, saveSettings, resolveQuality } from './settings';
 import { createGameAudio, gameSoundEvents } from './audio';
@@ -19,7 +21,7 @@ import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MAP_ART, BOSS_ART, BOSS_INTRO_ART, BOSS_STAGE2_ART, BOSS_DEFEAT_ART, BOSS_RUSH_ART, GATE_ART, PLAYER_ART, THREAT_ART, UI_HANGAR_ART, UI_RESULT_CRESTS, BLADE_SLASH_ART, ENEMY_ART, BATTLE_ART, BOSS_CAST_ART, BOSS_OBJECTIVE_ART, STORY_COVER } from './art';
 import { getLevel, LEVELS, hazardLaneAt, stageLabel, ENEMY_NAMES } from './level';
-import { createInitialState, gameReducer, formationFor, volleyCountFor, effectiveWeapon, bossPhase, bossY, gateEffectDetail, LANE_CENTERS, STEP_MS, laneXAt, targetY, bossFiring, gateGroundY, GATE_CONTACT_Y, isActiveStatus, canMove, canShoot, isBossArena, bossEnrage, BOSS_INTRO_TICKS, BOSS_SHIFT_TICKS, BOSS_VICTORY_TICKS, bossX, rushProgress, isRush, attackIntervalFor, bossAttackLabel, bossWarningTicks, enemyThreatY, playerFormation, bossGuarded, roadEnemyY, roadEnemyX, targetX as targetWorldX, type GameState } from './simulation';
+import { createInitialState, formationFor, volleyCountFor, effectiveWeapon, bossPhase, bossY, gateEffectDetail, LANE_CENTERS, STEP_MS, laneXAt, targetY, bossFiring, gateGroundY, GATE_CONTACT_Y, isActiveStatus, canMove, canShoot, isBossArena, bossEnrage, BOSS_INTRO_TICKS, BOSS_SHIFT_TICKS, BOSS_VICTORY_TICKS, bossX, rushProgress, isRush, attackIntervalFor, bossAttackLabel, bossWarningTicks, enemyThreatY, playerFormation, bossGuarded, roadEnemyY, roadEnemyX, targetX as targetWorldX } from './simulation';
 import { purchaseUpgrade, readGarage, rewardParts, saveGarage, toggleUpgrade, upgradeCost, UPGRADES, moduleLevel, garageStats, previewUpgrade, equipAllUpgrades, MODULE_MAX_LEVEL, canEnterLevel, recordLevelCompletion, type Garage, type UpgradeId } from './progression';
 
 function ProjectileArt({ level, heavy = false }: { level: number; heavy?: boolean }) {
@@ -102,15 +104,15 @@ const ToybotBreakout: React.FC = () => {
   const quality = resolveQuality(settings, navigator.hardwareConcurrency || 4, window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const [garage, setGarage] = useState<Garage>(readGarage);
   const [storyProgress,setStoryProgress]=useState(readStoryProgress);
-  const [storyView,setStoryView]=useState<'comic'|'world'|null>(()=>storyProgress.dismissed?null:'comic');
+  const [storyView,setStoryView]=useState<'comic'|'world'|null>(null);
   const storyWasOpen=useRef(storyView!==null);
   const [trainingMode, setTrainingMode] = useState<'first' | 'replay' | null>(null);
   const [garageOpen, setGarageOpen] = useState(false);
   const [earnedParts, setEarnedParts] = useState(0);
   const awardedRunId = useRef<number | null>(null);
-  const initialState = useRef<GameState | null>(null);
-  if (initialState.current === null) initialState.current = createInitialState(garage);
-  const [game, dispatch] = useReducer(gameReducer, initialState.current);
+  const initialState = useRef<CampaignState | null>(null);
+  if (initialState.current === null) initialState.current = createCampaign(createInitialState(garage));
+  const [game, dispatch] = useReducer(campaignReducer, initialState.current);
   const LEVEL = getLevel(game.levelIndex);
   const previousGame = useRef(game);
   const previousModules = useRef(UPGRADES.reduce((sum,u)=>sum+moduleLevel(garage,u.id),0));
@@ -171,6 +173,7 @@ const ToybotBreakout: React.FC = () => {
     return()=>{document.removeEventListener('visibilitychange',visibility);window.removeEventListener('blur',suspend);window.removeEventListener('pagehide',suspend);};
   },[game.status]);
   const warmRoadAssets=game.status==='running';
+  useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages([CHAPTER_FILMS[game.levelIndex],RELAY_ART]);},[game.status,game.levelIndex]);
   useEffect(() => { if(warmRoadAssets)void preloadImages([ENEMY_ART]); },[warmRoadAssets]);
   const warmBossAssets=game.status==='running'&&game.progress>=65;
   const warmCombatAssets=game.status==='running'&&game.progress>=35;
@@ -788,7 +791,7 @@ const ToybotBreakout: React.FC = () => {
         @media(prefers-reduced-motion:reduce){.is-player-hit .robot-player-art,.toybot-damage-vignette{animation:none}.toybot-damage-vignette{opacity:0}}
       `}</style>
 
-      <section className={'toybot-shell' + (arena ? ' in-boss-arena' : '')} aria-label="Toybot Breakout game">
+      <section className={'toybot-shell' + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
         {game.status !== 'home' && <div
           className={`toybot-scene formation-${formationColumns} weapon-tier-${activeWeapon} ${displayStatus === 'running' ? 'is-moving' : displayStatus === 'battle' ? 'is-battle' : displayStatus === 'defeat' ? `is-defeat ${game.defeatReason}` : ''} ${game.status === 'paused' ? 'is-paused' : ''} ${game.invulnerableTicks > 0 ? `is-player-hit damage-${game.damageKind}` : ''} ${arena ? 'is-arena' : ''} ${displayStatus === 'boss-intro' ? 'is-boss-intro' : displayStatus === 'boss-shift' ? 'is-boss-shift' : displayStatus === 'boss-victory' ? 'is-boss-victory' : ''}`}
           tabIndex={0}
@@ -812,6 +815,7 @@ const ToybotBreakout: React.FC = () => {
           <div className="toybot-road-flow" aria-hidden="true" />
           <div className="toybot-track-guides" aria-hidden="true" />
           <div className="toybot-lane">
+            <StoryRelay game={game}/>
             <div className="toybot-selected-lane" style={{ left: `${LANE_CENTERS[game.lane]}%` }} />
             {showRewardGates && (
               <>
@@ -1011,6 +1015,8 @@ const ToybotBreakout: React.FC = () => {
         )}
 
         <div className="toybot-bottom">
+          <StoryMission game={game}/>
+          <StoryRadio game={game} dispatch={dispatch}/>
           <div className={`toybot-player-health ${game.playerHp / game.playerMaxHp <= .25 ? 'critical' : ''}`} aria-label={`核心生命 ${game.playerHp}/${game.playerMaxHp}`}>
             <div className="toybot-health-caption"><strong>◈ 核心生命</strong><b>{game.playerHp}<small> / {game.playerMaxHp}</small></b></div>
             <div className="toybot-health-track" style={{ '--hp-now': game.playerHp / game.playerMaxHp * 100 + '%', '--hp-before': Math.min(game.playerMaxHp, game.playerHp + (game.damageKind === 'health' ? game.damageLoss : 0)) / game.playerMaxHp * 100 + '%' } as React.CSSProperties}>
@@ -1097,7 +1103,7 @@ const ToybotBreakout: React.FC = () => {
           </div>
         )}
 
-        {game.status === 'result' && (
+        {game.status === 'result' && !game.narrative.scene && (
           <div className={'toybot-overlay toybot-result ' + (game.won ? 'is-victory' : 'is-failure')} role="dialog" aria-modal="true" aria-labelledby="result-title">
             <div className="toybot-debrief-panel">
               <div className="toybot-debrief-topline"><span>战后报告 / 0{game.levelIndex + 1}</span><span>{game.won ? '任务完成' : '机甲回收'}</span></div>
@@ -1118,6 +1124,7 @@ const ToybotBreakout: React.FC = () => {
           </div>
         )}
 
+        {game.narrative.scene&&<CampaignStory game={game} dispatch={dispatch}/>}
         {game.status==='home'&&storyView&&<StoryDialog initialMode={storyView} initialPage={storyProgress.completed?0:storyProgress.page} completedLevels={garage.completedLevels} onPage={page=>setStoryProgress(current=>({...current,page}))} onClose={completed=>{setStoryProgress(current=>finishStory(current,completed));setStoryView(null);}} />}
         {trainingMode && <Tutorial settingsOpen={settingsOpen} onSettings={openSettings} onSound={cue => audio.current?.play(cue)} first={trainingMode === 'first'} renderMech={(index,firing) => <Robot index={index} firing={firing} />} onExit={() => setTrainingMode(null)} onComplete={() => {
           clearTrainingCheckpoint();

@@ -728,6 +728,86 @@ test('comic tolerates unavailable storage and malformed saved JSON',()=>{
  }finally{if(before===undefined)delete global.window;else global.window=before;}
 });
 
+const campaign=load('campaign');
+const campaignTick=s=>campaign.campaignReducer(s,{type:'TICK'});
+const campaignStart=(route='signal',level=0)=>{let s=campaign.campaignReducer(campaign.createCampaign(initial(level)),{type:'START',garage});s=campaign.campaignReducer(s,{type:'STORY_NEXT'});return campaign.campaignReducer(s,{type:'STORY_ROUTE',route});};
+test('chapter scenes freeze all simulation and input, survive pause, and skipping resumes without free rewards',()=>{
+ let s=campaign.campaignReducer(campaign.createCampaign(initial()),{type:'START',garage});assert.equal(s.narrative.scene.kind,'briefing');assert.equal(s.progress,0);
+ assert.equal(s.narrative.replay,true);assert.ok(campaign.sceneCopy(s).title.includes('维修巡查'));
+ const fresh=campaign.campaignReducer(campaign.createCampaign(initial()),{type:'START',garage:progression.normalizeGarage({tutorialCompleted:true})});assert.equal(fresh.narrative.replay,false);assert.equal(campaign.sceneCopy(fresh).title,'重燃火花');
+ assert.equal(campaignTick(s),s);assert.equal(campaign.campaignReducer(s,{type:'MOVE_LANE',lane:0}),s);
+ s=campaign.campaignReducer(s,{type:'PAUSE'});assert.equal(s.status,'paused');assert.equal(campaignTick(s),s);assert.equal(campaign.campaignReducer(s,{type:'STORY_SKIP'}),s);
+ s=campaign.campaignReducer(s,{type:'RESUME'});s=campaign.campaignReducer(s,{type:'STORY_SKIP'});assert.equal(s.narrative.scene,null);assert.equal(s.narrative.route,'signal');assert.equal(s.bots,1);assert.equal(s.shieldCharges,0);assert.ok(campaignTick(s).progress>0);
+});
+test('support route is a real same-lane road pickup with a contact window and once-only reward',()=>{
+ for(const route of ['rescue','signal']){
+  const base=campaignStart(route),lane=base.narrative.relayLane;
+  const s={...base,lane,progress:22.4,fireCooldown:1000,hazardHps:base.hazardHps.map(()=>-1),gate:levels.getLevel(0).gateMarks.length};
+  const before=JSON.stringify(s),collected=campaignTick(s);assert.equal(JSON.stringify(s),before,'input remains immutable');assert.equal(collected.narrative.objective,'collected');
+  assert.equal(collected.bots,s.bots+Number(route==='rescue'));assert.equal(collected.shieldCharges,s.shieldCharges+Number(route==='signal'));assert.equal(campaignTick(collected).bots,collected.bots);assert.equal(campaignTick(collected).shieldCharges,collected.shieldCharges);
+  let missed=campaignTick({...s,lane:(lane+1)%3});assert.equal(missed.narrative.objective,'pending');
+  const late=campaignTick({...missed,lane});assert.equal(late.narrative.objective,'collected','lateral correction still works inside the contact window');
+  for(let i=0;i<15;i++)missed=campaignTick(missed);assert.equal(missed.narrative.objective,'missed');assert.equal(missed.bots,s.bots);assert.equal(missed.shieldCharges,s.shieldCharges);
+ }
+});
+test('support relays avoid nearby obstacle lanes across all chapters',()=>{
+ for(let level=0;level<5;level++)for(let run=0;run<9;run++){
+  const s=campaignStart('rescue',level),n=s.narrative;
+  levels.getLevel(level).hazards.forEach((h,i)=>{if(Math.abs(h.progress-n.relayMark)<=5)assert.notEqual(n.relayLane,levels.hazardLaneAt(s.layoutIndex,i,n.relayMark,level));});
+ }
+});
+test('boss conversation triggers on actual arena entry, never spends warning time, and does not repeat',()=>{
+ let s=campaignStart();s={...s,progress:levels.getLevel(0).encounters[0].progress-.1,gate:levels.getLevel(0).gateMarks.length,hazardHps:s.hazardHps.map(()=>-1),fireCooldown:1000};
+ s=campaignTick(s);assert.equal(s.status,'boss-intro');assert.equal(s.narrative.scene.kind,'confrontation');assert.equal(campaignTick(s),s);
+ s=campaign.campaignReducer(s,{type:'STORY_NEXT'});assert.equal(s.narrative.scene.step,1);s=campaign.campaignReducer(s,{type:'STORY_NEXT'});
+ for(let i=0;i<sim.BOSS_INTRO_TICKS;i++)s=campaignTick(s);assert.equal(s.status,'battle');assert.equal(s.narrative.scene,null);assert.equal(s.battleTime,0);
+});
+test('victory dialogue and ordered sync never create extra rewards or block next-level unlock',()=>{
+ const base=campaign.createCampaign(battle());let s=campaignTick({...base,status:'boss-victory',bossDefeated:true,bossPhaseTicks:sim.BOSS_VICTORY_TICKS-1});
+ assert.equal(s.status,'result');assert.equal(s.won,true);assert.equal(s.progress,100);assert.equal(s.narrative.scene.kind,'aftermath');const score=s.score;
+ s=campaign.campaignReducer(s,{type:'STORY_NEXT'});assert.equal(campaign.campaignReducer(s,{type:'STORY_SYNC',index:2}),s);assert.equal(campaign.campaignReducer(s,{type:'STORY_NEXT'}),s);
+ for(let i=0;i<3;i++){s=campaign.campaignReducer(s,{type:'STORY_SYNC',index:i});const duplicate=campaign.campaignReducer(s,{type:'STORY_SYNC',index:i});assert.equal(duplicate,s);}
+ s=campaign.campaignReducer(s,{type:'STORY_NEXT'});assert.equal(s.narrative.scene,null);assert.equal(s.score,score);
+ const next=campaign.campaignReducer(s,{type:'NEXT_LEVEL',garage});assert.equal(next.levelIndex,1);assert.equal(next.narrative.scene.kind,'briefing');assert.equal(next.narrative.objective,'inactive');
+ const defeat=campaignTick({...base,status:'defeat',defeatTicks:sim.BOSS_DEFEAT_TICKS-1,bossDefeated:false});assert.equal(defeat.won,false);assert.equal(defeat.narrative.scene,null);
+});
+test('background lore is once per run, nonmodal, dismissible, and freezes during pause',()=>{
+ let s=campaignStart();s=campaignTick({...s,progress:54.9,hazardHps:s.hazardHps.map(()=>-1),gate:levels.getLevel(0).gateMarks.length});assert.equal(s.narrative.radio.id,'sector-lore');assert.equal(s.narrative.scene,null);
+ const paused=campaign.campaignReducer(s,{type:'PAUSE'});assert.equal(campaignTick(paused).narrative.radio.ticks,s.narrative.radio.ticks);
+ s=campaign.campaignReducer(s,{type:'STORY_DISMISS_RADIO'});assert.equal(campaignTick(s).narrative.radio,null);
+ const reset=campaign.campaignReducer(s,{type:'RESTART',garage});assert.deepEqual(reset.narrative.seen,['briefing']);
+});
+test('all chapter film cells stay within six frames and generated assets resolve with alpha relay',()=>{
+ for(const kind of ['briefing','confrontation','aftermath'])for(const step of [0,1])for(const time of [0,900,5000,999999]){const frame=campaign.filmFrame(kind,step,time);assert.ok(frame>=0&&frame<6);assert.equal(campaign.filmFrame(kind,step,time,true),campaign.filmFrame(kind,step,0));}
+ for(const url of campaign.CHAPTER_FILMS){const bytes=fs.readFileSync(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(bytes.readUInt16BE(0),0xffd8);}
+ const relay=fs.readFileSync(path.resolve(__dirname,'../../../public',campaign.RELAY_ART.slice(1)));assert.equal(relay[25],6);
+});
+test('interactive campaign completes all five sectors with both support routes and all chassis',()=>{
+ for(const route of ['rescue','signal'])for(const mechClass of ['pulse','heavy','blade'])for(let sector=0;sector<5;sector++){
+  let seed=42;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+  let s=campaign.createCampaign({...initial(sector),mechClass,status:'running',gateChoices:sim.createGateChoices(sector,0,random)}),ticks=0;
+  s.narrative.scene={kind:'briefing',step:0,synced:0};s=campaign.campaignReducer(s,{type:'STORY_NEXT'});s=campaign.campaignReducer(s,{type:'STORY_ROUTE',route});
+  const chapter=levels.getLevel(sector),scenes=[];
+  while(sim.isActiveStatus(s.status)||s.narrative.scene){
+   if(s.narrative.scene){scenes.push(s.narrative.scene.kind);s=campaign.campaignReducer(s,{type:'STORY_SKIP'});continue;}
+   let lane=s.lane;
+   if(sim.isBossArena(s))lane=bossTactic(s);
+   else{
+    const gate=s.gateChoices[s.gate]?.[0],mark=chapter.gateMarks[s.gate];
+    const enemy=chapter.hazards.findIndex((h,i)=>s.hazardHps[i]>0&&s.progress>=h.progress-14&&s.progress<h.progress);
+    if(enemy>=0)lane=levels.hazardLaneAt(s.layoutIndex,enemy,s.progress,sector);
+    const danger=chapter.hazards.flatMap((h,i)=>s.hazardHps[i]>0&&h.progress-s.progress<1.5&&h.progress>s.progress?[levels.hazardLaneAt(s.layoutIndex,i,s.progress,sector)]:[]);
+    if(danger.includes(lane))lane=[0,1,2].find(l=>!danger.includes(l));
+    if(s.progress>=chapter.encounters[0].progress-5)lane=s.battleLane;
+    if(gate&&!s.gateResolved&&s.progress>=mark-2.5&&s.progress<=mark+2)lane=gate.polarity==='reward'?gate.lane:(gate.lane+1)%3;
+    if(s.narrative.objective==='pending'&&s.progress>=22&&s.progress<26)lane=s.narrative.relayLane;
+   }
+   s=campaign.campaignReducer(s,{type:'MOVE_LANE',lane});s=campaignTick(s);assert.ok(++ticks<3500);
+  }
+  assert.equal(s.won,true,`${route} ${mechClass} sector ${sector+1}`);assert.equal(s.narrative.objective,'collected');assert.deepEqual(scenes,['confrontation','aftermath']);
+ }
+});
+
 test('road encounter density grows by sector and introduces specialists gradually', () => {
   const totals = levels.LEVELS.map(l => l.hazards.length);
   assert.deepEqual(totals, [14,18,23,26,29]);

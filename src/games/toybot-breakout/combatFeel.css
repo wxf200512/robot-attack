@@ -1,0 +1,23 @@
+.toybot-shell .toybot-burst-control{display:flex;align-items:center;gap:9px;width:100%;min-height:48px;margin:6px 0;padding:6px 10px;border:1px solid #7096ac;border-bottom:3px solid #16384c;border-radius:10px;background:linear-gradient(#294e65,#17394f);color:#c5e1ed;font-family:inherit;text-align:left;touch-action:manipulation;cursor:pointer}
+.toybot-shell .toybot-burst-control>span:nth-child(2){flex:1;min-width:0}.toybot-shell .toybot-burst-control b{display:block;font-size:11px}.toybot-shell .toybot-burst-control small{float:right;font-size:10px;font-weight:600}
+.toybot-shell .toybot-burst-control em{flex:none;color:#92b4c8;font-size:9px;font-style:normal}.toybot-shell .burst-symbol{color:#78d9e5;font-size:25px;line-height:1}
+.toybot-shell .burst-energy-track{display:block;height:4px;margin-top:5px;overflow:hidden;border-radius:5px;background:#071f30}.toybot-shell .burst-energy-track i{display:block;height:100%;background:linear-gradient(90deg,#4d99b8,#9ce9e8);transition:width .1s linear}
+.toybot-shell .toybot-burst-control:disabled{cursor:default;opacity:1}.toybot-shell .toybot-burst-control.is-ready{border-color:#f8dc9a;border-bottom-color:#986d33;background:linear-gradient(#ffe8ab,#e7ba66);color:#503c22;box-shadow:0 0 14px #f3bd4e44;animation:toybot-burst-ready 1.5s ease-in-out infinite alternate}
+.toybot-shell .toybot-burst-control.is-ready em{color:#715529}.toybot-shell .toybot-burst-control.is-ready .burst-symbol{color:#a86a25}.toybot-shell .toybot-burst-control.is-ready i{background:#fff0bb}.toybot-shell .toybot-burst-control.is-active{border-color:#f1d89d;background:linear-gradient(#62563f,#3c3a37);color:#ffe6af}.toybot-shell .toybot-burst-control.is-active em{color:#ffe6af}.toybot-shell .toybot-burst-control.is-active i{background:linear-gradient(90deg,#e7a647,#fff1bb)}
+.toybot-shell .toybot-burst-control:focus-visible{outline:2px solid #fff0b4;outline-offset:3px}.toybot-shell .toybot-burst-control.is-ready:active{translate:0 2px}
+.toybot-shell .toybot-robot.is-core-burst>.robot-player-art,.toybot-shell .toybot-robot.is-core-burst>.toybot-class-sprite,.toybot-shell .toybot-robot.is-core-burst>.robot-combat-sprite{filter:drop-shadow(0 0 7px #ffd66b)}
+.toybot-shell .toybot-shot.is-core-burst-shot .toybot-projectile-ai{filter:sepia(.55) saturate(1.9) drop-shadow(0 0 4px #ffd578)}
+.toybot-shell .effect-burst{border-color:#d8b874;background:#534328;color:#ffe6ad}.toybot-shell .toybot-combo.has-reward{border-color:#edd18d;box-shadow:0 0 11px #ffd46b33}.toybot-shell .toybot-combo.has-reward>span{color:#f6df9f}
+.toybot-shell.toybot-menu-system .toybot-run-highlights{margin:-5px 0 14px;color:#6c8492;font-size:10px;line-height:1.6}.toybot-shell.toybot-menu-system .toybot-run-highlights b{color:#365f76}
+@keyframes toybot-burst-ready{to{box-shadow:0 0 20px #f3bd4e88}}
+@media(prefers-reduced-motion:reduce){.toybot-shell .toybot-burst-control.is-ready{animation:none}.toybot-shell .burst-energy-track i{transition:none}}
+.quality-low .toybot-burst-control.is-ready{animation:none}
+.toybot-shell .toybot-burst-control{position:absolute;z-index:6;left:16px;top:58px;width:116px;min-height:48px;margin:0;padding:7px 9px}
+.toybot-shell .toybot-burst-control .burst-symbol,.toybot-shell .toybot-burst-control em{display:none}
+.toybot-shell .toybot-burst-control b{font-size:10px}.toybot-shell .toybot-burst-control small{font-size:9px}
+.toybot-shell.has-core-control .toybot-stats{left:140px;right:12px;gap:5px}
+.toybot-shell.has-core-control .toybot-pill{min-width:0;flex:1}
+@media(max-height:680px){.toybot-shell .toybot-burst-control{left:12px}}
+
+.toybot-shell .toybot-shot.is-core-burst-shot{width:32px;height:44px;background:none;border:0;box-shadow:none}
+.toybot-shell .toybot-melee-slash.is-core-burst-slash{filter:sepia(.4) saturate(1.6) drop-shadow(0 0 5px #ffd578)}

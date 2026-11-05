@@ -872,7 +872,7 @@ test('bomber destruction chains through nearby same-lane enemies, with bounded i
   const snapshot=JSON.stringify(s),n=tick(s);
   assert.equal(JSON.stringify(s),snapshot);assert.equal(n.hazardHps[index],0);assert.equal(n.hazardHps[ally],0);assert.equal(n.hazardHps[other],5);
   assert.equal(n.kills,2);assert.equal(n.combo,2);assert.equal(n.killEffects.length,2);assert.equal(new Set(n.killEffects.map(e=>e.id)).size,2);
-  let expired=n;for(let i=0;i<26;i++)expired=tick(expired);
+  let expired=n;for(let i=0;i<=sim.COMBO_WINDOW_TICKS;i++)expired=tick(expired);
   assert.equal(expired.combo,0);assert.equal(expired.killEffects.length,0);assert.equal(expired.bestCombo,2);
 });
 
@@ -1066,4 +1066,78 @@ test('stale defense impacts clear on arena entry, boss victory, restart and defe
 test('four defense atlases preserve alpha and six exact square cells',()=>{
  assert.deepEqual([0,1,2,3,4,5].map(defense.defenseCell),['0% 0%','100% 0%','0% 50%','100% 50%','0% 100%','100% 100%']);
  for(const url of Object.values(defense.DEFENSE_ART)){const data=fs.readFileSync(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(data.readUInt32BE(16),512);assert.equal(data.readUInt32BE(20),768);assert.equal(data[25],6);assert.ok(fs.existsSync(path.join(__dirname,'art-source',path.basename(url))));}
+});
+
+test('core burst requires earned full energy and only one activation can consume it',()=>{
+ const base={...initial(),status:'running',burstEnergy:100,jamTicks:30,fireCooldown:3};
+ const before=JSON.stringify(base),s=sim.gameReducer(base,{type:'ACTIVATE_BURST'});
+ assert.equal(JSON.stringify(base),before);assert.equal(s.burstEnergy,0);assert.equal(s.burstTicks,sim.BURST_TICKS);assert.equal(s.burstSequence,1);assert.equal(s.jamTicks,0);assert.equal(s.chargedVolleys,0);assert.equal(s.fireCooldown,3);
+ assert.equal(sim.gameReducer(s,{type:'ACTIVATE_BURST'}),s);
+ for(const status of ['home','paused','boss-intro','boss-shift','boss-victory','defeat','result']){const blocked={...base,status};assert.equal(sim.gameReducer(blocked,{type:'ACTIVATE_BURST'}),blocked);}
+ for(const props of [{burstEnergy:99},{playerHp:0},{bots:0}]){const blocked={...base,...props};assert.equal(sim.gameReducer(blocked,{type:'ACTIVATE_BURST'}),blocked);}
+ const campaign=load('campaign');const story=campaign.createCampaign(base);story.narrative.scene={kind:'briefing',step:0,synced:0};
+ assert.equal(campaign.campaignReducer(story,{type:'ACTIVATE_BURST'}),story);
+});
+
+test('burst grants individual captured shots for all chassis without faster fire or extra invulnerability',()=>{
+ for(const mechClass of ['pulse','heavy','blade']){
+  const base={...battle(),mechClass,lane:1,battleLane:1,bossStep:'warning',bots:3,weaponLevel:2,fireCooldown:0,burstEnergy:100};
+  const normal=tick(base),activated=sim.gameReducer(base,{type:'ACTIVATE_BURST'}),powered=tick(activated);
+  assert.equal(powered.fireCooldown,normal.fireCooldown);assert.equal(powered.pendingShots.length,3);assert.equal(powered.invulnerableTicks,normal.invulnerableTicks);
+  assert.ok(powered.pendingShots.every(p=>p.burst&&!p.charged&&p.damage>normal.pendingShots[0].damage*1.3&&p.origins.length===1));
+  assert.deepEqual(powered.pendingShots.map(p=>p.origins),normal.pendingShots.map(p=>p.origins));
+  const moved=sim.gameReducer(powered,{type:'MOVE_LANE',lane:2});assert.deepEqual(moved.pendingShots,powered.pendingShots);
+  const struck={...powered,playerHp:100,armorPoints:0,shieldCharges:0,invulnerableTicks:0};sim.applySquadHit(struck,10);assert.equal(struck.playerHp,90);
+ }
+});
+
+test('energy comes from actual kills objectives damage and successful evades, never empty shots',()=>{
+ const {state,index}=roadSpecialist('swarm',0,4.9);
+ const hit=tick({...state,combo:2,comboTicks:20,playerHp:80,pendingShots:[incoming(state,{target:'hazard',targetIndex:index,lane:state.lane,damage:99})]});
+ assert.equal(hit.burstEnergy,20);assert.equal(hit.playerHp,84);assert.equal(hit.comboHeal,4);assert.equal(hit.comboRewardTicks,12);assert.equal(hit.comboTicks,sim.COMBO_WINDOW_TICKS);
+ const capped=tick({...state,burstEnergy:98,pendingShots:[incoming(state,{target:'hazard',targetIndex:index,lane:state.lane,damage:99})]});assert.equal(capped.burstEnergy,100);
+ const b={...battle(),battleHp:1000,battleMaxHp:1000},bossHit=tick({...b,pendingShots:[incoming(b,{damage:10})]});assert.ok(bossHit.burstEnergy>0&&bossHit.burstEnergy<10);
+ const wrong=tick({...b,pendingShots:[incoming(b,{damage:10,lane:(b.battleLane+1)%3})]});assert.equal(wrong.burstEnergy,0);
+ let empty={...initial(),status:'running',gate:99,hazardHps:initial().hazardHps.map(()=>-1)};for(let i=0;i<20;i++)empty=tick(empty);assert.equal(empty.burstEnergy,0);
+ const objective={id:55,kind:'egg',lane:b.battleLane,ticks:20,duration:30,hp:2,maxHp:2,damage:0,fromLane:1};
+ const broken=tick({...b,threats:[objective],pendingShots:[incoming(b,{target:'threat',targetIndex:55,damage:99})]});assert.equal(broken.burstEnergy,16);
+ const moved=sim.gameReducer({...battle(),lane:1},{type:'MOVE_LANE',lane:2});
+ const shell={id:88,kind:'shell',lane:1,ticks:1,duration:8,hp:-1,maxHp:0,damage:12,fromLane:1};
+ const evaded=tick({...moved,dodgeTicks:3,threats:[shell,{...shell,id:89}]});assert.equal(evaded.burstEnergy,8,'one evasive window cannot farm multiple simultaneous projectiles');
+});
+
+test('burst combat timer freezes in pause and transitions and fully cleans up on restart or defeat',()=>{
+ let s=sim.gameReducer({...battle(),burstEnergy:100},{type:'ACTIVATE_BURST'});
+ const paused=sim.gameReducer(s,{type:'PAUSE'});assert.deepEqual(tick(paused),paused);
+ const intro=tick({...s,status:'boss-intro',bossPhaseTicks:0});assert.equal(intro.burstTicks,sim.BURST_TICKS);
+ s={...s,fireCooldown:1000,battleHp:1e9,battleMaxHp:1e9,playerHp:1e6,playerMaxHp:1e6};for(let i=0;i<sim.BURST_TICKS;i++)s=tick(s);assert.equal(s.burstTicks,0);
+ const reset=sim.gameReducer(s,{type:'RESTART',garage});assert.equal(reset.burstTicks,0);assert.equal(reset.burstEnergy,0);assert.equal(reset.burstSequence,0);
+ const dead=tick({...s,burstTicks:20,burstEnergy:70,bots:0});assert.equal(dead.status,'defeat');assert.equal(dead.burstTicks,0);assert.equal(dead.burstEnergy,0);
+});
+
+test('burst gain cannot refill itself while active and existing flights do not gain retroactive damage',()=>{
+ const b={...battle(),burstEnergy:100,fireCooldown:1000};const shot=incoming(b,{damage:10});
+ const active=sim.gameReducer({...b,pendingShots:[shot]},{type:'ACTIVATE_BURST'});
+ assert.equal(active.pendingShots[0].damage,10);
+ const hit=tick(active);assert.equal(hit.burstEnergy,0);
+ const expected=tick({...b,pendingShots:[shot],burstEnergy:0});assert.equal(hit.impactDamage,expected.impactDamage);
+ const audio=load('audio');assert.ok(audio.gameSoundEvents(b,active).includes('burst'));
+ assert.ok(audio.gameSoundEvents({...b,burstEnergy:99},{...b,burstEnergy:100}).includes('burst-ready'));
+ assert.ok(!audio.gameSoundEvents({...b,burstEnergy:100},{...b,burstEnergy:100}).includes('burst-ready'));
+ const basic=roadSpecialist('swarm',0,4.9),tiny=incoming(b,{target:'hazard',targetIndex:basic.index,lane:basic.state.lane,damage:1.4,burst:true,weaponLevel:0});
+ const basicHit=tick({...basic.state,pendingShots:[tiny]});assert.equal(basicHit.impactDamage,1.4,'base pulse burst must deal a real fractional bonus');
+});
+
+test('player-triggered burst preserves five bosses and all chassis with real counterplay',()=>{
+ const samples=[];
+ for(const mechClass of ['pulse','heavy','blade'])for(let level=0;level<5;level++){
+  const spec=levels.getLevel(level);let s=tick({...initial(level),mechClass,status:'running',progress:spec.encounters[0].progress-.1,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3});let ticks=0;
+  while(sim.isActiveStatus(s.status)&&ticks<2400){
+   s=sim.gameReducer(s,{type:'MOVE_LANE',lane:bossTactic(s)});
+   if(sim.canActivateBurst(s)&&s.bossStep==='recovery')s=sim.gameReducer(s,{type:'ACTIVATE_BURST'});
+   s=tick(s);ticks++;
+  }
+  assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(s.burstSequence>0);assert.ok(ticks>=600&&ticks<=1800,mechClass+' L'+(level+1)+' '+ticks/10+'s');samples.push(ticks/10);
+ }
+ console.log('Burst boss sample seconds: '+samples.join(', '));
 });

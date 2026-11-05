@@ -31,9 +31,16 @@ const homeReview=process.argv.includes('--home'),pauseReview=process.argv.includ
 if(homeReview)preview=sim.createInitialState(garage,0,0);
 if(pauseReview)preview={...sim.createInitialState(garage,2,0),status:'paused',resumeStatus:'running',progress:62,gate:5,bots:3,playerHp:78};
 if(process.argv.includes('--final'))preview={...preview,levelIndex:4};
+const burstReview=process.argv.includes('--burst');
+if(burstReview){
+ const mode=process.argv.find(a=>a.startsWith('--mode='))?.split('=')[1]||'ready';
+ preview={...sim.createInitialState(garage,0,0),status:'running',progress:18,bots:Math.max(1,Math.min(11,Number(process.argv.find(a=>a.startsWith('--bots='))?.split('=')[1])||3)),gate:2,burstEnergy:mode==='charging'?48:100,weaponLevel:2,combo:6,bestCombo:6,kills:10,comboTicks:sim.COMBO_WINDOW_TICKS,comboHeal:4,comboRewardTicks:10};
+ if(mode==='active')preview=sim.gameReducer(preview,{type:'ACTIVATE_BURST'});
+ preview=sim.gameReducer(preview,{type:'TICK'});
+}
 const App=load('index.tsx').default;
 const css=fs.readdirSync(path.resolve(__dirname,'../../../dist/assets')).find(n=>/^main-.*\.css$/.test(n));
 if(!css)throw Error('Run npm run build first');
 const html='<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>胜利页 · 只读布局验收</title><link rel="stylesheet" href="/dist/assets/'+css+'"></head><body>'+renderToStaticMarkup(React.createElement(MemoryRouter,null,React.createElement(App)))+'</body></html>';
-const output=homeReview?'home-review.html':pauseReview?'pause-review.html':defenseReview?'defense-review.html':bossReview?'boss-review.html':encounter?'encounter-review.html':defeat?'defeat-review.html':'victory-review.html';
+const output=burstReview?'burst-review.html':homeReview?'home-review.html':pauseReview?'pause-review.html':defenseReview?'defense-review.html':bossReview?'boss-review.html':encounter?'encounter-review.html':defeat?'defeat-review.html':'victory-review.html';
 fs.writeFileSync(path.join(__dirname,output),html.replace(/<style>([\s\S]*?)<\/style>/g,(_,css)=>'<style>'+css.replaceAll('&#x27;',String.fromCharCode(39)).replaceAll('&quot;',String.fromCharCode(34)).replaceAll('&amp;','&').replaceAll('&lt;','<').replaceAll('&gt;','>')+'</style>'));console.log('Generated read-only '+output+' from actual component');

@@ -20,6 +20,8 @@ import './polish.css';
 import './enemies.css';
 import './bossCombat.css';
 import './menus.css';
+import './combatFeel.css';
+import { canActivateBurst, COMBO_WINDOW_TICKS, BURST_TICKS } from './simulation';
 import { OBJECTIVE_NAMES, SPECIAL_LABELS } from './bossSkills';
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -229,6 +231,7 @@ const ToybotBreakout: React.FC = () => {
   const encounterLabel = LEVEL.encounters[game.encounter]?.label ?? '轨道维修站';
   const volleyCount = volleyCountFor(game.bots);
   const activeWeapon = effectiveWeapon(game);
+  const comboFeedback=[game.comboHeal>0?`维修 +${game.comboHeal}`:'',game.burstTicks===0?'能量加成':''].filter(Boolean).join(' · ')||'连击达成';
   const activeMech = mechSpec(game.mechClass);
   const attackInterval = attackIntervalFor(game);
   const visualCore = Math.max(game.coreLevel, Math.min(4, game.garageCoreLevel));
@@ -275,6 +278,7 @@ const ToybotBreakout: React.FC = () => {
   const handlePointerCancel = () => { dragStart.current = null; };
 
   const handleSceneKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if(event.code==='Space'){event.preventDefault();if(!event.repeat)dispatch({type:'ACTIVATE_BURST'});return;}
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
     event.preventDefault();
     dispatch({ type: 'MOVE_LANE', lane: game.lane + (event.key === 'ArrowLeft' ? -1 : 1) });
@@ -790,10 +794,11 @@ const ToybotBreakout: React.FC = () => {
         @media(prefers-reduced-motion:reduce){.is-player-hit .robot-player-art,.toybot-damage-vignette{animation:none}.toybot-damage-vignette{opacity:0}}
       `}</style>
 
-      <section className={'toybot-shell toybot-menu-system' + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
+      <section className={'toybot-shell toybot-menu-system' + ((displayStatus==='running'||displayStatus==='battle')?' has-core-control':'') + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
         {game.status !== 'home' && <div
           className={`toybot-scene formation-${formationColumns} weapon-tier-${activeWeapon} ${displayStatus === 'running' ? 'is-moving' : displayStatus === 'battle' ? 'is-battle' : displayStatus === 'defeat' ? `is-defeat ${game.defeatReason}` : ''} ${game.status === 'paused' ? 'is-paused' : ''} ${game.invulnerableTicks > 0 ? `is-player-hit damage-${game.damageKind}` : ''} ${arena ? 'is-arena' : ''} ${displayStatus === 'boss-intro' ? 'is-boss-intro' : displayStatus === 'boss-shift' ? 'is-boss-shift' : displayStatus === 'boss-victory' ? 'is-boss-victory' : ''}`}
           tabIndex={0}
+          aria-keyshortcuts="ArrowLeft ArrowRight Space"
           aria-label="游戏场景。左右拖动或使用方向键切换三条队列，穿过随机奖励门或惩罚门，机器人会自动射击障碍和首领。"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
@@ -843,7 +848,7 @@ const ToybotBreakout: React.FC = () => {
                 <div className="toybot-hazard-hp" aria-label={`障碍耐久 ${h.hp}/${h.hp > 0 ? LEVEL.hazards[h.index].hp : 0}`}><span style={{ width: h.hp / LEVEL.hazards[h.index].hp * 100 + '%' }} /></div>
               </div>
             ))}
-            {game.comboTicks > 0 && game.combo >= 2 && !arena && <div className="toybot-combo" role="status" aria-live="off"><b>{game.combo}<small> 连击</small></b><span>击破 {game.kills} · 积分 ×{(1 + Math.min(3, Math.floor(game.combo / 3)) * .25).toFixed(2)}</span><i style={{ scale: `${game.comboTicks / 25} 1` }} /></div>}
+            {game.comboTicks > 0 && game.combo >= 2 && !arena && <div className={'toybot-combo'+(game.comboRewardTicks>0?' has-reward':'')} role="status" aria-live="off"><b>{game.combo}<small> 连击</small></b><span>{game.comboRewardTicks>0?comboFeedback:`击破 ${game.kills} · 积分 ×${(1 + Math.min(3, Math.floor(game.combo / 3)) * .25).toFixed(2)}`}</span><i style={{ scale: `${game.comboTicks / COMBO_WINDOW_TICKS} 1` }} /></div>}
             {game.killEffects.map(effect => <div key={effect.id} className={'toybot-enemy-break kind-' + effect.kind} style={{ left: effect.x + '%', top: effect.y + '%', '--break-progress': (7 - effect.ticks) / 7, zIndex: Math.round((effect.y + 7) * 10) + 5 } as React.CSSProperties} aria-hidden="true"><span /><b>{effect.combo >= 3 ? effect.combo + ' 连击' : '击破'}</b></div>)}
             {game.enemyAttacks.map(attack => {
               const progress = attack.phase === 'flight' ? 1 - attack.ticks / attack.duration : 0;
@@ -865,7 +870,7 @@ const ToybotBreakout: React.FC = () => {
                     if (!volley.target || game.lane !== volley.lane) return null;
                     const y = targetY(game, volley.target, volley.targetIndex);
                     const tier = Math.min(3, volley.weaponLevel + Math.min(1, game.armorLevel) + Math.min(1, visualCore));
-                    return <div key={origin.index} className="toybot-melee-slash" style={{ left: (targetWorldX(game, volley.target, volley.targetIndex) + (origin.x - LANE_CENTERS[volley.lane]) * .22) + '%', top: y + '%', backgroundImage: 'url(' + BLADE_SLASH_ART + ')', backgroundPosition: ((volley.duration - volley.ticks) * 100 / 3) + '% ' + (tier * 100 / 3) + '%', zIndex: Math.round((y + 7) * 10) + 7 }} aria-hidden="true" />;
+                    return <div key={origin.index} className={'toybot-melee-slash'+(volley.burst?' is-core-burst-slash':'')} style={{ left: (targetWorldX(game, volley.target, volley.targetIndex) + (origin.x - LANE_CENTERS[volley.lane]) * .22) + '%', top: y + '%', backgroundImage: 'url(' + BLADE_SLASH_ART + ')', backgroundPosition: ((volley.duration - volley.ticks) * 100 / 3) + '% ' + (tier * 100 / 3) + '%', zIndex: Math.round((y + 7) * 10) + 7 }} aria-hidden="true" />;
                   }
                   const tier = volley.charged || volley.weaponLevel >= 4 ? 'weapon-ultimate' : volley.weaponLevel >= 3 ? 'weapon-heavy weapon-overdrive' : volley.weaponLevel >= 2 ? 'weapon-heavy' : volley.weaponLevel > 0 ? 'weapon-powered' : '';
                   const flightProgress = (volley.duration - volley.ticks) / volley.duration;
@@ -880,8 +885,8 @@ const ToybotBreakout: React.FC = () => {
                   const top = `calc(${origin.y + (destinationY - origin.y) * flightProgress}% - ${lift} * ${(1 - flightProgress) / 4})`;
                   return <React.Fragment key={`${volley.id}-${origin.index}`}>
                     {volley.muzzle && volley.ticks === volley.duration && volley.weaponLevel === 0 && <div className="toybot-muzzle-event" style={{ left: `${origin.x}%`, top: `calc(${origin.y}% - ${size} / 4)` }} aria-hidden="true"><span className="toybot-muzzle-flash center" /></div>}
-                    <div className={`toybot-shot in-flight ${volley.attackStyle === 'heavy' ? 'is-heavy-round' : ''} ${tier}${volley.count >= 5 ? ' is-swarm' : ''}${volley.charged ? ' is-charged' : ''}`} style={{ left: `${origin.x + (targetX - origin.x) * flightProgress}%`, top, '--flight-from-x': origin.x + '%', '--flight-to-x': targetX + '%', '--flight-from-y': `calc(${origin.y}% - ${lift} / 4)`, '--flight-to-y': destinationY + '%', '--flight-duration': volley.duration * STEP_MS + 'ms', '--flight-angle': angle + 'deg', '--flight-end-scale': volley.target ? '.65' : '.22', '--flight-end-opacity': volley.target ? '1' : '0', zIndex: depth } as React.CSSProperties} aria-hidden="true">
-                      <ProjectileArt heavy={volley.attackStyle === 'heavy'} level={volley.charged ? 4 : volley.weaponLevel} />
+                    <div className={`toybot-shot in-flight ${volley.attackStyle === 'heavy' ? 'is-heavy-round' : ''} ${tier}${volley.count >= 5 ? ' is-swarm' : ''}${volley.charged ? ' is-charged' : ''}${volley.burst ? ' is-core-burst-shot' : ''}`} style={{ left: `${origin.x + (targetX - origin.x) * flightProgress}%`, top, '--flight-from-x': origin.x + '%', '--flight-to-x': targetX + '%', '--flight-from-y': `calc(${origin.y}% - ${lift} / 4)`, '--flight-to-y': destinationY + '%', '--flight-duration': volley.duration * STEP_MS + 'ms', '--flight-angle': angle + 'deg', '--flight-end-scale': volley.target ? '.65' : '.22', '--flight-end-opacity': volley.target ? '1' : '0', zIndex: depth } as React.CSSProperties} aria-hidden="true">
+                      <ProjectileArt heavy={volley.attackStyle === 'heavy'} level={volley.charged || volley.burst ? 4 : volley.weaponLevel} />
                     </div>
                   </React.Fragment>;
                 })}
@@ -949,7 +954,7 @@ const ToybotBreakout: React.FC = () => {
             {robotPositions.map((robot) => (
               <div
                 key={robot.index}
-                className={`toybot-robot ${game.dodgeTicks>0?'is-dodging':''} ${robot.index === 0 ? 'lead' : ''}`}
+                className={`toybot-robot ${game.burstTicks>0?'is-core-burst':''} ${game.dodgeTicks>0?'is-dodging':''} ${robot.index === 0 ? 'lead' : ''}`}
                 style={{ left: `${robot.x}%`, top: `${robot.y}%`, zIndex: Math.round((robot.y + 5) * 10) }}
               >
                 <Robot mechClass={game.mechClass} combat={arena} dodging={game.dodgeTicks > 0} dodgeDirection={game.dodgeDirection} motionFrame={(motionFrame + robot.index) % 4} attacking={attackActive && game.dodgeTicks === 0} index={robot.index} weaponPhase={weaponPhase} firing={canShoot(displayStatus ?? 'home') && weaponPhase === 2} weaponLevel={activeWeapon} armorLevel={game.armorLevel} coreLevel={visualCore} />
@@ -996,7 +1001,9 @@ const ToybotBreakout: React.FC = () => {
           </button>
         </header>
 
-        {game.status !== 'home' && <button type="button" className="toybot-back" onClick={goHome}>← 游戏首页</button>}
+        {game.status !== 'home' && displayStatus !== 'running' && displayStatus !== 'battle' && <button type="button" className="toybot-back" onClick={goHome}>← 游戏首页</button>}
+
+          {(displayStatus==='running'||displayStatus==='battle')&&<button type="button" className={'toybot-burst-control'+(canActivateBurst(game)?' is-ready':'')+(game.burstTicks>0?' is-active':'')} onClick={()=>dispatch({type:'ACTIVATE_BURST'})} disabled={!canActivateBurst(game)||!!game.narrative.scene} aria-label={game.burstTicks>0?`核心爆发中，剩余${Math.ceil(game.burstTicks/10)}秒`:canActivateBurst(game)?'释放核心爆发：5秒伤害提升40%，清除干扰':`核心爆发充能${Math.floor(game.burstEnergy)}%，击破和成功闪避充能`}><span className="burst-symbol" aria-hidden="true">✦</span><span><b>{game.burstTicks>0?'核心爆发中':canActivateBurst(game)?'核心爆发':'核心充能'} <small>{game.burstTicks>0?Math.ceil(game.burstTicks/10)+'s':Math.floor(game.burstEnergy)+'%'}</small></b><span className="burst-energy-track"><i style={{width:(game.burstTicks>0?game.burstTicks/BURST_TICKS*100:game.burstEnergy)+'%'}}/></span></span><em>{game.burstTicks>0?'伤害 +40%':canActivateBurst(game)?'点击 / 空格':'击破 · 闪避'}</em></button>}
 
         <div className="toybot-stats">
           <div className="toybot-pill"><small>{stageLabel(game.progress)}</small><b>{Math.floor(game.progress)}%</b></div>
@@ -1024,6 +1031,7 @@ const ToybotBreakout: React.FC = () => {
             </div>
           </div>
           <div className="toybot-status-effects" aria-label="战斗状态">
+            {game.burstTicks>0&&<span className="effect-burst">核心爆发 · 伤害 +40%</span>}
             {game.weaponLevel >= 4 && <span className="effect-charge">✹ <i style={{ width: game.charge / 4 * 100 + '%' }} />{game.charge}/4</span>}
             {game.chargedVolleys > 0 && <span className="effect-charge">✹ ×{game.chargedVolleys}</span>}
             {game.overloadTicks > 0 && <span>↟ {Math.ceil(game.overloadTicks / 10)}s</span>}
@@ -1112,6 +1120,7 @@ const ToybotBreakout: React.FC = () => {
               <p className="toybot-result-summary">{game.won ? LEVEL.encounters[0].label + ' 已击败 · 区域安全' : game.defeatReason === 'boss-wipe' ? '核心生命耗尽，整备后再次出击' : '小队停止作战，返回机库重新整备'}</p>
               <div className="toybot-debrief-score"><span>本次作战得分</span><strong>{game.score.toLocaleString()}</strong><small>历史最佳 {garage.bestScore.toLocaleString()}</small></div>
               <div className="toybot-debrief-rewards"><div><small>回收零件</small><b>◈ +{earnedParts}</b></div><div><small>当前库存</small><b>{garage.parts}</b></div><div><small>{game.won ? '归队机甲' : '关卡进度'}</small><b>{game.won ? game.bots + ' 台' : Math.floor(game.progress) + '%'}</b></div></div>
+              <p className="toybot-run-highlights">路段击破 <b>{game.kills}</b> · 最佳连击 <b>{game.bestCombo}</b> · 核心爆发 <b>{game.burstSequence}</b></p>
               {!game.won && <p className="toybot-debrief-tip"><span>战术建议</span>{game.defeatReason === 'boss-wipe' ? ['熔岩消退后再回到原轨道。','先击落蜂群，再追击蜂后。','打穿重盾，抓住恢复窗口。','每段风暴都会重新预警，注意连续换道。','交叉炮会改变安全缺口，跟随新预警移动。'][game.levelIndex] : '提前击毁蓄力中的敌人，保留生命迎战首领。'}</p>}
               <div className={'toybot-debrief-actions' + (!game.won || game.levelIndex === LEVELS.length - 1 ? ' is-single-route' : '')}>
                 {game.won && game.levelIndex < LEVELS.length - 1 && <button type="button" className="toybot-primary" onClick={() => { setEarnedParts(0); dispatch({ type: 'NEXT_LEVEL', garage }); }}>前往第 {game.levelIndex + 2} 关 <span aria-hidden="true">›</span></button>}

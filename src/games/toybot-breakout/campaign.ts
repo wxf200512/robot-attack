@@ -47,7 +47,7 @@ export function campaignReducer(state:CampaignState,action:CampaignAction):Campa
   const lanes=[0,1,2].filter(lane=>!blocked.includes(lane));
   return {...state,narrative:{...n,scene:null,...(scene.kind==='briefing'?{route,objective:'pending' as const,relayLane:lanes[(state.layoutIndex+state.levelIndex)%Math.max(1,lanes.length)]??1,radio:radio('support-brief',route==='rescue'?'已呼叫失联伙伴。前方中继处会合，驶入它所在的轨道。':'已请求维护护盾。前方中继处同步，驶入它所在的轨道。')}:{})}};
  }
- if(n.scene&&(action.type==='TICK'||action.type==='MOVE_LANE'))return state;
+ if(n.scene&&(action.type==='TICK'||action.type==='MOVE_LANE'||action.type==='ACTIVATE_BURST'))return state;
  const next=gameReducer(state,action as Action);
  if(next===state)return state;
  if('garage' in action){const narrative=freshNarrative();narrative.replay=normalizeGarage(action.garage).completedLevels[next.levelIndex]===true;if(next.status==='running'){narrative.scene={kind:'briefing',step:0,synced:0};narrative.seen=['briefing'];}return {...next,narrative};}

@@ -1,10 +1,12 @@
 import type { GameState } from './simulation';
-import { attackIntervalFor } from './simulation';
+import { attackIntervalFor, canShoot } from './simulation';
 import type { PlayerSettings } from './settings';
-export type AudioCue='pulse'|'heavy'|'blade'|'hit'|'destroy'|'shield'|'shield-break'|'damage'|'warning'|'gate'|'upgrade'|'victory'|'defeat'|'dodge'|'evade';
+export type AudioCue='pulse'|'heavy'|'blade'|'hit'|'destroy'|'shield'|'shield-break'|'damage'|'warning'|'gate'|'upgrade'|'victory'|'defeat'|'dodge'|'evade'|'burst'|'burst-ready';
 export function gameSoundEvents(previous:GameState,current:GameState):AudioCue[]{
  if(previous.runId!==current.runId||current.status==='paused'||previous.status==='paused')return [];
  const cues:AudioCue[]=[];
+ if(current.burstSequence>previous.burstSequence)cues.push('burst');
+ if(canShoot(current.status)&&previous.burstEnergy<100&&current.burstEnergy>=100)cues.push('burst-ready');
  if(current.dodgeSequence>previous.dodgeSequence)cues.push('dodge');
  if(current.evadeSequence>previous.evadeSequence)cues.push('evade');
  if(current.shotSequence>previous.shotSequence&&current.fireCooldown===attackIntervalFor(current))cues.push(current.mechClass);
@@ -41,6 +43,8 @@ export function createGameAudio(){
   if(disposed||settings.muted||settings.volume===0||!context||context.state!=='running'||document.hidden)return;
   const now=performance.now(),gap=cue==='hit'?75:cue==='warning'?700:60;if(now-(last.get(cue)??-Infinity)<gap)return;last.set(cue,now);
   switch(cue){
+   case 'burst':tone(180,900,.3,'triangle',0,.65);tone(1600,450,.3,'sine',.12,.4);break;
+   case 'burst-ready':tone(880,880,.1,'sine',0,.35);tone(1320,1320,.18,'sine',.12,.35);break;
    case 'pulse':tone(1100,380,.065,'triangle',0,.65);break;
    case 'heavy':tone(150,36,.22,'sawtooth',0,.8);tone(360,95,.1,'triangle',0,.5);break;
    case 'blade':tone(1200,180,.15,'sawtooth',0,.45);tone(1900,600,.07,'sine',.035,.3);break;

@@ -1,0 +1,24 @@
+{
+  "version": 14,
+  "generator": "built-in image_gen",
+  "assets": [
+    {
+      "kind": "hangar",
+      "prompt": "Use case: stylized-concept. Asset type: landscape background illustration for a polished mobile toy-mecha game home hero, 1536x1024 landscape composition. Create an exquisite clean futuristic orbital hangar overlooking a hopeful floating city, navy blue alloy framing, muted ivory mechanical structures, cyan luminous accents and a little champagne brass. High quality stylized 3D game illustration, soft painterly finish, appealing toy-scale sci-fi, elegant readable silhouettes, restrained details. Central EMPTY circular deployment platform in the lower middle with subtle cyan floor light; keep middle third open for a separately composited selectable robot. Frame left and right with slender maintenance gantries, softly receding sky-city and dawn clouds behind. Quiet dark upper corners, atmospheric cool blue light and a small warm sunlight glint. Eye-level front-facing slightly elevated view, symmetrical balanced composition. No robot, no people, no text, no typography, no logos, no watermarks, no UI panels or buttons. This is an environment asset, not an entire UI screenshot.",
+      "source": "art-source/ui-menu-hangar-v14.png",
+      "runtime": "public/games/toybot-breakout/optimized/ui-menu-hangar-v14.jpg"
+    },
+    {
+      "kind": "victory",
+      "prompt": "Use case: stylized-concept. Asset type: landscape victory header background for a premium mobile toy-mecha game, 1536x1024 landscape composition. Illustrate a liberated floating science-fiction city at luminous dawn, elegant rounded ivory and navy towers on elevated islands, a graceful transport bridge leading into the distance, brilliant but soft golden sunrise beyond the upper right, turquoise crystal energy conduits relit across the city. Hopeful triumphant peaceful mood after battle. High quality stylized 3D game illustration with painterly finish, refined clean shapes and atmospheric perspective; cyan, midnight navy and champagne gold palette matching a toy-mecha game. An EMPTY small navy observation landing platform in lower center, enough quiet central space for composited victory insignia, architectural framing at edges, no clutter. No characters, no robots, no text, no logos, no watermark, no confetti, no interface elements. Must be a beautiful usable environment backdrop, not a UI mockup.",
+      "source": "art-source/ui-menu-victory-v14.png",
+      "runtime": "public/games/toybot-breakout/optimized/ui-menu-victory-v14.jpg"
+    },
+    {
+      "kind": "medal",
+      "prompt": "Use case: stylized-concept. Asset type: transparent victory insignia for a toy-mecha mobile game reward screen. Create ONE exquisite original mechanical victory medal, a compact central ivory five-point star inset in a polished champagne-gold hexagonal armored core, small symmetric ivory and navy segmented mechanical wings extending sideways, tiny luminous cyan reactor at the center. Premium stylized 3D game item illustration, clean strong silhouette, rounded machined bevels, restrained luminous edges, glossy enamel and brushed metal, attractive readable at 96 pixels. Shape should be wider than tall, centered fully within square canvas with generous transparent padding. Front facing straight-on, balanced symmetrical object, no perspective tilt. Inspired by broad mobile game achievement hierarchy: clear single central reward, strong contrast, elegant rather than busy. No letters, no text, no numbers, no watermark, no background scene, no pedestal, no confetti, no extra objects. True transparent background; no opaque shadow rectangle or background glow wash.",
+      "source": "art-source/ui-menu-medal-v14.png",
+      "runtime": "public/games/toybot-breakout/optimized/ui-menu-medal-v14.png"
+    }
+  ]
+}

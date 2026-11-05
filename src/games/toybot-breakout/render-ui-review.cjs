@@ -4,7 +4,8 @@ const cache=new Map();let preview;
 const react={...React,useReducer(reducer,arg,init){return ['gameReducer','campaignReducer'].includes(reducer.name)?[load('campaign').createCampaign(preview),()=>{}]:React.useReducer(reducer,arg,init);}};
 function load(name){const file=path.resolve(__dirname,name+(name.endsWith('.tsx')||name.endsWith('.ts')?'':'.ts'));if(cache.has(file))return cache.get(file);const module={exports:{}};cache.set(file,module.exports);const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;new Function('require','module','exports',code)(id=>id==='react'?react:id.endsWith('.css')?{}:id.startsWith('./')?load(id+(fs.existsSync(path.resolve(__dirname,id+'.tsx'))?'.tsx':'')):require(id),module,module.exports);return module.exports;}
 const progression=load('progression'),sim=load('simulation');
-const garage=progression.normalizeGarage({mechClass:'pulse',parts:16,runs:5,wins:4,completedLevels:[true,true,true,true,false],tutorialCompleted:true,levels:{weapon:1,armor:1,core:1},equipped:{weapon:true,armor:true,core:true}});
+const menuMech=process.argv.find(a=>a.startsWith('--mech='))?.split('=')[1]||'pulse';
+const garage=progression.normalizeGarage({mechClass:menuMech,parts:16,runs:5,wins:4,completedLevels:[true,true,true,true,false],tutorialCompleted:true,levels:{weapon:1,armor:1,core:1},equipped:{weapon:true,armor:true,core:true}});
 global.window={localStorage:{getItem:key=>key.includes('settings')?JSON.stringify({muted:true,volume:.45,quality:'high'}):key.includes('garage')?JSON.stringify(garage):null,setItem(){throw Error('Static fixtures must not save');}},matchMedia:()=>({matches:false})};
 const defeat=process.argv.includes('--defeat');
 preview={...sim.createInitialState(garage,0,0),status:'result',won:!defeat,bossDefeated:!defeat,progress:defeat?93:100,bots:defeat?0:6,playerHp:defeat?0:110,score:1280,battleHp:0,battleMaxHp:1400};
@@ -26,9 +27,13 @@ if(defenseReview){
  preview={...sim.createInitialState({...garage,mechClass:kind},0,0),status:'running',progress:18,bots:3,gate:2,weaponLevel:1,armorLevel:2,armorPoints:mode==='break'||mode==='empty'?0:4,shieldCharges:mode==='idle'?2:mode==='impact'?1:0,roadTicks:4,fireCooldown:1000,hazardHps:sim.createInitialState(garage).hazardHps.map(()=>-1)};
  if(mode==='impact'||mode==='break')preview.defenseFx={kind:'shield',exhausted:mode==='break',ticks:Number(process.argv.find(a=>a.startsWith('--ticks='))?.split('=')[1])||5,id:1};
 }
+const homeReview=process.argv.includes('--home'),pauseReview=process.argv.includes('--pause');
+if(homeReview)preview=sim.createInitialState(garage,0,0);
+if(pauseReview)preview={...sim.createInitialState(garage,2,0),status:'paused',resumeStatus:'running',progress:62,gate:5,bots:3,playerHp:78};
+if(process.argv.includes('--final'))preview={...preview,levelIndex:4};
 const App=load('index.tsx').default;
 const css=fs.readdirSync(path.resolve(__dirname,'../../../dist/assets')).find(n=>/^main-.*\.css$/.test(n));
 if(!css)throw Error('Run npm run build first');
 const html='<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>胜利页 · 只读布局验收</title><link rel="stylesheet" href="/dist/assets/'+css+'"></head><body>'+renderToStaticMarkup(React.createElement(MemoryRouter,null,React.createElement(App)))+'</body></html>';
-const output=defenseReview?'defense-review.html':bossReview?'boss-review.html':encounter?'encounter-review.html':defeat?'defeat-review.html':'victory-review.html';
+const output=homeReview?'home-review.html':pauseReview?'pause-review.html':defenseReview?'defense-review.html':bossReview?'boss-review.html':encounter?'encounter-review.html':defeat?'defeat-review.html':'victory-review.html';
 fs.writeFileSync(path.join(__dirname,output),html.replace(/<style>([\s\S]*?)<\/style>/g,(_,css)=>'<style>'+css.replaceAll('&#x27;',String.fromCharCode(39)).replaceAll('&quot;',String.fromCharCode(34)).replaceAll('&amp;','&').replaceAll('&lt;','<').replaceAll('&gt;','>')+'</style>'));console.log('Generated read-only '+output+' from actual component');

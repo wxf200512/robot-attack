@@ -1,0 +1,130 @@
+/* Menu v14: quiet navy framing, ivory type, cyan controls, champagne victory. */
+.toybot-shell .menu-refresh { --menu-line:#88becb38;--menu-muted:#9ab7c7; }
+.toybot-shell .menu-refresh button { -webkit-tap-highlight-color:transparent; }
+.toybot-shell .menu-refresh button:focus-visible { outline:2px solid #fff3c9;outline-offset:3px; }
+.toybot-shell .menu-refresh .toybot-primary { border-radius:9px;min-height:49px;background:linear-gradient(105deg,#c9f6ee,#75d8df);border-color:#c4fff3;box-shadow:inset 0 1px #fff9,0 3px 0 #337b87,0 7px 20px #00172080; }
+.toybot-shell .menu-stage-code { position:absolute;left:13px;top:12px;z-index:3;color:#d0e6ea;font:600 8px/1.5 'Segoe UI',sans-serif;letter-spacing:.15em;text-shadow:0 1px 5px #001325; }
+/* Home: explicitly sized sections avoid the old implicit grid row pushing actions out. */
+.toybot-shell .toybot-home.menu-refresh:not(.is-workshop) { background:#0b1927; }
+.toybot-shell .toybot-home.menu-refresh:not(.is-workshop)>.toybot-home-backdrop { opacity:.08;filter:blur(4px); }
+.toybot-shell .toybot-home.menu-refresh:not(.is-workshop):before { background:linear-gradient(150deg,#0b203580,transparent 45%,#060e1c77); }
+.toybot-shell .menu-refresh .toybot-home-content { display:flex;flex-direction:column;align-items:stretch;height:auto;min-height:100%;padding:0 15px 8px;gap:10px; }
+.toybot-shell .menu-refresh .toybot-home-heading { flex:none;padding:20px 2px 2px;text-align:left; }
+.toybot-shell .menu-refresh .toybot-home-kicker { color:#88adbd;font-size:8px;letter-spacing:.19em; }
+.toybot-shell .menu-refresh .toybot-online { padding:3px 6px;border:1px solid #79bcaa38;border-radius:4px;background:#37776615;font-size:8px; }
+.toybot-shell .menu-refresh.toybot-home h1 { margin:9px 0 5px;font-size:30px;font-weight:750;letter-spacing:.1em;color:#f5f2e6; }
+.toybot-shell .menu-refresh.toybot-home .toybot-home-subtitle { font-size:10px;color:#a3bfcb;letter-spacing:.13em; }
+.toybot-shell .menu-refresh .toybot-home-hero { flex:1 0 220px;min-height:220px;max-height:330px;padding:20px 0 29px;overflow:hidden;border:1px solid #a5d3dd40;border-radius:12px;background:#173044 url('/games/toybot-breakout/optimized/ui-menu-hangar-v14.jpg') center 58%/cover;box-shadow:inset 0 1px #e1ffff20,0 9px 24px #020b1855; }
+.toybot-shell .menu-refresh .toybot-home-hero:before { content:'';position:absolute;inset:0;background:linear-gradient(180deg,#04102055,transparent 35%,#06152511 65%,#071827db);pointer-events:none; }
+.toybot-shell .menu-refresh .toybot-home-mech { z-index:1;width:190px;max-height:230px;filter:drop-shadow(0 12px 9px #03101aa6); }
+.toybot-shell .menu-refresh .toybot-mech-caption { z-index:3;top:34px;left:13px;max-width:90px;padding:7px 8px;border:1px solid #a5e9f540;border-radius:5px;background:#081c2ad9; }
+.toybot-shell .menu-refresh .toybot-mech-caption small { font-size:8px;color:#a4cfda;letter-spacing:.1em; }
+.toybot-shell .menu-refresh .toybot-mech-caption b { margin-top:4px;font-size:12px;letter-spacing:.02em;text-shadow:0 2px 5px #001020; }
+.toybot-shell .menu-refresh .toybot-home-equipped { z-index:2;bottom:9px;gap:5px; }
+.toybot-shell .menu-refresh .toybot-home-equipped span { padding:3px 6px;background:#0a2636dd;border-color:#a1d7dc44;border-radius:4px;font-size:8px;color:#cbe7ec; }
+.toybot-shell .menu-refresh .toybot-home-dashboard { flex:none;align-items:stretch;gap:10px;padding:13px 12px 11px;border:1px solid var(--menu-line);border-radius:12px;background:linear-gradient(135deg,#183244e6,#0e2132f5);box-shadow:inset 0 1px #c9f9ff0c,0 10px 25px #030a1733; }
+.toybot-shell .menu-refresh .toybot-mission-heading { text-align:left; }
+.toybot-shell .menu-refresh .toybot-mission-heading>span { display:flex;gap:8px;align-items:center;font-size:9px;color:#94b7c5; }
+.toybot-shell .menu-refresh .toybot-mission-heading em { color:#b9d6df;font-size:8px;font-style:normal;letter-spacing:.08em; }
+.toybot-shell .menu-refresh .toybot-mission-heading>b { font-size:12px;font-weight:650;letter-spacing:.04em; }
+.toybot-shell .menu-refresh .toybot-level-select { gap:6px; }
+.toybot-shell .menu-refresh .toybot-level-select button { height:44px;min-height:44px;gap:2px;border-radius:6px;background:#091a2b;border-color:#88b1c32b; }
+.toybot-shell .menu-refresh .toybot-level-select button b { font-size:16px;font-weight:600; }
+.toybot-shell .menu-refresh .toybot-level-select button[aria-pressed=true] { border-color:#a1e7e5;background:linear-gradient(145deg,#285b66,#153440);box-shadow:inset 0 -2px #94e4df,0 0 10px #5cd3d211; }
+.toybot-shell .menu-refresh .toybot-level-select button:disabled { opacity:.6;color:#8fa6b7; }
+.toybot-shell .menu-refresh.toybot-home .toybot-home-story-objective { display:block;padding:0 0 0 7px;margin:0;border-left:2px solid #bea27288;background:none;color:#b7cdd6;font-size:9px;line-height:1.7;text-align:left; }
+.toybot-shell .menu-refresh .toybot-home-story-objective>span { margin-right:7px;color:#e2c993;font-size:9px;letter-spacing:0; }
+.toybot-shell .menu-refresh.toybot-home .toybot-home-start { min-height:48px;font-size:16px;letter-spacing:.08em; }
+.toybot-shell .menu-home-secondary { display:grid;grid-template-columns:1.45fr 1fr;gap:8px; }
+.toybot-shell .menu-refresh .menu-home-secondary>button { display:grid;grid-template-columns:1fr auto;align-content:center;gap:3px 7px;min-width:0;min-height:48px;width:100%;padding:7px 10px;margin:0;border:1px solid #739aaf55;border-radius:7px;background:linear-gradient(125deg,#213f52,#152b3c);color:#e0edf2;text-align:left;cursor:pointer; }
+.toybot-shell .menu-home-secondary>button>span:first-child { font-size:11px;font-weight:650; }
+.toybot-shell .menu-refresh .menu-home-secondary>button>small { grid-row:2;grid-column:1;margin:0;color:#95b5c5;font-size:8px;font-weight:400; }
+.toybot-shell .menu-home-secondary>button>span:last-child { grid-column:2;grid-row:1/3;align-self:center;color:#afd5dd;font-size:20px; }
+.toybot-shell .menu-refresh .toybot-home-record { padding:7px 0 0;border-top:1px solid #a6c9d01c;color:#8eacbd;font-size:9px; }
+.toybot-shell .menu-refresh .toybot-home-record b { font-size:11px;font-weight:600;color:#dcecf0; }
+.toybot-shell .menu-refresh .toybot-home-story-links { flex:none;gap:8px;margin:0;grid-template-columns:1.15fr 1fr; }
+.toybot-shell .menu-refresh.toybot-home .toybot-home-story-links>button { min-height:45px;padding:5px 8px;gap:8px;border-color:#769eae30;border-radius:7px;background:#12293b80; }
+.toybot-shell .menu-refresh .toybot-home-story-open img { width:36px;height:30px;flex-basis:36px;filter:saturate(.7); }
+.toybot-shell .menu-refresh .toybot-home-story-links b { font-size:10px;font-weight:600; }
+.toybot-shell .menu-refresh .toybot-home-story-links small { margin-top:3px;font-size:8px;color:#95afbf; }
+.toybot-shell .menu-refresh .story-world-index { display:grid;place-items:center;width:30px;height:30px;flex:none;border:1px solid #abbdab44;border-radius:4px;background:#29455344;color:#d6c59f;font-size:12px; }
+.toybot-shell .menu-home-footer { flex:none;display:flex;align-items:center;justify-content:space-between;gap:5px;min-height:33px; }
+.toybot-shell .menu-home-footer>span { color:#668595;font-size:7px;letter-spacing:.1em; }
+.toybot-shell .menu-home-footer button { padding:8px 2px;min-height:33px;border:0;background:none;color:#a2bcca;font-size:9px;cursor:pointer; }
+/* Pause: one clear resume action, full-body selected mech, frozen combat context. */
+.toybot-shell .toybot-paused.menu-refresh { padding:20px 18px;background:#030b16d9;backdrop-filter:blur(9px); }
+.toybot-shell .menu-refresh .toybot-pause-panel { max-width:356px;padding:0 20px 15px;border:1px solid #8bc6d65c;border-radius:15px;background:linear-gradient(145deg,#183549,#0c1e30 65%);box-shadow:0 25px 70px #000b,inset 0 1px #d7f9ff11; }
+.toybot-shell .menu-refresh .toybot-pause-art { height:177px;margin:0 -20px 20px;background:#173044 url('/games/toybot-breakout/optimized/ui-menu-hangar-v14.jpg') center 62%/cover;border-bottom-color:#9ed7df44; }
+.toybot-shell .menu-refresh .toybot-pause-art:after { background:linear-gradient(180deg,#03112633,transparent 42%,#102739); }
+.toybot-shell .menu-refresh .toybot-pause-art .toybot-mech-showcase { width:146px;bottom:5px;z-index:1;filter:drop-shadow(0 7px 9px #001323); }
+.toybot-shell .menu-pause-symbol { position:absolute;z-index:3;right:15px;top:15px;display:grid;place-items:center;width:33px;height:33px;border:1px solid #afdce166;border-radius:8px;background:#10283aaa;color:#d8eeed;font-size:17px; }
+.toybot-shell .menu-refresh .toybot-pause-label { color:#97c1ce;font-size:8px;letter-spacing:.24em; }
+.toybot-shell .menu-refresh .toybot-pause-panel h2 { margin:7px 0;font-size:29px;font-weight:650;letter-spacing:.12em;color:#f3f1e6; }
+.toybot-shell .menu-refresh .toybot-pause-context { margin:0 0 18px;color:#a2bcc9;font-size:11px; }
+.toybot-shell .menu-refresh .toybot-pause-stats { border-radius:8px;border-color:#9ac7d22b;background:#071a2b66; }
+.toybot-shell .menu-refresh .toybot-pause-stats>div { padding:13px 2px; }
+.toybot-shell .menu-refresh .toybot-pause-stats strong { font-size:20px;font-weight:550;font-variant-numeric:tabular-nums;color:#dceff2; }
+.toybot-shell .menu-refresh .toybot-pause-stats strong small { display:inline;font-size:9px;color:#8faebb; }
+.toybot-shell .menu-refresh .toybot-pause-progress { height:3px;margin:12px 0 0;background:#294455; }
+.toybot-shell .menu-refresh .toybot-pause-progress>span { background:linear-gradient(90deg,#4ea9ba,#b7eadb); }
+.toybot-shell .menu-pause-note { margin:9px 0 18px;color:#89a7b7;font-size:9px;letter-spacing:.02em; }
+.toybot-shell .menu-refresh .toybot-pause-panel .toybot-pause-resume { margin:0;min-height:49px;font-size:16px; }
+.toybot-shell .menu-refresh .toybot-pause-settings { width:100%;min-height:43px;margin-top:12px;border:1px solid #7eaabd40;border-radius:7px;background:#1a3549;color:#bfd7e1;font-size:11px;cursor:pointer; }
+.toybot-shell .menu-refresh .toybot-pause-home { min-height:36px;margin:7px 0 0;font-size:10px;color:#99b5c4; }
+/* Victory: liberated city artwork frames the existing victory insignia. */
+.toybot-shell .toybot-result.is-victory.menu-refresh { padding:20px 18px;background:radial-gradient(ellipse at 50% 0,#36545c99,#061323ed 75%),url('/games/toybot-breakout/optimized/ui-menu-victory-v14.jpg') center/cover; }
+.toybot-shell .menu-refresh.is-victory .toybot-debrief-panel { max-width:362px;padding:0 20px 11px;border:1px solid #cfbd8d70;border-top:2px solid #ebd29d;border-radius:15px;background:linear-gradient(150deg,#203748f5,#0c1f31 65%);box-shadow:0 25px 60px #0009,inset 0 1px #fff3; }
+.toybot-shell .menu-refresh.is-victory .toybot-debrief-topline { position:relative;z-index:2;margin:0 -20px;padding:12px 14px;background:#0c2031b8;color:#b5cbd3;font-size:8px; }
+.toybot-shell .menu-victory-art { position:relative;height:160px;margin:0 -20px 15px;display:flex;align-items:center;justify-content:center;background:#284c60 url('/games/toybot-breakout/optimized/ui-menu-victory-v14.jpg') center 48%/cover; }
+.toybot-shell .menu-victory-art:after { content:'';position:absolute;inset:0;background:linear-gradient(180deg,#081b2a11,#0d24331a 55%,#172e40); }
+.toybot-shell .menu-victory-medal { position:relative;z-index:1;width:236px;height:148px;object-fit:contain;filter:drop-shadow(0 6px 12px #00152a99);pointer-events:none; }
+.toybot-shell .menu-refresh.is-victory .toybot-debrief-kicker { color:#dfc68b;font-size:8px;letter-spacing:.25em; }
+.toybot-shell .menu-refresh.is-victory h2 { margin:8px 0 7px;font-size:31px;letter-spacing:.14em;color:#faf3df;font-weight:650; }
+.toybot-shell .menu-refresh.is-victory .toybot-result-summary { color:#a8c0c9;font-size:10px; }
+.toybot-shell .menu-refresh.is-victory .toybot-debrief-score { display:grid;grid-template-columns:1fr auto;align-items:center;gap:5px 10px;margin:17px 0 12px;padding:13px 0;text-align:left;border-color:#b9c7b52b; }
+.toybot-shell .menu-refresh.is-victory .toybot-debrief-score>span { font-size:9px;color:#abc2cd; }
+.toybot-shell .menu-refresh.is-victory .toybot-debrief-score>strong { grid-column:2;grid-row:1/3;font-size:34px;font-weight:550;line-height:1.2;color:#f4e1b5; }
+.toybot-shell .menu-refresh.is-victory .toybot-debrief-score>small { font-size:8px; }
+.toybot-shell .menu-refresh.is-victory .toybot-debrief-rewards { gap:7px;margin-bottom:18px; }
+.toybot-shell .menu-refresh.is-victory .toybot-debrief-rewards>div { padding:11px 2px;border-color:#b3c3c22b;border-radius:7px;background:#0a1e2d88; }
+.toybot-shell .menu-refresh.is-victory .toybot-debrief-rewards small { color:#a0b9c5;font-size:9px; }
+.toybot-shell .menu-refresh.is-victory .toybot-debrief-rewards b { color:#e8d4a8;font-size:17px;font-weight:600; }
+.toybot-shell .menu-refresh.is-victory .toybot-debrief-actions { display:grid;grid-template-columns:1fr 1fr;gap:9px; }
+.toybot-shell .menu-refresh.is-victory .toybot-debrief-actions .toybot-primary { grid-column:1/-1;min-height:48px;background:linear-gradient(105deg,#f5e6bd,#cda96d);box-shadow:inset 0 1px #fff8,0 3px 0 #83653c,0 7px 20px #00172080;border-color:#f7e3b2;color:#30291e;font-size:14px; }
+.toybot-shell .menu-refresh.is-victory .toybot-debrief-actions .toybot-secondary,.toybot-shell .menu-refresh.is-victory .toybot-debrief-actions .toybot-result-garage { min-height:42px;padding:8px 10px;font-size:10px;background:#1c374a;border-color:#93b6c23b;border-radius:7px; }
+.toybot-shell .menu-refresh.is-victory .toybot-debrief-actions .toybot-home-exit { grid-column:1/-1;min-height:32px;padding:5px;font-size:10px; }
+.toybot-shell .menu-refresh.is-victory .toybot-debrief-actions.is-final .toybot-result-garage { grid-column:1/-1; }
+@media(max-height:740px) {
+ .toybot-shell .menu-refresh .toybot-home-content { gap:8px;padding:0 13px 5px; }
+ .toybot-shell .menu-refresh .toybot-home-heading { padding-top:15px; }
+ .toybot-shell .menu-refresh.toybot-home h1 { font-size:28px;margin-top:7px; }
+ .toybot-shell .menu-refresh .toybot-home-hero { flex-basis:182px;min-height:182px;padding-top:12px;padding-bottom:25px; }
+ .toybot-shell .menu-refresh .toybot-home-mech { width:160px;max-height:180px; }
+ .toybot-shell .menu-refresh .toybot-home-dashboard { gap:8px;padding:11px 11px 9px; }
+ .toybot-shell .menu-refresh .toybot-pause-art { height:139px;margin-bottom:16px; }
+ .toybot-shell .menu-refresh .toybot-pause-art .toybot-mech-showcase { width:122px;bottom:0; }
+ .toybot-shell .menu-refresh .toybot-pause-context { margin-bottom:14px; }
+ .toybot-shell .menu-victory-art { height:129px;margin-bottom:12px; }
+ .toybot-shell .menu-victory-medal { width:208px;height:120px; }
+ .toybot-shell .menu-refresh.is-victory .toybot-debrief-score { margin:13px 0 11px;padding:10px 0; }
+ .toybot-shell .menu-refresh.is-victory .toybot-debrief-rewards { margin-bottom:14px; }
+}
+@media(max-width:360px) {
+ .toybot-shell .menu-refresh .toybot-home-content { padding-left:11px;padding-right:11px; }
+ .toybot-shell .menu-refresh .toybot-home-kicker { font-size:7px;letter-spacing:.12em; }
+ .toybot-shell .menu-refresh .toybot-home-mech { width:147px; }
+ .toybot-shell .menu-refresh .toybot-mech-caption { max-width:75px;left:10px; }
+ .toybot-shell .menu-refresh .toybot-mech-caption b { font-size:10px; }
+ .toybot-shell .menu-refresh .toybot-home-story-objective>span { display:none; }
+ .toybot-shell .menu-refresh .toybot-pause-panel,.toybot-shell .menu-refresh.is-victory .toybot-debrief-panel { padding-left:15px;padding-right:15px; }
+ .toybot-shell .menu-refresh .toybot-pause-art,.toybot-shell .menu-victory-art,.toybot-shell .menu-refresh.is-victory .toybot-debrief-topline { margin-left:-15px;margin-right:-15px; }
+ .toybot-shell .menu-refresh.is-victory .toybot-debrief-score>strong { font-size:30px; }
+}
+@media(max-height:580px) {
+ .toybot-shell .menu-refresh .toybot-home-hero { flex-basis:163px;min-height:163px; }
+ .toybot-shell .menu-refresh .toybot-home-mech { width:137px; }
+ .toybot-shell .menu-refresh .toybot-pause-art,.toybot-shell .menu-victory-art { height:105px; }
+ .toybot-shell .menu-victory-medal { width:176px;height:100px; }
+ .toybot-shell .menu-refresh .toybot-pause-art .toybot-mech-showcase { width:98px; }
+}
+@media(prefers-reduced-motion:reduce) { .toybot-shell .menu-refresh .toybot-home-mech { animation:none; } }

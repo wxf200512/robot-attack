@@ -16,6 +16,8 @@ export const BOSS_NAMES = ['铸炉监工', '苍穹蜂后', '赤铁堡垒', '风�
 
 export const UI_HANGAR_ART = ROOT + 'ui-hangar-ai-v6.jpg';
 export const UI_RESULT_CRESTS = ROOT + 'ui-result-crests-ai-v6.png';
+export const STORY_ART = [1,2,3,4].map(page=>ROOT + `story-comic-${page}-v11.jpg`);
+export const STORY_COVER = ROOT + 'story-cover-v11.jpg';
 
 export const MECH_CLASS_ART = { heavy: ROOT + 'mech-heavy-ai-v7.png', blade: ROOT + 'mech-blade-ai-v7.png' };
 export const BLADE_SLASH_ART = ROOT + 'blade-slash-ai-v7.png';

@@ -696,6 +696,36 @@ test('optimized art URLs resolve, transparent character sheets keep alpha, and o
  for(const url of urls){assert.ok(url.includes('/optimized/'));const file=path.resolve(__dirname,'../../../public',url.slice(1));assert.ok(fs.existsSync(file),url);}
  for(const url of Object.values(art.MECH_CLASS_ART)){const b=fs.readFileSync(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(b[25],6,'mech PNG must keep RGBA alpha');}
  assert.ok(fs.existsSync(path.join(__dirname,'art-source','ui-hangar-ai-v6.png')));
+ for(const url of [...art.STORY_ART,art.STORY_COVER]){const bytes=fs.readFileSync(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(bytes.readUInt16BE(0),0xffd8,'comic deployment images are JPEG');}
+ for(let page=1;page<=4;page++)assert.ok(fs.existsSync(path.join(__dirname,'art-source',`story-comic-${page}-v11.png`)));
+});
+
+test('story chapters follow the five actual guardians and never replace playable levels',()=>{
+ const story=load('story');assert.equal(story.STORY_PAGES.length,4);assert.equal(story.STORY_CHAPTERS.length,levels.LEVELS.length);
+ story.STORY_CHAPTERS.forEach((chapter,index)=>assert.ok(chapter.objective.includes(levels.getLevel(index).encounters[0].label)));
+});
+test('story progress rejects unknown versions and corrupt page values',()=>{
+ const {normalizeStoryProgress:n}=load('story');const fresh={version:1,page:0,dismissed:false,completed:false};
+ for(const value of [null,[],{version:2,page:3,completed:true}])assert.deepEqual(n(value),fresh);
+ for(const page of [NaN,Infinity,'2',-10])assert.equal(n({version:1,page}).page,0);
+ assert.equal(n({version:1,page:99}).page,3);assert.equal(n({version:1,page:2.9}).page,2);
+ assert.deepEqual(n({version:1,completed:true}),{...fresh,dismissed:true,completed:true});
+});
+test('comic skip, resume and completion persist separately from campaign and settings',()=>{
+ const story=load('story'),settings=load('settings'),before=global.window,store=new Map();
+ try{global.window={localStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value)}};
+ progression.saveGarage(progression.normalizeGarage({...garage,parts:81}));settings.saveSettings({muted:true,volume:.3,quality:'low'});const existing=[...store.entries()];
+ const bookmark={...story.readStoryProgress(),page:2};story.saveStoryProgress(bookmark);assert.deepEqual(story.readStoryProgress(),bookmark);
+ story.saveStoryProgress(story.finishStory(bookmark,false));assert.deepEqual(story.readStoryProgress(),{...bookmark,dismissed:true});
+ const complete=story.finishStory(story.readStoryProgress(),true);story.saveStoryProgress(complete);assert.equal(story.readStoryProgress().completed,true);assert.equal(story.finishStory(complete,false).completed,true);
+ for(const [key,value] of existing)assert.equal(store.get(key),value);assert.equal(store.size,existing.length+1);
+ }finally{if(before===undefined)delete global.window;else global.window=before;}
+});
+test('comic tolerates unavailable storage and malformed saved JSON',()=>{
+ const story=load('story'),before=global.window;
+ try{global.window={localStorage:{getItem:()=>'{broken',setItem:()=>{throw Error('quota');}}};assert.equal(story.readStoryProgress().page,0);assert.doesNotThrow(()=>story.saveStoryProgress(story.readStoryProgress()));
+ global.window={localStorage:{getItem:()=>{throw Error('denied');}}};assert.equal(story.readStoryProgress().dismissed,false);
+ }finally{if(before===undefined)delete global.window;else global.window=before;}
 });
 
 test('road encounter density grows by sector and introduces specialists gradually', () => {

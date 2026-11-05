@@ -1,4 +1,6 @@
 import PlayerSettingsPanel from './PlayerSettingsPanel';
+import StoryDialog from './StoryDialog';
+import { readStoryProgress, saveStoryProgress, finishStory, STORY_CHAPTERS } from './story';
 import { readSettings, saveSettings, resolveQuality } from './settings';
 import { createGameAudio, gameSoundEvents } from './audio';
 import { advanceDrag } from './interaction';
@@ -15,7 +17,7 @@ import './bossCombat.css';
 import { OBJECTIVE_NAMES, SPECIAL_LABELS } from './bossSkills';
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MAP_ART, BOSS_ART, BOSS_INTRO_ART, BOSS_STAGE2_ART, BOSS_DEFEAT_ART, BOSS_RUSH_ART, GATE_ART, PLAYER_ART, THREAT_ART, UI_HANGAR_ART, UI_RESULT_CRESTS, BLADE_SLASH_ART, ENEMY_ART, BATTLE_ART, BOSS_CAST_ART, BOSS_OBJECTIVE_ART } from './art';
+import { MAP_ART, BOSS_ART, BOSS_INTRO_ART, BOSS_STAGE2_ART, BOSS_DEFEAT_ART, BOSS_RUSH_ART, GATE_ART, PLAYER_ART, THREAT_ART, UI_HANGAR_ART, UI_RESULT_CRESTS, BLADE_SLASH_ART, ENEMY_ART, BATTLE_ART, BOSS_CAST_ART, BOSS_OBJECTIVE_ART, STORY_COVER } from './art';
 import { getLevel, LEVELS, hazardLaneAt, stageLabel, ENEMY_NAMES } from './level';
 import { createInitialState, gameReducer, formationFor, volleyCountFor, effectiveWeapon, bossPhase, bossY, gateEffectDetail, LANE_CENTERS, STEP_MS, laneXAt, targetY, bossFiring, gateGroundY, GATE_CONTACT_Y, isActiveStatus, canMove, canShoot, isBossArena, bossEnrage, BOSS_INTRO_TICKS, BOSS_SHIFT_TICKS, BOSS_VICTORY_TICKS, bossX, rushProgress, isRush, attackIntervalFor, bossAttackLabel, bossWarningTicks, enemyThreatY, playerFormation, bossGuarded, roadEnemyY, roadEnemyX, targetX as targetWorldX, type GameState } from './simulation';
 import { purchaseUpgrade, readGarage, rewardParts, saveGarage, toggleUpgrade, upgradeCost, UPGRADES, moduleLevel, garageStats, previewUpgrade, equipAllUpgrades, MODULE_MAX_LEVEL, canEnterLevel, recordLevelCompletion, type Garage, type UpgradeId } from './progression';
@@ -99,6 +101,9 @@ const ToybotBreakout: React.FC = () => {
   const audioSettings = useRef(settings);
   const quality = resolveQuality(settings, navigator.hardwareConcurrency || 4, window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const [garage, setGarage] = useState<Garage>(readGarage);
+  const [storyProgress,setStoryProgress]=useState(readStoryProgress);
+  const [storyView,setStoryView]=useState<'comic'|'world'|null>(()=>storyProgress.dismissed?null:'comic');
+  const storyWasOpen=useRef(storyView!==null);
   const [trainingMode, setTrainingMode] = useState<'first' | 'replay' | null>(null);
   const [garageOpen, setGarageOpen] = useState(false);
   const [earnedParts, setEarnedParts] = useState(0);
@@ -147,6 +152,11 @@ const ToybotBreakout: React.FC = () => {
   }, [game.status, game.runId, game.score, game.won, game.levelIndex, game.bossDefeated, game.progress]);
 
   useEffect(() => saveGarage(garage), [garage]);
+  useEffect(()=>saveStoryProgress(storyProgress),[storyProgress]);
+  useEffect(()=>{
+    if(storyWasOpen.current&&!storyView&&game.status==='home')document.querySelector<HTMLButtonElement>('.toybot-home-story-open')?.focus({preventScroll:true});
+    storyWasOpen.current=storyView!==null;
+  },[storyView,game.status]);
   useEffect(() => {
     const engine = createGameAudio(); audio.current = engine; engine.setSettings(audioSettings.current);
     return () => { engine.dispose(); if (audio.current === engine) audio.current = null; };
@@ -1032,7 +1042,7 @@ const ToybotBreakout: React.FC = () => {
           </div>
         </div>
 
-        {game.status === 'home' && !trainingMode && (
+        {game.status === 'home' && !trainingMode && !storyView && (
           <div className={`toybot-overlay toybot-home ${garageOpen ? 'is-workshop' : ''}`} role="dialog" aria-modal="true" aria-labelledby={garageOpen ? 'toybot-workshop-title' : 'toybot-home-title'}>
             <img className="toybot-home-backdrop" src={UI_HANGAR_ART} decoding="async" alt="" aria-hidden="true" draggable={false} />
             {garageOpen ? <GarageWorkshop garage={garage} onUnlock={unlock} onToggle={toggleEquip} onEquipAll={() => setGarage(current => equipAllUpgrades(current))} onSelectMech={id => setGarage(current => ({ ...current, mechClass: id }))} onBack={() => setGarageOpen(false)} /> :
@@ -1040,7 +1050,7 @@ const ToybotBreakout: React.FC = () => {
               <div className="toybot-home-heading">
                 <div className="toybot-home-kicker">TOYBOT / BREAKOUT <span className="toybot-online">系统就绪</span></div>
                 <h1 id="toybot-home-title">玩具城突围</h1>
-                <p className="toybot-home-subtitle">集结机甲，突破城市封锁线</p>
+                <p className="toybot-home-subtitle">黎明重启 · 带伙伴回家</p>
               </div>
               <div className="toybot-home-hero" aria-hidden="true">
                 <div className="toybot-mech-caption"><small>{mechSpec(garage.mechClass).role}</small><b>{mechSpec(garage.mechClass).name}</b></div>
@@ -1051,8 +1061,10 @@ const ToybotBreakout: React.FC = () => {
                   {garage.equipped.core && <span>动力核心 Lv.{moduleLevel(garage,'core')}</span>}
                 </div>
               </div>
+              <div className="toybot-home-story-links"><button type="button" className="toybot-home-story-open" onClick={()=>setStoryView('comic')}><img src={STORY_COVER} alt="" decoding="async"/><span><b>序章漫画</b><small>{storyProgress.completed?'重看黎明重启':storyProgress.page>0?'继续黎明重启':'唤醒星穹城的火花'}</small></span></button><button type="button" className="toybot-home-world-open" onClick={()=>setStoryView('world')}><span className="story-world-index">05</span><span><b>世界档案</b><small>城市背景 · 五区主线</small></span></button></div>
               <div className="toybot-home-dashboard">
                 <div className="toybot-mission-heading"><span>当前任务 / 0{game.levelIndex + 1}</span><b>{LEVEL.title}</b></div>
+                <p className="toybot-home-story-objective"><span>黎明重启 / {STORY_CHAPTERS[game.levelIndex].title}</span>{STORY_CHAPTERS[game.levelIndex].objective}</p>
                 <div className="toybot-level-select" role="group" aria-label="选择关卡">{LEVELS.map((level, index) => <button key={level.title} type="button" disabled={!canEnterLevel(garage,index)} title={!canEnterLevel(garage,index) ? '请先通关第 ' + index + ' 关' : garage.completedLevels[index] ? '已通关，可再次挑战' : '已解锁，可以挑战'} aria-pressed={game.levelIndex === index} aria-label={`第 ${index + 1} 关 ${level.title}`} onClick={() => dispatch({ type: 'SELECT_LEVEL', levelIndex: index, garage })}><small>{!canEnterLevel(garage,index) ? '锁定' : garage.completedLevels[index] ? '已通关' : '已解锁'}</small><b>{String(index + 1).padStart(2, '0')}</b></button>)}</div>
                 <p className="toybot-level-rule">击败本关首领，完成结算后解锁下一关</p>
                 <div className="toybot-home-record"><span>开局 <b>{1}</b> 台</span><span>最高分 <b>{garage.bestScore}</b></span><span>通关 <b>{garage.wins}</b> 次</span></div>
@@ -1106,6 +1118,7 @@ const ToybotBreakout: React.FC = () => {
           </div>
         )}
 
+        {game.status==='home'&&storyView&&<StoryDialog initialMode={storyView} initialPage={storyProgress.completed?0:storyProgress.page} completedLevels={garage.completedLevels} onPage={page=>setStoryProgress(current=>({...current,page}))} onClose={completed=>{setStoryProgress(current=>finishStory(current,completed));setStoryView(null);}} />}
         {trainingMode && <Tutorial settingsOpen={settingsOpen} onSettings={openSettings} onSound={cue => audio.current?.play(cue)} first={trainingMode === 'first'} renderMech={(index,firing) => <Robot index={index} firing={firing} />} onExit={() => setTrainingMode(null)} onComplete={() => {
           clearTrainingCheckpoint();
           const updated = { ...garage, tutorialCompleted: true };

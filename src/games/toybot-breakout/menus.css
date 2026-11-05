@@ -1,130 +1,202 @@
-/* Menu v14: quiet navy framing, ivory type, cyan controls, champagne victory. */
-.toybot-shell .menu-refresh { --menu-line:#88becb38;--menu-muted:#9ab7c7; }
-.toybot-shell .menu-refresh button { -webkit-tap-highlight-color:transparent; }
-.toybot-shell .menu-refresh button:focus-visible { outline:2px solid #fff3c9;outline-offset:3px; }
-.toybot-shell .menu-refresh .toybot-primary { border-radius:9px;min-height:49px;background:linear-gradient(105deg,#c9f6ee,#75d8df);border-color:#c4fff3;box-shadow:inset 0 1px #fff9,0 3px 0 #337b87,0 7px 20px #00172080; }
-.toybot-shell .menu-stage-code { position:absolute;left:13px;top:12px;z-index:3;color:#d0e6ea;font:600 8px/1.5 'Segoe UI',sans-serif;letter-spacing:.15em;text-shadow:0 1px 5px #001325; }
-/* Home: explicitly sized sections avoid the old implicit grid row pushing actions out. */
-.toybot-shell .toybot-home.menu-refresh:not(.is-workshop) { background:#0b1927; }
-.toybot-shell .toybot-home.menu-refresh:not(.is-workshop)>.toybot-home-backdrop { opacity:.08;filter:blur(4px); }
-.toybot-shell .toybot-home.menu-refresh:not(.is-workshop):before { background:linear-gradient(150deg,#0b203580,transparent 45%,#060e1c77); }
-.toybot-shell .menu-refresh .toybot-home-content { display:flex;flex-direction:column;align-items:stretch;height:auto;min-height:100%;padding:0 15px 8px;gap:10px; }
-.toybot-shell .menu-refresh .toybot-home-heading { flex:none;padding:20px 2px 2px;text-align:left; }
-.toybot-shell .menu-refresh .toybot-home-kicker { color:#88adbd;font-size:8px;letter-spacing:.19em; }
-.toybot-shell .menu-refresh .toybot-online { padding:3px 6px;border:1px solid #79bcaa38;border-radius:4px;background:#37776615;font-size:8px; }
-.toybot-shell .menu-refresh.toybot-home h1 { margin:9px 0 5px;font-size:30px;font-weight:750;letter-spacing:.1em;color:#f5f2e6; }
-.toybot-shell .menu-refresh.toybot-home .toybot-home-subtitle { font-size:10px;color:#a3bfcb;letter-spacing:.13em; }
-.toybot-shell .menu-refresh .toybot-home-hero { flex:1 0 220px;min-height:220px;max-height:330px;padding:20px 0 29px;overflow:hidden;border:1px solid #a5d3dd40;border-radius:12px;background:#173044 url('/games/toybot-breakout/optimized/ui-menu-hangar-v14.jpg') center 58%/cover;box-shadow:inset 0 1px #e1ffff20,0 9px 24px #020b1855; }
-.toybot-shell .menu-refresh .toybot-home-hero:before { content:'';position:absolute;inset:0;background:linear-gradient(180deg,#04102055,transparent 35%,#06152511 65%,#071827db);pointer-events:none; }
-.toybot-shell .menu-refresh .toybot-home-mech { z-index:1;width:190px;max-height:230px;filter:drop-shadow(0 12px 9px #03101aa6); }
-.toybot-shell .menu-refresh .toybot-mech-caption { z-index:3;top:34px;left:13px;max-width:90px;padding:7px 8px;border:1px solid #a5e9f540;border-radius:5px;background:#081c2ad9; }
-.toybot-shell .menu-refresh .toybot-mech-caption small { font-size:8px;color:#a4cfda;letter-spacing:.1em; }
-.toybot-shell .menu-refresh .toybot-mech-caption b { margin-top:4px;font-size:12px;letter-spacing:.02em;text-shadow:0 2px 5px #001020; }
-.toybot-shell .menu-refresh .toybot-home-equipped { z-index:2;bottom:9px;gap:5px; }
-.toybot-shell .menu-refresh .toybot-home-equipped span { padding:3px 6px;background:#0a2636dd;border-color:#a1d7dc44;border-radius:4px;font-size:8px;color:#cbe7ec; }
-.toybot-shell .menu-refresh .toybot-home-dashboard { flex:none;align-items:stretch;gap:10px;padding:13px 12px 11px;border:1px solid var(--menu-line);border-radius:12px;background:linear-gradient(135deg,#183244e6,#0e2132f5);box-shadow:inset 0 1px #c9f9ff0c,0 10px 25px #030a1733; }
-.toybot-shell .menu-refresh .toybot-mission-heading { text-align:left; }
-.toybot-shell .menu-refresh .toybot-mission-heading>span { display:flex;gap:8px;align-items:center;font-size:9px;color:#94b7c5; }
-.toybot-shell .menu-refresh .toybot-mission-heading em { color:#b9d6df;font-size:8px;font-style:normal;letter-spacing:.08em; }
-.toybot-shell .menu-refresh .toybot-mission-heading>b { font-size:12px;font-weight:650;letter-spacing:.04em; }
-.toybot-shell .menu-refresh .toybot-level-select { gap:6px; }
-.toybot-shell .menu-refresh .toybot-level-select button { height:44px;min-height:44px;gap:2px;border-radius:6px;background:#091a2b;border-color:#88b1c32b; }
-.toybot-shell .menu-refresh .toybot-level-select button b { font-size:16px;font-weight:600; }
-.toybot-shell .menu-refresh .toybot-level-select button[aria-pressed=true] { border-color:#a1e7e5;background:linear-gradient(145deg,#285b66,#153440);box-shadow:inset 0 -2px #94e4df,0 0 10px #5cd3d211; }
-.toybot-shell .menu-refresh .toybot-level-select button:disabled { opacity:.6;color:#8fa6b7; }
-.toybot-shell .menu-refresh.toybot-home .toybot-home-story-objective { display:block;padding:0 0 0 7px;margin:0;border-left:2px solid #bea27288;background:none;color:#b7cdd6;font-size:9px;line-height:1.7;text-align:left; }
-.toybot-shell .menu-refresh .toybot-home-story-objective>span { margin-right:7px;color:#e2c993;font-size:9px;letter-spacing:0; }
-.toybot-shell .menu-refresh.toybot-home .toybot-home-start { min-height:48px;font-size:16px;letter-spacing:.08em; }
-.toybot-shell .menu-home-secondary { display:grid;grid-template-columns:1.45fr 1fr;gap:8px; }
-.toybot-shell .menu-refresh .menu-home-secondary>button { display:grid;grid-template-columns:1fr auto;align-content:center;gap:3px 7px;min-width:0;min-height:48px;width:100%;padding:7px 10px;margin:0;border:1px solid #739aaf55;border-radius:7px;background:linear-gradient(125deg,#213f52,#152b3c);color:#e0edf2;text-align:left;cursor:pointer; }
-.toybot-shell .menu-home-secondary>button>span:first-child { font-size:11px;font-weight:650; }
-.toybot-shell .menu-refresh .menu-home-secondary>button>small { grid-row:2;grid-column:1;margin:0;color:#95b5c5;font-size:8px;font-weight:400; }
-.toybot-shell .menu-home-secondary>button>span:last-child { grid-column:2;grid-row:1/3;align-self:center;color:#afd5dd;font-size:20px; }
-.toybot-shell .menu-refresh .toybot-home-record { padding:7px 0 0;border-top:1px solid #a6c9d01c;color:#8eacbd;font-size:9px; }
-.toybot-shell .menu-refresh .toybot-home-record b { font-size:11px;font-weight:600;color:#dcecf0; }
-.toybot-shell .menu-refresh .toybot-home-story-links { flex:none;gap:8px;margin:0;grid-template-columns:1.15fr 1fr; }
-.toybot-shell .menu-refresh.toybot-home .toybot-home-story-links>button { min-height:45px;padding:5px 8px;gap:8px;border-color:#769eae30;border-radius:7px;background:#12293b80; }
-.toybot-shell .menu-refresh .toybot-home-story-open img { width:36px;height:30px;flex-basis:36px;filter:saturate(.7); }
-.toybot-shell .menu-refresh .toybot-home-story-links b { font-size:10px;font-weight:600; }
-.toybot-shell .menu-refresh .toybot-home-story-links small { margin-top:3px;font-size:8px;color:#95afbf; }
-.toybot-shell .menu-refresh .story-world-index { display:grid;place-items:center;width:30px;height:30px;flex:none;border:1px solid #abbdab44;border-radius:4px;background:#29455344;color:#d6c59f;font-size:12px; }
-.toybot-shell .menu-home-footer { flex:none;display:flex;align-items:center;justify-content:space-between;gap:5px;min-height:33px; }
-.toybot-shell .menu-home-footer>span { color:#668595;font-size:7px;letter-spacing:.1em; }
-.toybot-shell .menu-home-footer button { padding:8px 2px;min-height:33px;border:0;background:none;color:#a2bcca;font-size:9px;cursor:pointer; }
-/* Pause: one clear resume action, full-body selected mech, frozen combat context. */
-.toybot-shell .toybot-paused.menu-refresh { padding:20px 18px;background:#030b16d9;backdrop-filter:blur(9px); }
-.toybot-shell .menu-refresh .toybot-pause-panel { max-width:356px;padding:0 20px 15px;border:1px solid #8bc6d65c;border-radius:15px;background:linear-gradient(145deg,#183549,#0c1e30 65%);box-shadow:0 25px 70px #000b,inset 0 1px #d7f9ff11; }
-.toybot-shell .menu-refresh .toybot-pause-art { height:177px;margin:0 -20px 20px;background:#173044 url('/games/toybot-breakout/optimized/ui-menu-hangar-v14.jpg') center 62%/cover;border-bottom-color:#9ed7df44; }
-.toybot-shell .menu-refresh .toybot-pause-art:after { background:linear-gradient(180deg,#03112633,transparent 42%,#102739); }
-.toybot-shell .menu-refresh .toybot-pause-art .toybot-mech-showcase { width:146px;bottom:5px;z-index:1;filter:drop-shadow(0 7px 9px #001323); }
-.toybot-shell .menu-pause-symbol { position:absolute;z-index:3;right:15px;top:15px;display:grid;place-items:center;width:33px;height:33px;border:1px solid #afdce166;border-radius:8px;background:#10283aaa;color:#d8eeed;font-size:17px; }
-.toybot-shell .menu-refresh .toybot-pause-label { color:#97c1ce;font-size:8px;letter-spacing:.24em; }
-.toybot-shell .menu-refresh .toybot-pause-panel h2 { margin:7px 0;font-size:29px;font-weight:650;letter-spacing:.12em;color:#f3f1e6; }
-.toybot-shell .menu-refresh .toybot-pause-context { margin:0 0 18px;color:#a2bcc9;font-size:11px; }
-.toybot-shell .menu-refresh .toybot-pause-stats { border-radius:8px;border-color:#9ac7d22b;background:#071a2b66; }
-.toybot-shell .menu-refresh .toybot-pause-stats>div { padding:13px 2px; }
-.toybot-shell .menu-refresh .toybot-pause-stats strong { font-size:20px;font-weight:550;font-variant-numeric:tabular-nums;color:#dceff2; }
-.toybot-shell .menu-refresh .toybot-pause-stats strong small { display:inline;font-size:9px;color:#8faebb; }
-.toybot-shell .menu-refresh .toybot-pause-progress { height:3px;margin:12px 0 0;background:#294455; }
-.toybot-shell .menu-refresh .toybot-pause-progress>span { background:linear-gradient(90deg,#4ea9ba,#b7eadb); }
-.toybot-shell .menu-pause-note { margin:9px 0 18px;color:#89a7b7;font-size:9px;letter-spacing:.02em; }
-.toybot-shell .menu-refresh .toybot-pause-panel .toybot-pause-resume { margin:0;min-height:49px;font-size:16px; }
-.toybot-shell .menu-refresh .toybot-pause-settings { width:100%;min-height:43px;margin-top:12px;border:1px solid #7eaabd40;border-radius:7px;background:#1a3549;color:#bfd7e1;font-size:11px;cursor:pointer; }
-.toybot-shell .menu-refresh .toybot-pause-home { min-height:36px;margin:7px 0 0;font-size:10px;color:#99b5c4; }
-/* Victory: liberated city artwork frames the existing victory insignia. */
-.toybot-shell .toybot-result.is-victory.menu-refresh { padding:20px 18px;background:radial-gradient(ellipse at 50% 0,#36545c99,#061323ed 75%),url('/games/toybot-breakout/optimized/ui-menu-victory-v14.jpg') center/cover; }
-.toybot-shell .menu-refresh.is-victory .toybot-debrief-panel { max-width:362px;padding:0 20px 11px;border:1px solid #cfbd8d70;border-top:2px solid #ebd29d;border-radius:15px;background:linear-gradient(150deg,#203748f5,#0c1f31 65%);box-shadow:0 25px 60px #0009,inset 0 1px #fff3; }
-.toybot-shell .menu-refresh.is-victory .toybot-debrief-topline { position:relative;z-index:2;margin:0 -20px;padding:12px 14px;background:#0c2031b8;color:#b5cbd3;font-size:8px; }
-.toybot-shell .menu-victory-art { position:relative;height:160px;margin:0 -20px 15px;display:flex;align-items:center;justify-content:center;background:#284c60 url('/games/toybot-breakout/optimized/ui-menu-victory-v14.jpg') center 48%/cover; }
-.toybot-shell .menu-victory-art:after { content:'';position:absolute;inset:0;background:linear-gradient(180deg,#081b2a11,#0d24331a 55%,#172e40); }
-.toybot-shell .menu-victory-medal { position:relative;z-index:1;width:236px;height:148px;object-fit:contain;filter:drop-shadow(0 6px 12px #00152a99);pointer-events:none; }
-.toybot-shell .menu-refresh.is-victory .toybot-debrief-kicker { color:#dfc68b;font-size:8px;letter-spacing:.25em; }
-.toybot-shell .menu-refresh.is-victory h2 { margin:8px 0 7px;font-size:31px;letter-spacing:.14em;color:#faf3df;font-weight:650; }
-.toybot-shell .menu-refresh.is-victory .toybot-result-summary { color:#a8c0c9;font-size:10px; }
-.toybot-shell .menu-refresh.is-victory .toybot-debrief-score { display:grid;grid-template-columns:1fr auto;align-items:center;gap:5px 10px;margin:17px 0 12px;padding:13px 0;text-align:left;border-color:#b9c7b52b; }
-.toybot-shell .menu-refresh.is-victory .toybot-debrief-score>span { font-size:9px;color:#abc2cd; }
-.toybot-shell .menu-refresh.is-victory .toybot-debrief-score>strong { grid-column:2;grid-row:1/3;font-size:34px;font-weight:550;line-height:1.2;color:#f4e1b5; }
-.toybot-shell .menu-refresh.is-victory .toybot-debrief-score>small { font-size:8px; }
-.toybot-shell .menu-refresh.is-victory .toybot-debrief-rewards { gap:7px;margin-bottom:18px; }
-.toybot-shell .menu-refresh.is-victory .toybot-debrief-rewards>div { padding:11px 2px;border-color:#b3c3c22b;border-radius:7px;background:#0a1e2d88; }
-.toybot-shell .menu-refresh.is-victory .toybot-debrief-rewards small { color:#a0b9c5;font-size:9px; }
-.toybot-shell .menu-refresh.is-victory .toybot-debrief-rewards b { color:#e8d4a8;font-size:17px;font-weight:600; }
-.toybot-shell .menu-refresh.is-victory .toybot-debrief-actions { display:grid;grid-template-columns:1fr 1fr;gap:9px; }
-.toybot-shell .menu-refresh.is-victory .toybot-debrief-actions .toybot-primary { grid-column:1/-1;min-height:48px;background:linear-gradient(105deg,#f5e6bd,#cda96d);box-shadow:inset 0 1px #fff8,0 3px 0 #83653c,0 7px 20px #00172080;border-color:#f7e3b2;color:#30291e;font-size:14px; }
-.toybot-shell .menu-refresh.is-victory .toybot-debrief-actions .toybot-secondary,.toybot-shell .menu-refresh.is-victory .toybot-debrief-actions .toybot-result-garage { min-height:42px;padding:8px 10px;font-size:10px;background:#1c374a;border-color:#93b6c23b;border-radius:7px; }
-.toybot-shell .menu-refresh.is-victory .toybot-debrief-actions .toybot-home-exit { grid-column:1/-1;min-height:32px;padding:5px;font-size:10px; }
-.toybot-shell .menu-refresh.is-victory .toybot-debrief-actions.is-final .toybot-result-garage { grid-column:1/-1; }
-@media(max-height:740px) {
- .toybot-shell .menu-refresh .toybot-home-content { gap:8px;padding:0 13px 5px; }
- .toybot-shell .menu-refresh .toybot-home-heading { padding-top:15px; }
- .toybot-shell .menu-refresh.toybot-home h1 { font-size:28px;margin-top:7px; }
- .toybot-shell .menu-refresh .toybot-home-hero { flex-basis:182px;min-height:182px;padding-top:12px;padding-bottom:25px; }
- .toybot-shell .menu-refresh .toybot-home-mech { width:160px;max-height:180px; }
- .toybot-shell .menu-refresh .toybot-home-dashboard { gap:8px;padding:11px 11px 9px; }
- .toybot-shell .menu-refresh .toybot-pause-art { height:139px;margin-bottom:16px; }
- .toybot-shell .menu-refresh .toybot-pause-art .toybot-mech-showcase { width:122px;bottom:0; }
- .toybot-shell .menu-refresh .toybot-pause-context { margin-bottom:14px; }
- .toybot-shell .menu-victory-art { height:129px;margin-bottom:12px; }
- .toybot-shell .menu-victory-medal { width:208px;height:120px; }
- .toybot-shell .menu-refresh.is-victory .toybot-debrief-score { margin:13px 0 11px;padding:10px 0; }
- .toybot-shell .menu-refresh.is-victory .toybot-debrief-rewards { margin-bottom:14px; }
+/* Toybot v15: enamel surfaces and tactile mobile-game controls. */
+.toybot-shell.toybot-menu-system{--menu-ink:#20384c;--menu-muted:#687f90;--menu-paper:#eef4f3}
+.toybot-shell.toybot-menu-system .toybot-overlay{font-family:'Segoe UI','Microsoft YaHei',sans-serif}
+.toybot-shell.toybot-menu-system .toybot-overlay button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:translate .12s,box-shadow .12s,filter .12s}
+.toybot-shell.toybot-menu-system .toybot-overlay button:focus-visible{outline:3px solid #32c6ef;outline-offset:3px}
+.toybot-shell.toybot-menu-system .toybot-overlay .toybot-primary{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:51px;margin:0;padding:12px 16px;border:2px solid #805529;border-top-color:#fff1ba;border-radius:13px;background:linear-gradient(#ffeaa0 0%,#ffd66d 48%,#ffc54e 49%,#ffcf5d 100%);color:#463321;box-shadow:inset 0 2px #fff7,0 5px 0 #a76a2d,0 8px 14px #071c2922;font-size:16px;line-height:1.2;font-weight:850;text-shadow:0 1px #fff6;letter-spacing:.03em;cursor:pointer}
+.toybot-shell.toybot-menu-system .toybot-overlay .toybot-primary:active:not(:disabled){translate:0 3px;transform:none;box-shadow:inset 0 1px #fff7,0 2px 0 #a76a2d}
+.toybot-shell.toybot-menu-system .menu-icon{display:block;flex:none;width:37px;height:37px;background-repeat:no-repeat;background-size:300% 200%;pointer-events:none}
+/* Home command bar and full-bleed stage. */
+.toybot-shell.toybot-menu-system .toybot-home:not(.is-workshop){padding:0;background:#173951;scrollbar-width:thin;scrollbar-color:#608fa4 #173951}
+.toybot-shell.toybot-menu-system .toybot-home:not(.is-workshop)>.toybot-home-backdrop,.toybot-shell.toybot-menu-system .toybot-home:not(.is-workshop):before{display:none}
+.toybot-shell.toybot-menu-system .toybot-home-content{display:flex;flex-direction:column;align-items:stretch;gap:0;width:100%;min-height:100%;height:auto;padding:0}
+.toybot-shell.toybot-menu-system .menu-commandbar{z-index:3;position:relative;display:flex;align-items:center;justify-content:space-between;gap:7px;flex:none;padding:12px 13px 10px;background:linear-gradient(#253e55,#172e43);box-shadow:0 3px 0 #0d2337,0 5px 12px #061b3944}
+.toybot-shell.toybot-menu-system .menu-square-button{display:grid;place-items:center;flex:none;width:38px;height:38px;padding:0;border:1px solid #7792a4;border-bottom:3px solid #081c2e;border-radius:10px;background:linear-gradient(#425e75,#2a4359);color:#e6f5f4;box-shadow:inset 0 1px #b7d1de44;cursor:pointer}
+.toybot-shell.toybot-menu-system .menu-square-button .menu-icon{width:35px;height:35px}
+.toybot-shell.toybot-menu-system .menu-back{font-size:30px;line-height:1;padding-bottom:4px}
+.toybot-shell.toybot-menu-system .menu-currency{display:flex;align-items:center;gap:5px;flex:1;min-width:0;max-width:125px;height:36px;padding:3px 8px 3px 2px;border:1px solid #698698;border-radius:9px;background:#0c2437;box-shadow:inset 0 2px 4px #020b1855;text-align:left}
+.toybot-shell.toybot-menu-system .menu-currency .menu-icon{width:30px;height:30px}
+.toybot-shell.toybot-menu-system .menu-currency span:not(.menu-icon):not(.menu-cup){min-width:0}
+.toybot-shell.toybot-menu-system .menu-currency small{display:block;color:#aac4d2;font-size:8px;line-height:1.2}
+.toybot-shell.toybot-menu-system .menu-currency b{display:block;overflow:hidden;color:#f9edbf;font-size:13px;line-height:1.3;font-variant-numeric:tabular-nums;text-overflow:ellipsis}
+.toybot-shell.toybot-menu-system .menu-cup{padding:0 3px;color:#ffd475;font-size:23px;text-shadow:0 2px #ab692e}
+.toybot-shell.toybot-menu-system .toybot-home-hero{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;flex:1 0 320px;min-height:320px;max-height:450px;width:100%;padding:69px 0 37px;overflow:hidden;border:0;border-radius:0;background:#397599 url('/games/toybot-breakout/optimized/ui-menu-hangar-v14.jpg') center 55%/cover;box-shadow:none}
+.toybot-shell.toybot-menu-system .toybot-home-hero:before{content:'';position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,#0b2949bf,transparent 40%,transparent 63%,#102c4299);pointer-events:none}
+.toybot-shell.toybot-menu-system .toybot-home-heading{position:absolute;z-index:3;left:18px;top:15px;width:auto;padding:0;text-align:left}
+.toybot-shell.toybot-menu-system .toybot-home-kicker{display:block;color:#b8e6f1;font-size:8px;font-weight:800;letter-spacing:.19em}
+.toybot-shell.toybot-menu-system .toybot-home h1{margin:4px 0;color:#ffefc6;font-size:31px;font-weight:950;line-height:1.1;letter-spacing:.07em;text-shadow:0 2px 0 #1b4259,0 3px 0 #1b4259,0 5px 10px #071b3677}
+.toybot-shell.toybot-menu-system .toybot-home .toybot-home-subtitle{margin:0;color:#e1f0f4;font-size:10px;font-weight:600;letter-spacing:.04em;text-shadow:0 2px 4px #102438}
+.toybot-shell.toybot-menu-system .toybot-home-mech{position:relative;z-index:1;width:230px;max-height:none;filter:drop-shadow(0 10px 7px #071f3e99);animation:toybot-ui-hover 4s ease-in-out infinite alternate}
+.toybot-shell.toybot-menu-system .menu-world-shortcut{position:absolute;z-index:4;right:12px;top:19px;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:58px;padding:3px 5px 5px;border:1px solid #a3d6e66b;border-radius:11px;background:linear-gradient(#315a75e8,#163953ee);box-shadow:inset 0 1px #e0ffff33,0 3px 0 #10283d;color:#eff9f5;font-size:9px;font-weight:750;cursor:pointer}
+.toybot-shell.toybot-menu-system .menu-world-shortcut .menu-icon{width:36px;height:36px}
+.toybot-shell.toybot-menu-system .toybot-mech-caption{position:absolute;z-index:3;left:16px;top:auto;bottom:46px;max-width:145px;padding:7px 10px;border:1px solid #96c4d46b;border-left:3px solid #ffdc89;border-radius:2px 9px 9px 2px;background:#132f46d9;text-align:left}
+.toybot-shell.toybot-menu-system .toybot-mech-caption small{display:block;color:#9dc6d8;font-size:8px;letter-spacing:.03em}
+.toybot-shell.toybot-menu-system .toybot-mech-caption b{display:block;margin-top:3px;color:#fff1cd;font-size:14px;font-weight:800;letter-spacing:.04em}
+.toybot-shell.toybot-menu-system .toybot-home-equipped{position:absolute;z-index:3;left:16px;right:16px;bottom:10px;display:flex;flex-direction:row;justify-content:center;gap:6px}
+.toybot-shell.toybot-menu-system .toybot-home-equipped span{display:flex;gap:6px;align-items:center;padding:4px 8px;border:1px solid #99bed255;border-radius:5px;background:#102d44e8;color:#b2c7d2;font-size:9px;font-weight:500}
+.toybot-shell.toybot-menu-system .toybot-home-equipped b{color:#d6e6eb;font-size:9px}
+.toybot-shell.toybot-menu-system .toybot-home-equipped .is-equipped{border-color:#d4b46777}
+.toybot-shell.toybot-menu-system .toybot-home-equipped .is-equipped b{color:#ffdc85}
+/* Mission console and route controls. */
+.toybot-shell.toybot-menu-system .toybot-home-dashboard{position:relative;z-index:4;display:flex;align-items:stretch;flex:none;gap:10px;width:auto;margin:0 12px 13px;padding:13px 13px 17px;border:2px solid #93b1bf;border-top:3px solid #fff;border-radius:18px;background:linear-gradient(135deg,#f4f8f3,#d8e6e9);box-shadow:0 5px 0 #102a40,0 9px 16px #0b22394d;color:var(--menu-ink)}
+.toybot-shell.toybot-menu-system .toybot-mission-heading{display:flex;align-items:center;justify-content:flex-start;gap:10px;width:100%;text-align:left}
+.toybot-shell.toybot-menu-system .menu-sector-number{display:grid;place-items:center;flex:none;width:43px;height:43px;border:1px solid #4c748d;border-radius:10px;background:linear-gradient(#3c6883,#234a66);color:#ffdf91;font-size:24px;font-weight:850;box-shadow:inset 0 2px #d7f3ff22,0 2px 0 #132f43}
+.toybot-shell.toybot-menu-system .toybot-mission-heading>div{flex:1;min-width:0}
+.toybot-shell.toybot-menu-system .toybot-mission-heading small{display:block;color:#687f8c;font-size:9px;line-height:1.5}
+.toybot-shell.toybot-menu-system .toybot-mission-heading b{display:block;margin-top:1px;color:#1e3b51;font-size:17px;font-weight:850}
+.toybot-shell.toybot-menu-system .menu-sector-status{align-self:flex-start;margin-top:2px;padding:4px 6px;border:1px solid #8db7ab;border-radius:5px;background:#cce6dd;color:#376e62;font-size:9px;font-weight:700;white-space:nowrap}
+.toybot-shell.toybot-menu-system .toybot-level-select{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;width:100%;margin:0}
+.toybot-shell.toybot-menu-system .toybot-level-select button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:47px;min-height:44px;width:auto;border:1px solid #9bb3c0;border-bottom:3px solid #91a7b6;border-radius:8px;background:linear-gradient(#f8fbfa,#dce7e9);color:#647e91;box-shadow:inset 0 1px #fff;cursor:pointer}
+.toybot-shell.toybot-menu-system .toybot-level-select button b{color:inherit;font-size:16px;line-height:1;font-weight:850}
+.toybot-shell.toybot-menu-system .toybot-level-select button small{font-size:8px;line-height:1;font-weight:650}
+.toybot-shell.toybot-menu-system .toybot-level-select button[aria-pressed=true]{border-color:#2b6b8b;border-bottom-color:#1c4f6b;background:linear-gradient(#65b9cc,#3d8faa);color:#f5ffff;box-shadow:inset 0 2px #b9eced88}
+.toybot-shell.toybot-menu-system .toybot-level-select button:disabled{opacity:.72;border-color:#b4c1c9;border-bottom-color:#a9bac5;background:#cfdbdf;color:#7e929f}
+.toybot-shell.toybot-menu-system .toybot-home-story-objective{display:block;margin:0;padding:0;border:0;background:none;color:#526e7e;font-size:10px;text-align:center;line-height:1.5}
+.toybot-shell.toybot-menu-system .toybot-home .toybot-home-start{justify-content:center;gap:14px;width:100%;min-height:58px;margin-top:0;padding:9px 13px;border-radius:13px;font-size:20px;letter-spacing:.04em}
+.toybot-shell.toybot-menu-system .toybot-home-start>span{font-size:20px;line-height:1.2}
+.toybot-shell.toybot-menu-system .toybot-home-start>span:nth-child(2){text-align:center}
+.toybot-shell.toybot-menu-system .toybot-home-start small{display:block;margin-top:3px;font-size:9px;line-height:1.2;font-weight:650;letter-spacing:.04em;color:#805a2b;text-shadow:none}
+.toybot-shell.toybot-menu-system .toybot-home-start .menu-play{display:grid;place-items:center;flex:none;width:28px;height:28px;padding-left:2px;border-radius:50%;background:#bf7c2b;color:#fff1b7;font-size:14px;box-shadow:inset 0 2px 3px #87521f55,0 1px #fff9;text-shadow:none}
+.toybot-shell.toybot-menu-system .toybot-home-start .menu-launch-arrow{font-size:24px;letter-spacing:-5px;color:#a66b2b}
+/* Bottom dock: destinations, not tiny utility links. */
+.toybot-shell.toybot-menu-system .menu-bottom-nav{position:relative;z-index:5;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));flex:none;gap:6px;margin-top:auto;padding:9px 10px calc(10px + env(safe-area-inset-bottom));border-top:2px solid #7691a2;background:linear-gradient(#294359,#142b40);box-shadow:0 -3px 10px #061b3033}
+.toybot-shell.toybot-menu-system .menu-bottom-nav>button,.toybot-shell.toybot-menu-system .menu-bottom-nav>span{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:60px;padding:1px 3px 4px;border:1px solid #5d7c935c;border-bottom:3px solid #091f32;border-radius:11px;background:linear-gradient(#38556b,#243e55);color:#d9eaf0;text-decoration:none;cursor:pointer}
+.toybot-shell.toybot-menu-system .menu-bottom-nav b{font-size:11px;line-height:1.5;font-weight:800;text-shadow:0 1px #112e43}
+.toybot-shell.toybot-menu-system .menu-bottom-nav .menu-icon{width:41px;height:41px;filter:drop-shadow(0 2px 2px #06172c66)}
+.toybot-shell.toybot-menu-system .menu-bottom-nav>.is-current{margin-top:-7px;padding-top:5px;background:linear-gradient(#ffe7a3,#e9b956);border-color:#ffe9a9;border-bottom-color:#9f6f31;color:#4c3a24;cursor:default;box-shadow:inset 0 2px #fff8}
+.toybot-shell.toybot-menu-system .menu-bottom-nav>.is-current b{text-shadow:0 1px #fff7}
+/* Shared modal body. */
+.toybot-shell.toybot-menu-system .toybot-paused,.toybot-shell.toybot-menu-system .toybot-result{padding:20px 18px;overflow:auto;background:#07182bd9;backdrop-filter:blur(8px)}
+.toybot-shell.toybot-menu-system .toybot-pause-panel,.toybot-shell.toybot-menu-system .toybot-debrief-panel{flex:none;width:100%;max-width:362px;margin:auto;padding:0 20px 15px;overflow:hidden;border:2px solid #819eae;border-top:3px solid #edf8f6;border-radius:20px;background:linear-gradient(135deg,#f4f7ef,#dce8e9);color:var(--menu-ink);box-shadow:0 6px 0 #0a2035,0 20px 50px #00132b99}
+.toybot-shell.toybot-menu-system .toybot-pause-art{height:171px;margin:0 -20px 17px;background:#30586f url('/games/toybot-breakout/optimized/ui-menu-hangar-v14.jpg') center 60%/cover;border-bottom:3px solid #8aa8b7}
+.toybot-shell.toybot-menu-system .toybot-pause-art:after{background:linear-gradient(transparent 65%,#12385066)}
+.toybot-shell.toybot-menu-system .toybot-pause-art .toybot-mech-showcase{width:146px;bottom:5px;filter:drop-shadow(0 7px 5px #08284d77)}
+.toybot-shell.toybot-menu-system .menu-stage-code{position:absolute;left:13px;top:12px;z-index:3;color:#eef8fb;font-size:8px;letter-spacing:.12em;text-shadow:0 1px 4px #082844}
+.toybot-shell.toybot-menu-system .menu-pause-symbol{position:absolute;right:12px;top:12px;z-index:3;width:33px;padding:6px 0;border:1px solid #abc9d3;border-bottom:3px solid #132f46;border-radius:9px;background:#284b64;color:#d5f4f6;font-size:17px}
+.toybot-shell.toybot-menu-system .toybot-pause-label,.toybot-shell.toybot-menu-system .toybot-debrief-kicker{color:#6d8797;font-size:8px;letter-spacing:.17em;font-weight:800}
+.toybot-shell.toybot-menu-system .toybot-pause-panel h2,.toybot-shell.toybot-menu-system .toybot-result h2{margin:7px 0 8px;color:#243f54;font-size:29px;font-weight:950;letter-spacing:.08em;text-shadow:0 1px #fff}
+.toybot-shell.toybot-menu-system .toybot-pause-context,.toybot-shell.toybot-menu-system .toybot-result .toybot-result-summary{margin:0 0 17px;color:#637c8b;font-size:11px;line-height:1.6}
+.toybot-shell.toybot-menu-system .toybot-pause-stats{gap:0;border:1px solid #9bb4c0;border-bottom:3px solid #b4c8ce;border-radius:11px;background:#f8faf7;box-shadow:inset 0 2px 5px #658ba012}
+.toybot-shell.toybot-menu-system .toybot-pause-stats>div{padding:12px 2px;border:0;background:none}
+.toybot-shell.toybot-menu-system .toybot-pause-stats>div+div{border-left:1px solid #b2c9cf}
+.toybot-shell.toybot-menu-system .toybot-pause-stats small{color:#6c8594;font-size:10px}
+.toybot-shell.toybot-menu-system .toybot-pause-stats strong{margin-top:6px;color:#264a63;font-size:22px;font-weight:850}
+.toybot-shell.toybot-menu-system .toybot-pause-stats strong small{display:inline;color:#7894a3;font-size:9px}
+.toybot-shell.toybot-menu-system .toybot-pause-progress{height:8px;margin:14px 0 0;border:1px solid #9ab2bf;background:#c1d2d9;box-shadow:inset 0 1px 2px #3c637633}
+.toybot-shell.toybot-menu-system .toybot-pause-progress span{background:linear-gradient(#78d0d5,#3fa1b9);box-shadow:inset 0 1px #dcffff}
+.toybot-shell.toybot-menu-system .menu-pause-note{margin:9px 0 18px;color:#6c8493;font-size:10px}
+.toybot-shell.toybot-menu-system .toybot-pause-panel .toybot-pause-resume{margin:0;font-size:17px}
+.toybot-shell.toybot-menu-system .toybot-pause-settings,.toybot-shell.toybot-menu-system .toybot-debrief-actions .toybot-secondary,.toybot-shell.toybot-menu-system .toybot-debrief-actions .toybot-result-garage{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:43px;margin:13px 0 0;padding:9px 12px;border:1px solid #426d88;border-top-color:#8db8cd;border-bottom:3px solid #294c67;border-radius:10px;background:linear-gradient(#5e94af,#477c9b);box-shadow:inset 0 1px #d0efff66;color:#f5fdff;font-size:12px;font-weight:800;cursor:pointer}
+.toybot-shell.toybot-menu-system .toybot-pause-home,.toybot-shell.toybot-menu-system .toybot-debrief-actions .toybot-home-exit{min-height:35px;margin:8px 0 0;padding:7px 8px;border:0;background:none;color:#5c7a8e;font-size:11px;font-weight:650;cursor:pointer;text-decoration:none}
+/* Debrief. */
+.toybot-shell.toybot-menu-system .toybot-result.is-victory{background:linear-gradient(#13395699,#091b30ee),url('/games/toybot-breakout/optimized/ui-menu-victory-v14.jpg') center/cover}
+.toybot-shell.toybot-menu-system .toybot-result.is-failure{background:linear-gradient(#40394999,#091b30ee),url('/games/toybot-breakout/optimized/ui-menu-hangar-v14.jpg') center/cover}
+.toybot-shell.toybot-menu-system .toybot-debrief-topline{position:relative;z-index:2;display:flex;justify-content:space-between;gap:8px;margin:0 -20px;padding:11px 14px;background:linear-gradient(#36536a,#203d55);color:#bcd2df;font-size:9px}
+.toybot-shell.toybot-menu-system .toybot-debrief-topline>span:last-child{color:#ffdf92}
+.toybot-shell.toybot-menu-system .menu-victory-art{position:relative;display:grid;place-items:center;height:153px;margin:0 -20px 14px;border-bottom:3px solid #c9b27b;background:#50798b url('/games/toybot-breakout/optimized/ui-menu-victory-v14.jpg') center 45%/cover}
+.toybot-shell.toybot-menu-system .menu-victory-medal{position:relative;z-index:1;width:230px;height:140px;object-fit:contain;filter:drop-shadow(0 7px 5px #16274588)}
+.toybot-shell.toybot-menu-system .toybot-result-crest{width:120px;margin:14px auto 5px}
+.toybot-shell.toybot-menu-system .is-victory .toybot-debrief-kicker{color:#a07b3f}
+.toybot-shell.toybot-menu-system .toybot-debrief-score{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 10px;margin:13px 0;padding:12px 0;border-top:1px solid #a7bdc6;border-bottom:1px solid #a7bdc6;text-align:left}
+.toybot-shell.toybot-menu-system .toybot-debrief-score>span{color:#6d8592;font-size:10px}
+.toybot-shell.toybot-menu-system .toybot-debrief-score>small{color:#7e94a0;font-size:9px}
+.toybot-shell.toybot-menu-system .toybot-debrief-score>strong{grid-column:2;grid-row:1/3;color:#294d65;font-size:35px;font-weight:900;text-shadow:0 1px #fff}
+.toybot-shell.toybot-menu-system .toybot-debrief-rewards{gap:7px;margin:0 0 18px}
+.toybot-shell.toybot-menu-system .toybot-debrief-rewards>div{padding:11px 2px;border:1px solid #a1bbc7;border-bottom:3px solid #9db5c2;border-radius:10px;background:linear-gradient(#fcfdf8,#dce9e9)}
+.toybot-shell.toybot-menu-system .toybot-debrief-rewards small{color:#6f8794;font-size:9px}
+.toybot-shell.toybot-menu-system .toybot-debrief-rewards b{color:#32617a;font-size:18px;font-weight:850}
+.toybot-shell.toybot-menu-system .toybot-debrief-rewards>div:first-child{border-color:#c1a66e;background:linear-gradient(#fff8dc,#f1e1b1)}
+.toybot-shell.toybot-menu-system .toybot-debrief-rewards>div:first-child b{color:#936d30}
+.toybot-shell.toybot-menu-system .toybot-debrief-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.toybot-shell.toybot-menu-system .toybot-debrief-actions .toybot-primary{grid-column:1/-1;min-height:50px}
+.toybot-shell.toybot-menu-system .toybot-debrief-actions .toybot-secondary,.toybot-shell.toybot-menu-system .toybot-debrief-actions .toybot-result-garage{margin:4px 0 0;min-height:42px;padding:8px;font-size:10px}
+.toybot-shell.toybot-menu-system .toybot-debrief-actions .toybot-home-exit,.toybot-shell.toybot-menu-system .toybot-debrief-actions.is-single-route .toybot-result-garage{grid-column:1/-1;margin:0}
+.toybot-shell.toybot-menu-system .toybot-result .toybot-debrief-tip{padding:10px;margin:0 0 15px;border:1px solid #d1b5a0;border-left:3px solid #c48c69;border-radius:8px;background:#f1e3d4;color:#85634d;font-size:11px}
+.toybot-shell.toybot-menu-system .toybot-debrief-tip>span{color:#a47652;font-size:9px}
+/* Hangar module cards. */
+.toybot-shell.toybot-menu-system .is-workshop:before{background:linear-gradient(#12334cbb,#163954aa 35%,#142e43f7 65%)}
+.toybot-shell.toybot-menu-system .toybot-workshop{display:flex;align-items:stretch;gap:12px;height:auto;min-height:100%;padding:18px 16px 23px}
+.toybot-shell.toybot-menu-system .toybot-workshop-back{padding:7px 11px;min-height:36px;border:1px solid #718c9f;border-bottom:3px solid #0d273d;border-radius:9px;background:linear-gradient(#42617b,#28475f);color:#e6f3fa}
+.toybot-shell.toybot-menu-system .toybot-workshop-parts{border-radius:8px;border-color:#b5a471;background:#17354b;color:#ffe19c}
+.toybot-shell.toybot-menu-system .toybot-workshop-title{text-align:left}
+.toybot-shell.toybot-menu-system .toybot-workshop-title h2{color:#ffedbe;font-size:29px;font-weight:900}
+.toybot-shell.toybot-menu-system .toybot-workshop-title p{color:#b8cfdb;font-size:10px}
+.toybot-shell.toybot-menu-system .toybot-mech-picker{gap:7px}
+.toybot-shell.toybot-menu-system .toybot-mech-picker button{border:1px solid #86a6b9;border-bottom:3px solid #102e45;border-radius:10px;background:linear-gradient(#416780,#264962);color:#c9dce7;min-height:65px}
+.toybot-shell.toybot-menu-system .toybot-mech-picker button[aria-pressed=true]{border-color:#ffde91;border-bottom-color:#aa773c;background:linear-gradient(#ffe9a7,#e9bf71);color:#523e25;box-shadow:inset 0 1px #fff9}
+.toybot-shell.toybot-menu-system .toybot-mech-picker button[aria-pressed=true] strong{color:#523e25;text-shadow:0 1px #fff6}
+.toybot-shell.toybot-menu-system .toybot-mech-picker button[aria-pressed=true] small,.toybot-shell.toybot-menu-system .toybot-mech-picker button[aria-pressed=true] span{color:#80643c}
+.toybot-shell.toybot-menu-system .toybot-workshop-preview{flex:none;min-height:215px;padding-bottom:44px;margin:0}
+.toybot-shell.toybot-menu-system .toybot-workshop-mech{width:176px}
+.toybot-shell.toybot-menu-system .toybot-workshop-loadout{border-radius:9px;border-color:#b0c7d04a;background:#102e44d9;color:#e4f1f1;font-size:11px}
+.toybot-shell.toybot-menu-system .toybot-workshop-item{min-height:101px;padding:12px 10px;border:1px solid #b9ccce;border-bottom:4px solid #88a7b5;border-radius:13px;background:linear-gradient(115deg,#f5f8ee,#dce9ea);color:#29475d;box-shadow:inset 0 1px #fff}
+.toybot-shell.toybot-menu-system .toybot-workshop-item.is-equipped{border-color:#84b7c0;border-bottom-color:#548b9e;background:linear-gradient(115deg,#f5faf0,#d5ebeb);box-shadow:inset 4px 0 #53a7b6}
+.toybot-shell.toybot-menu-system .toybot-workshop-icon{width:55px;height:61px;border-color:#82a6b5;border-bottom:3px solid #426f87;border-radius:11px;background:radial-gradient(ellipse,#6eabc0,#254b66)}
+.toybot-shell.toybot-menu-system .toybot-workshop-copy strong{color:#26465c;font-size:13px;font-weight:850}
+.toybot-shell.toybot-menu-system .toybot-workshop-copy small{color:#5e7a8b;font-size:9px}
+.toybot-shell.toybot-menu-system .toybot-workshop-copy em,.toybot-shell.toybot-menu-system .is-equipped .toybot-workshop-copy em{color:#5c9aa1;font-size:8px}
+.toybot-shell.toybot-menu-system .toybot-workshop-action{border:1px solid #b98d46;border-bottom:3px solid #987039;border-radius:7px;background:linear-gradient(#ffe8a5,#efc66f);color:#5d4426;font-size:10px;min-height:36px}
+.toybot-shell.toybot-menu-system .toybot-workshop-action.equip{background:linear-gradient(#759cb4,#527f9a);border-color:#436981;color:#eef8fc}
+.toybot-shell.toybot-menu-system .toybot-workshop-action:disabled{background:#d7e0dd;border-color:#acbfc2;color:#889fa8}
+.toybot-shell.toybot-menu-system .toybot-equip-all{min-height:33px;padding:5px 10px;border:1px solid #86a8bd;border-bottom:3px solid #16364d;border-radius:7px;background:linear-gradient(#4f7891,#355870);color:#e7f4f8}
+.toybot-shell.toybot-menu-system .toybot-equip-all:disabled{opacity:.5}
+.toybot-shell.toybot-menu-system .toybot-module-levels i{background:#b6cacf;border-color:#8eafb8}
+.toybot-shell.toybot-menu-system .toybot-module-levels i.filled{background:#4b9cad;border-color:#337c91}
+.toybot-shell.toybot-menu-system .toybot-workshop .toybot-workshop-done{max-width:none;min-height:51px;font-size:14px}
+/* Preferences console. */
+.toybot-shell.toybot-menu-system .toybot-settings-panel{padding:20px;border:2px solid #95b0bd;border-top:3px solid #fff;border-radius:19px;background:linear-gradient(135deg,#f2f6ee,#dce8e9);color:#2a485e;box-shadow:0 6px 0 #0b263e,0 20px 50px #00112b99}
+.toybot-shell.toybot-menu-system .toybot-settings-heading small{color:#71909f}
+.toybot-shell.toybot-menu-system .toybot-settings-heading button{border:1px solid #4a738e;border-bottom:3px solid #284a64;border-radius:9px;background:linear-gradient(#709db7,#47758f);color:#fff}
+.toybot-shell.toybot-menu-system .toybot-settings-panel h2{font-size:26px;font-weight:900;color:#29475c}
+.toybot-shell.toybot-menu-system .toybot-settings-panel .toybot-quality-label{color:#38596d;font-weight:750}
+.toybot-shell.toybot-menu-system .toybot-settings-row small,.toybot-shell.toybot-menu-system .toybot-settings-note,.toybot-shell.toybot-menu-system .toybot-volume-label{color:#66818f}
+.toybot-shell.toybot-menu-system .toybot-quality-options button,.toybot-shell.toybot-menu-system .toybot-settings-row button{min-height:44px;border:1px solid #9ab3bd;border-bottom:3px solid #91acb7;border-radius:9px;background:#edf5f3;color:#5f7e90;font-weight:750}
+.toybot-shell.toybot-menu-system .toybot-quality-options button[aria-pressed=true],.toybot-shell.toybot-menu-system .toybot-settings-row button[aria-pressed=true]{background:linear-gradient(#69b5c7,#4289a6);border-color:#326d88;color:#f3ffff}
+.toybot-shell.toybot-menu-system .toybot-settings-panel input[type=range]{accent-color:#408eac}
+@media(max-height:740px){
+.toybot-shell.toybot-menu-system .menu-commandbar{padding:10px 12px 8px}
+.toybot-shell.toybot-menu-system .toybot-home-hero{flex-basis:272px;min-height:272px;padding-top:64px}
+.toybot-shell.toybot-menu-system .toybot-home-mech{width:192px}
+.toybot-shell.toybot-menu-system .toybot-home-dashboard{gap:8px;padding:11px 12px 15px;margin-bottom:12px}
+.toybot-shell.toybot-menu-system .menu-bottom-nav{padding-top:8px;padding-bottom:8px}
+.toybot-shell.toybot-menu-system .menu-bottom-nav>button,.toybot-shell.toybot-menu-system .menu-bottom-nav>span{min-height:55px}
+.toybot-shell.toybot-menu-system .menu-bottom-nav .menu-icon{width:36px;height:36px}
+.toybot-shell.toybot-menu-system .toybot-pause-art{height:138px;margin-bottom:14px}
+.toybot-shell.toybot-menu-system .toybot-pause-art .toybot-mech-showcase{width:120px;bottom:2px}
+.toybot-shell.toybot-menu-system .menu-victory-art{height:127px}
+.toybot-shell.toybot-menu-system .menu-victory-medal{width:204px;height:116px}
 }
-@media(max-width:360px) {
- .toybot-shell .menu-refresh .toybot-home-content { padding-left:11px;padding-right:11px; }
- .toybot-shell .menu-refresh .toybot-home-kicker { font-size:7px;letter-spacing:.12em; }
- .toybot-shell .menu-refresh .toybot-home-mech { width:147px; }
- .toybot-shell .menu-refresh .toybot-mech-caption { max-width:75px;left:10px; }
- .toybot-shell .menu-refresh .toybot-mech-caption b { font-size:10px; }
- .toybot-shell .menu-refresh .toybot-home-story-objective>span { display:none; }
- .toybot-shell .menu-refresh .toybot-pause-panel,.toybot-shell .menu-refresh.is-victory .toybot-debrief-panel { padding-left:15px;padding-right:15px; }
- .toybot-shell .menu-refresh .toybot-pause-art,.toybot-shell .menu-victory-art,.toybot-shell .menu-refresh.is-victory .toybot-debrief-topline { margin-left:-15px;margin-right:-15px; }
- .toybot-shell .menu-refresh.is-victory .toybot-debrief-score>strong { font-size:30px; }
+@media(max-width:360px){
+.toybot-shell.toybot-menu-system .menu-commandbar{gap:5px;padding-left:10px;padding-right:10px}
+.toybot-shell.toybot-menu-system .menu-currency{gap:2px}
+.toybot-shell.toybot-menu-system .toybot-home h1{font-size:28px}
+.toybot-shell.toybot-menu-system .toybot-home-heading{left:14px}
+.toybot-shell.toybot-menu-system .menu-world-shortcut{right:10px;top:17px;padding:2px 4px 4px}
+.toybot-shell.toybot-menu-system .menu-world-shortcut .menu-icon{width:30px;height:30px}
+.toybot-shell.toybot-menu-system .toybot-home-dashboard{margin-left:9px;margin-right:9px;padding-left:10px;padding-right:10px}
+.toybot-shell.toybot-menu-system .toybot-mission-heading b{font-size:15px}
+.toybot-shell.toybot-menu-system .toybot-home-equipped{gap:4px;left:10px;right:10px}
+.toybot-shell.toybot-menu-system .toybot-home-equipped span{padding:4px 6px;gap:4px}
+.toybot-shell.toybot-menu-system .toybot-workshop{padding-left:12px;padding-right:12px}
+.toybot-shell.toybot-menu-system .toybot-workshop-item{gap:7px;padding:10px 8px}
+.toybot-shell.toybot-menu-system .toybot-workshop-icon{width:42px;height:51px}
+.toybot-shell.toybot-menu-system .toybot-pause-panel,.toybot-shell.toybot-menu-system .toybot-debrief-panel{padding-left:15px;padding-right:15px}
+.toybot-shell.toybot-menu-system .toybot-pause-art,.toybot-shell.toybot-menu-system .menu-victory-art,.toybot-shell.toybot-menu-system .toybot-debrief-topline{margin-left:-15px;margin-right:-15px}
 }
-@media(max-height:580px) {
- .toybot-shell .menu-refresh .toybot-home-hero { flex-basis:163px;min-height:163px; }
- .toybot-shell .menu-refresh .toybot-home-mech { width:137px; }
- .toybot-shell .menu-refresh .toybot-pause-art,.toybot-shell .menu-victory-art { height:105px; }
- .toybot-shell .menu-victory-medal { width:176px;height:100px; }
- .toybot-shell .menu-refresh .toybot-pause-art .toybot-mech-showcase { width:98px; }
+@media(max-height:620px){
+.toybot-shell.toybot-menu-system .menu-commandbar{padding-top:8px}
+.toybot-shell.toybot-menu-system .toybot-home-hero{flex-basis:212px;min-height:212px;padding-top:53px;padding-bottom:31px}
+.toybot-shell.toybot-menu-system .toybot-home-mech{width:158px}
+.toybot-shell.toybot-menu-system .toybot-home-heading{top:11px}
+.toybot-shell.toybot-menu-system .toybot-home h1{font-size:26px}
+.toybot-shell.toybot-menu-system .toybot-home-subtitle{display:none}
+.toybot-shell.toybot-menu-system .toybot-mech-caption{bottom:39px;padding:5px 8px}
+.toybot-shell.toybot-menu-system .toybot-mech-caption b{font-size:12px}
+.toybot-shell.toybot-menu-system .toybot-home-dashboard{gap:7px;padding-top:9px;padding-bottom:13px;margin-bottom:10px}
+.toybot-shell.toybot-menu-system .toybot-home .toybot-home-start{min-height:53px;font-size:18px}
+.toybot-shell.toybot-menu-system .toybot-level-select button{height:43px}
+.toybot-shell.toybot-menu-system .toybot-pause-art,.toybot-shell.toybot-menu-system .menu-victory-art{height:105px}
+.toybot-shell.toybot-menu-system .toybot-pause-art .toybot-mech-showcase{width:96px}
+.toybot-shell.toybot-menu-system .menu-victory-medal{width:175px;height:97px}
 }
-@media(prefers-reduced-motion:reduce) { .toybot-shell .menu-refresh .toybot-home-mech { animation:none; } }
+@media(prefers-reduced-motion:reduce){.toybot-shell.toybot-menu-system .toybot-home-mech{animation:none}.toybot-shell.toybot-menu-system .toybot-overlay button{transition:none}}

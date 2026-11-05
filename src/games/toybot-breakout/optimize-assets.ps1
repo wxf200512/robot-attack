@@ -16,7 +16,7 @@ foreach($file in $inputs){
  $original=[Drawing.Image]::FromFile($file.FullName)
  try{
   $opaque=$file.BaseName -match '^(map-[1-5]-ai|ui-hangar|ui-menu-(hangar|victory)-|home-hangar|mech-road|story-comic-|chapter-film-)'
-  $limit=if($file.BaseName -eq 'ui-menu-medal-v14'){384}elseif($file.BaseName -match '^shield-.*-v13$'){512}elseif($file.BaseName -match '^chapter-film-'){1024}elseif($file.BaseName -eq 'story-relay-v12'){256}elseif($file.BaseName -match '^story-comic-'){1200}elseif($file.BaseName -match '^mech-.*-combat-v10$'){1536}elseif($file.BaseName -eq 'boss-cast-v10'){1584}elseif($file.BaseName -eq 'boss-objectives-v10'){1024}elseif($file.BaseName -match '^upgrade-'){160}elseif($file.BaseName -match '^home-mech-'){480}else{768}
+  $limit=if($file.BaseName -eq 'ui-menu-icons-v15'){576}elseif($file.BaseName -eq 'ui-menu-medal-v14'){384}elseif($file.BaseName -match '^shield-.*-v13$'){512}elseif($file.BaseName -match '^chapter-film-'){1024}elseif($file.BaseName -eq 'story-relay-v12'){256}elseif($file.BaseName -match '^story-comic-'){1200}elseif($file.BaseName -match '^mech-.*-combat-v10$'){1536}elseif($file.BaseName -eq 'boss-cast-v10'){1584}elseif($file.BaseName -eq 'boss-objectives-v10'){1024}elseif($file.BaseName -match '^upgrade-'){160}elseif($file.BaseName -match '^home-mech-'){480}else{768}
   $width=[Math]::Min($original.Width,$limit);$height=[int][Math]::Round($original.Height*$width/$original.Width)
   if($file.BaseName -match '^chapter-film-'){$height=[int]([Math]::Round($height/3)*3)}
   elseif($file.BaseName -match '^mech-.*-combat-v10$'){$height=576}

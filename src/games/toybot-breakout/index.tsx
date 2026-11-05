@@ -2,6 +2,7 @@ import PlayerSettingsPanel from './PlayerSettingsPanel';
 import StoryDialog from './StoryDialog';
 import CampaignStory, { StoryRadio, StoryRelay, StoryMission } from './CampaignStory';
 import DefenseVfx from './DefenseVfx';
+import MenuIcon from './MenuIcon';
 import { DEFENSE_ART } from './defenseArt';
 import { campaignReducer, createCampaign, CHAPTER_FILMS, RELAY_ART, type CampaignState } from './campaign';
 import { readStoryProgress, saveStoryProgress, finishStory, STORY_CHAPTERS } from './story';
@@ -22,7 +23,7 @@ import './menus.css';
 import { OBJECTIVE_NAMES, SPECIAL_LABELS } from './bossSkills';
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MAP_ART, BOSS_ART, BOSS_INTRO_ART, BOSS_STAGE2_ART, BOSS_DEFEAT_ART, BOSS_RUSH_ART, GATE_ART, PLAYER_ART, THREAT_ART, UI_HANGAR_ART, UI_RESULT_CRESTS, UI_MENU_ART, BLADE_SLASH_ART, ENEMY_ART, BATTLE_ART, BOSS_CAST_ART, BOSS_OBJECTIVE_ART, STORY_COVER } from './art';
+import { MAP_ART, BOSS_ART, BOSS_INTRO_ART, BOSS_STAGE2_ART, BOSS_DEFEAT_ART, BOSS_RUSH_ART, GATE_ART, PLAYER_ART, THREAT_ART, UI_HANGAR_ART, UI_RESULT_CRESTS, UI_MENU_ART, UI_MENU_ICONS, BLADE_SLASH_ART, ENEMY_ART, BATTLE_ART, BOSS_CAST_ART, BOSS_OBJECTIVE_ART } from './art';
 import { getLevel, LEVELS, hazardLaneAt, stageLabel, ENEMY_NAMES } from './level';
 import { createInitialState, formationFor, volleyCountFor, effectiveWeapon, bossPhase, bossY, gateEffectDetail, LANE_CENTERS, STEP_MS, laneXAt, targetY, bossFiring, gateGroundY, GATE_CONTACT_Y, isActiveStatus, canMove, canShoot, isBossArena, bossEnrage, BOSS_INTRO_TICKS, BOSS_SHIFT_TICKS, BOSS_VICTORY_TICKS, bossX, rushProgress, isRush, attackIntervalFor, bossAttackLabel, bossWarningTicks, enemyThreatY, playerFormation, bossGuarded, roadEnemyY, roadEnemyX, targetX as targetWorldX } from './simulation';
 import { purchaseUpgrade, readGarage, rewardParts, saveGarage, toggleUpgrade, upgradeCost, UPGRADES, moduleLevel, garageStats, previewUpgrade, equipAllUpgrades, MODULE_MAX_LEVEL, canEnterLevel, recordLevelCompletion, type Garage, type UpgradeId } from './progression';
@@ -175,7 +176,7 @@ const ToybotBreakout: React.FC = () => {
   },[game.status]);
   const warmRoadAssets=game.status==='running';
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages(Object.values(DEFENSE_ART));},[game.status]);
-  useEffect(()=>{if(game.status==='home')void preloadImages(Object.values(UI_MENU_ART));},[game.status]);
+  useEffect(()=>{if(game.status==='home')void preloadImages([...Object.values(UI_MENU_ART),UI_MENU_ICONS]);},[game.status]);
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages([CHAPTER_FILMS[game.levelIndex],RELAY_ART]);},[game.status,game.levelIndex]);
   useEffect(() => { if(warmRoadAssets)void preloadImages([ENEMY_ART]); },[warmRoadAssets]);
   const warmBossAssets=game.status==='running'&&game.progress>=65;
@@ -789,7 +790,7 @@ const ToybotBreakout: React.FC = () => {
         @media(prefers-reduced-motion:reduce){.is-player-hit .robot-player-art,.toybot-damage-vignette{animation:none}.toybot-damage-vignette{opacity:0}}
       `}</style>
 
-      <section className={'toybot-shell' + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
+      <section className={'toybot-shell toybot-menu-system' + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
         {game.status !== 'home' && <div
           className={`toybot-scene formation-${formationColumns} weapon-tier-${activeWeapon} ${displayStatus === 'running' ? 'is-moving' : displayStatus === 'battle' ? 'is-battle' : displayStatus === 'defeat' ? `is-defeat ${game.defeatReason}` : ''} ${game.status === 'paused' ? 'is-paused' : ''} ${game.invulnerableTicks > 0 ? `is-player-hit damage-${game.damageKind}` : ''} ${arena ? 'is-arena' : ''} ${displayStatus === 'boss-intro' ? 'is-boss-intro' : displayStatus === 'boss-shift' ? 'is-boss-shift' : displayStatus === 'boss-victory' ? 'is-boss-victory' : ''}`}
           tabIndex={0}
@@ -1052,31 +1053,30 @@ const ToybotBreakout: React.FC = () => {
             <img className="toybot-home-backdrop" src={UI_HANGAR_ART} decoding="async" alt="" aria-hidden="true" draggable={false} />
             {garageOpen ? <GarageWorkshop garage={garage} onUnlock={unlock} onToggle={toggleEquip} onEquipAll={() => setGarage(current => equipAllUpgrades(current))} onSelectMech={id => setGarage(current => ({ ...current, mechClass: id }))} onBack={() => setGarageOpen(false)} /> :
             <div className="toybot-home-content">
-              <div className="toybot-home-heading">
-                <div className="toybot-home-kicker">TOYBOT / BREAKOUT <span className="toybot-online">系统就绪</span></div>
-                <h1 id="toybot-home-title">玩具城突围</h1>
-                <p className="toybot-home-subtitle">黎明重启 · 带伙伴回家</p>
-              </div>
-              <div className="toybot-home-hero" aria-hidden="true">
-                <span className="menu-stage-code">HANGAR / 01</span>
-                <div className="toybot-mech-caption"><small>{mechSpec(garage.mechClass).role}</small><b>{mechSpec(garage.mechClass).name}</b></div>
+              <header className="menu-commandbar">
+                <button type="button" className="menu-square-button menu-back" onClick={() => navigate('/home')} aria-label="返回游戏列表">‹</button>
+                <div className="menu-currency"><MenuIcon name="garage"/><span><small>零件</small><b>{garage.parts.toLocaleString()}</b></span></div>
+                <div className="menu-currency menu-best"><span className="menu-cup" aria-hidden="true">★</span><span><small>最高分</small><b>{garage.bestScore.toLocaleString()}</b></span></div>
+                <button type="button" className="menu-square-button" onClick={openSettings} aria-label="声音与画面设置"><MenuIcon name="settings"/></button>
+              </header>
+              <div className="toybot-home-hero">
+                <div className="toybot-home-heading"><div className="toybot-home-kicker">TOYBOT BREAKOUT</div><h1 id="toybot-home-title">玩具城突围</h1><p className="toybot-home-subtitle">黎明重启 · 带伙伴回家</p></div>
+                <button type="button" className="menu-world-shortcut" onClick={()=>setStoryView('world')}><MenuIcon name="world"/><span>世界档案</span></button>
                 <MechShowcase mechClass={garage.mechClass} weapon={garage.equipped.weapon} armor={garage.equipped.armor} core={garage.equipped.core} className="toybot-home-mech" />
+                <div className="toybot-mech-caption"><small>{mechSpec(garage.mechClass).role} / 出击机型</small><b>{mechSpec(garage.mechClass).name}</b></div>
                 <div className="toybot-home-equipped">
-                  {garage.equipped.weapon && <span>武器已强化</span>}
-                  {garage.equipped.armor && <span>装甲已装配</span>}
-                  {garage.equipped.core && <span>动力核心 Lv.{moduleLevel(garage,'core')}</span>}
+                  <span className={garage.equipped.weapon?'is-equipped':''}>武器 <b>{garage.equipped.weapon?'Lv.'+moduleLevel(garage,'weapon'):'基础'}</b></span>
+                  <span className={garage.equipped.armor?'is-equipped':''}>装甲 <b>{garage.equipped.armor?'Lv.'+moduleLevel(garage,'armor'):'基础'}</b></span>
+                  <span className={garage.equipped.core?'is-equipped':''}>核心 <b>{garage.equipped.core?'Lv.'+moduleLevel(garage,'core'):'基础'}</b></span>
                 </div>
               </div>
               <div className="toybot-home-dashboard">
-                <div className="toybot-mission-heading"><span>作战区域 <em>0{game.levelIndex + 1} / 05</em></span><b>{LEVEL.title}</b></div>
-                <div className="toybot-level-select" role="group" aria-label="选择关卡">{LEVELS.map((level, index) => <button key={level.title} type="button" disabled={!canEnterLevel(garage,index)} title={!canEnterLevel(garage,index) ? '请先通关第 ' + index + ' 关' : garage.completedLevels[index] ? '已通关，可再次挑战' : '已解锁，可以挑战'} aria-pressed={game.levelIndex === index} aria-label={`第 ${index + 1} 关 ${level.title}`} onClick={() => dispatch({ type: 'SELECT_LEVEL', levelIndex: index, garage })}><small>{!canEnterLevel(garage,index) ? '锁定' : garage.completedLevels[index] ? '已通关' : '已解锁'}</small><b>{String(index + 1).padStart(2, '0')}</b></button>)}</div>
-                <p className="toybot-home-story-objective"><span>{STORY_CHAPTERS[game.levelIndex].title}</span>{STORY_CHAPTERS[game.levelIndex].objective}</p>
-                <button type="button" className="toybot-primary toybot-home-start" onClick={start}>{garage.tutorialCompleted ? '开始突围' : '基础训练 · 开始'} <span aria-hidden="true">›</span></button>
-                <div className="menu-home-secondary"><button type="button" className="toybot-home-garage" onClick={openGarage}><span>机库改装</span><small>{UPGRADES.filter((upgrade) => garage.equipped[upgrade.id]).length}/3 已装配</small><span aria-hidden="true">›</span></button><button type="button" className="menu-training" onClick={() => setTrainingMode('replay')}><span>训练场</span><small>重温操作</small><span aria-hidden="true">›</span></button></div>
-                <div className="toybot-home-record"><span>最高分 <b>{garage.bestScore.toLocaleString()}</b></span><span>回收零件 <b>{garage.parts}</b></span><span>胜利 <b>{garage.wins}</b></span></div>
+                <div className="toybot-mission-heading"><span className="menu-sector-number">{String(game.levelIndex+1).padStart(2,'0')}</span><div><small>主线任务 · {STORY_CHAPTERS[game.levelIndex].title}</small><b>{LEVEL.title}</b></div><span className="menu-sector-status">{garage.completedLevels[game.levelIndex]?'已通关':'待突破'}</span></div>
+                <div className="toybot-level-select" role="group" aria-label="选择关卡">{LEVELS.map((level, index) => <button key={level.title} type="button" disabled={!canEnterLevel(garage,index)} title={!canEnterLevel(garage,index) ? '请先通关第 ' + index + ' 关' : garage.completedLevels[index] ? '已通关，可再次挑战' : '已解锁，可以挑战'} aria-pressed={game.levelIndex === index} aria-label={`第 ${index + 1} 关 ${level.title}`} onClick={() => dispatch({ type: 'SELECT_LEVEL', levelIndex: index, garage })}><b>{String(index + 1).padStart(2, '0')}</b><small>{!canEnterLevel(garage,index) ? '未解锁' : garage.completedLevels[index] ? '已通关' : '可挑战'}</small></button>)}</div>
+                <p className="toybot-home-story-objective">{STORY_CHAPTERS[game.levelIndex].objective}</p>
+                <button type="button" className="toybot-primary toybot-home-start" onClick={start}><span className="menu-play" aria-hidden="true">▶</span><span>{garage.tutorialCompleted ? '开始突围' : '开始基础训练'}<small>单机甲出发 · 自动攻击</small></span><span className="menu-launch-arrow" aria-hidden="true">››</span></button>
               </div>
-              <div className="toybot-home-story-links"><button type="button" className="toybot-home-story-open" onClick={()=>setStoryView('comic')}><img src={STORY_COVER} alt="" decoding="async"/><span><b>序章漫画</b><small>{storyProgress.completed?'重看黎明重启':storyProgress.page>0?'继续黎明重启':'黎明重启'}</small></span></button><button type="button" className="toybot-home-world-open" onClick={()=>setStoryView('world')}><span className="story-world-index">05</span><span><b>世界档案</b><small>探索五区主线</small></span></button></div>
-              <div className="menu-home-footer"><button type="button" onClick={() => navigate('/home')}>返回游戏列表</button><span aria-hidden="true">TOY CITY / DAWN</span><button type="button" onClick={openSettings}>声音与画面</button></div>
+              <nav className="menu-bottom-nav" aria-label="游戏功能"><span className="is-current" aria-current="page"><MenuIcon name="battle"/><b>出击</b></span><button type="button" onClick={openGarage}><MenuIcon name="garage"/><b>机库</b></button><button type="button" onClick={()=>setStoryView('comic')}><MenuIcon name="story"/><b>剧情</b></button><button type="button" onClick={()=>setTrainingMode('replay')}><MenuIcon name="training"/><b>训练</b></button></nav>
             </div>}
           </div>
         )}
@@ -1113,7 +1113,7 @@ const ToybotBreakout: React.FC = () => {
               <div className="toybot-debrief-score"><span>本次作战得分</span><strong>{game.score.toLocaleString()}</strong><small>历史最佳 {garage.bestScore.toLocaleString()}</small></div>
               <div className="toybot-debrief-rewards"><div><small>回收零件</small><b>◈ +{earnedParts}</b></div><div><small>当前库存</small><b>{garage.parts}</b></div><div><small>{game.won ? '归队机甲' : '关卡进度'}</small><b>{game.won ? game.bots + ' 台' : Math.floor(game.progress) + '%'}</b></div></div>
               {!game.won && <p className="toybot-debrief-tip"><span>战术建议</span>{game.defeatReason === 'boss-wipe' ? ['熔岩消退后再回到原轨道。','先击落蜂群，再追击蜂后。','打穿重盾，抓住恢复窗口。','每段风暴都会重新预警，注意连续换道。','交叉炮会改变安全缺口，跟随新预警移动。'][game.levelIndex] : '提前击毁蓄力中的敌人，保留生命迎战首领。'}</p>}
-              <div className={'toybot-debrief-actions' + (game.won && game.levelIndex === LEVELS.length - 1 ? ' is-final' : '')}>
+              <div className={'toybot-debrief-actions' + (!game.won || game.levelIndex === LEVELS.length - 1 ? ' is-single-route' : '')}>
                 {game.won && game.levelIndex < LEVELS.length - 1 && <button type="button" className="toybot-primary" onClick={() => { setEarnedParts(0); dispatch({ type: 'NEXT_LEVEL', garage }); }}>前往第 {game.levelIndex + 2} 关 <span aria-hidden="true">›</span></button>}
                 <button type="button" className={game.won && game.levelIndex < LEVELS.length - 1 ? 'toybot-secondary' : 'toybot-primary'} onClick={restart}>{game.won ? '再次挑战本关' : '重新出击'}<span aria-hidden="true">↗</span></button>
                 <button type="button" className="toybot-result-garage" onClick={openGarage}>机库整备 <span aria-hidden="true">›</span></button>

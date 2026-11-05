@@ -1,0 +1,12 @@
+{
+  "version": 15,
+  "generator": "built-in image_gen",
+  "prompt": "Use case: stylized-concept. Asset type: transparent mobile toy-mecha game navigation icon atlas. Produce a STRICT grid of SIX separate icons, exactly 3 columns by 2 rows, 1536x1024 image, each square cell exactly512x512. Each icon is centered inside its cell with 20 percent padding and never crossing cell boundaries. Row1 left: a friendly ivory navy cyan toy robot head front facing (battle); row1 middle: two crossed chunky orange and ivory mechanic spanners (hangar); row1 right: a teal and gold circular archery target with one small arrow (training). Row2 left: an open navy hardback story book with luminous cyan pages and a gold bookmark (story); row2 middle: a folded pale-blue holographic city map with a cyan location pin (world archive); row2 right: a chunky silver and navy mechanical cog with cyan reactor center (settings). Unifying style: polished stylized 3D casual mobile-game item icons, clean thick silhouettes, beveled enamel, warm ivory surfaces, navy shadows, small golden yellow and cyan accents, no busy micro-details, strong readable forms at 28px. Straight-on slight 3D isometric product icon view, consistent lighting from upper left. TRUE transparent background throughout including spaces between icons. No individual tile backgrounds, no frames, no shadows outside each object silhouette, no grid lines, no text, no letters, no numbers, no labels, no logos, no watermark. Separate icons, not a UI screenshot.",
+  "source": "art-source/ui-menu-icons-v15.png",
+  "runtime": "public/games/toybot-breakout/optimized/ui-menu-icons-v15.png",
+  "layout": "3 columns x 2 rows: battle, garage, training / story, world, settings",
+  "runtimeSize": [
+    576,
+    384
+  ]
+}

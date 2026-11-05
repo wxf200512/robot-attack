@@ -1,5 +1,5 @@
 import { mechSpec, normalizeMechClass, type MechClass } from './mechs';
-import { bossLaneAt, getLevel, hazardLaneAt, LEVELS } from './level';
+import { bossLaneAt, getLevel, hazardLaneAt, LEVELS, type EnemyKind } from './level';
 import { garageStats, garageInterval, normalizeGarage, canEnterLevel, recordLevelCompletion, type Garage } from './progression';
 export const LANE_CENTERS = [27, 50, 73];
 export const STEP_MS = 100;
@@ -32,7 +32,8 @@ export type ShotOrigin = { index: number; x: number; y: number };
 type Target = 'hazard' | 'boss' | 'threat';
 export type BossThreat = { id: number; kind: 'shell' | 'barrier' | 'minion' | 'lava' | 'beam'; lingerTicks?: number; lane: number; ticks: number; duration: number; hp: number; maxHp: number; damage: number; fromLane: number; originY?: number };
 export type PendingShot = { attackStyle?: MechClass; id: number; ticks: number; duration: number; target: Target | null; targetIndex: number; damage: number; count: number; origins: ShotOrigin[]; weaponLevel: number; lane: number; y: number; charged: boolean; pierce: number; muzzle: boolean };
-export type EnemyAttack = { id: number; source: 'hazard' | 'threat'; sourceId: number; kind: 'drone-burst' | 'shockwave' | 'pounce'; lane: number; fromLane: number; fromY: number; phase: 'warning' | 'flight'; ticks: number; duration: number; damage: number; shotsRemaining: number };
+export type EnemyAttack = { id: number; source: 'hazard' | 'threat'; sourceId: number; kind: 'drone-burst' | 'shockwave' | 'pounce' | 'sniper-shot' | 'bombard' | 'charge'; lane: number; fromLane: number; fromY: number; fromX?: number; phase: 'warning' | 'flight'; ticks: number; duration: number; damage: number; shotsRemaining: number };
+export type KillEffect = { id: number; kind: EnemyKind; lane: number; x: number; y: number; ticks: number; combo: number };
 type Burn = { target: Target; index: number; lane: number; ticks: number; damage: number };
 export type GameState = {
   mechClass: MechClass;
@@ -54,9 +55,11 @@ export type GameState = {
   enemyAttacks: EnemyAttack[]; enemyAttackSources: string[]; enemyAttackSequence: number;
   defeatReason: 'boss-wipe' | 'squad-wipe' | null; defeatTicks: number;
   fireCooldown: number; shotSequence: number; pendingShots: PendingShot[]; burns: Burn[];
-  impactSequence: number; impactDamage: number; impactWeaponLevel: number; impactTarget: Target | null; impactLane: number; impactY: number;
+  impactSequence: number; impactDamage: number; impactWeaponLevel: number; impactTarget: Target | null; impactLane: number; impactY: number; impactX: number;
   damageSequence: number; damageLoss: number; damageLane: number; toast: string; won: boolean;
   damageKind: 'health' | 'shield' | 'armor' | 'squad'; damageAbsorbed: number;
+  kills: number; combo: number; bestCombo: number; comboTicks: number; killSequence: number; killEffects: KillEffect[];
+  roadTicks: number; medicPulses: number[];
 };
 export type Action = { type: 'TICK' | 'PAUSE' | 'RESUME' | 'CLEAR_TOAST' } | { type: 'MOVE_LANE'; lane: number }
   | { type: 'START' | 'RESTART' | 'HOME' | 'NEXT_LEVEL'; garage: Garage }
@@ -161,9 +164,10 @@ export const createInitialState = (garage: Garage, levelIndex = 0, layoutIndex =
     bossAttack: 'cannon', bossRushHit: false, bossWave: 0,
     bossMoveFromLane: bossLaneAt(layoutIndex, 0, levelIndex), bossMoveTicks: 0, bossRandomSeed: Math.floor(Math.random() * 4294967296) >>> 0,
     defeatReason: null, defeatTicks: 0, fireCooldown: 0, shotSequence: 0, pendingShots: [], burns: [],
-    impactSequence: 0, impactDamage: 0, impactWeaponLevel: 0, impactTarget: null, impactLane: 1, impactY: 48,
+    impactSequence: 0, impactDamage: 0, impactWeaponLevel: 0, impactTarget: null, impactLane: 1, impactY: 48, impactX: 50,
     damageSequence: 0, damageLoss: 0, damageLane: 1, toast: '', won: false,
     damageKind: 'health', damageAbsorbed: 0,
+    kills: 0, combo: 0, bestCombo: 0, comboTicks: 0, killSequence: 0, killEffects: [], roadTicks: 0, medicPulses: [],
   };
 };
 export const applyGateEffect = (state: GameState, option: GateOption): GameState => {
@@ -202,9 +206,21 @@ const syncHazard = (s: GameState) => {
   s.hazard = index < 0 ? level.hazards.length : index;
   s.hazardHp = s.hazardHps[s.hazard] ?? 0; s.hazardMaxHp = level.hazards[s.hazard]?.hp ?? 0;
 };
-const fail = (s: GameState, reason: GameState['defeatReason']): GameState => ({ ...s, status: 'defeat', playerHp: 0, bots: 0, defeatReason: reason ?? 'squad-wipe', defeatTicks: 0, won: false, pendingShots: [], burns: [], threats: [], enemyAttacks: [] });
+const fail = (s: GameState, reason: GameState['defeatReason']): GameState => ({ ...s, status: 'defeat', playerHp: 0, bots: 0, defeatReason: reason ?? 'squad-wipe', defeatTicks: 0, won: false, pendingShots: [], burns: [], threats: [], enemyAttacks: [], killEffects: [] });
 const targetLane = (s: GameState, target: Target, index: number) => target === 'boss' ? s.battleLane : target === 'threat' ? s.threats.find(t => t.id === index)?.lane ?? -1 : hazardLaneAt(s.layoutIndex, index, s.progress, s.levelIndex);
-export const targetY = (s: GameState, target: Target, index: number) => target === 'boss' ? bossY(s) : target === 'threat' ? enemyThreatY(s, s.threats.find(t => t.id === index) ?? { ticks: 0, duration: 1 } as BossThreat) : hazardY(s.progress, getLevel(s.levelIndex).hazards[index].progress);
+export const roadEnemyY = (s: GameState, index: number) => {
+  const dash = s.enemyAttacks.find(a => a.source === 'hazard' && a.sourceId === index && a.kind === 'charge' && a.phase === 'flight');
+  const h = getLevel(s.levelIndex).hazards[index];
+  const offset = h.kind === 'swarm' ? Math.floor((h.slot ?? 0) / 2) * 3 : h.kind === 'sniper' ? 2 : h.kind === 'bomber' ? 4 : h.kind === 'medic' ? 7 : 0;
+  const y = hazardY(s.progress, h.progress) - offset * Math.min(1, Math.max(0, (h.progress - s.progress) / 6));
+  return dash ? dash.fromY + (59 - dash.fromY) * (1 - dash.ticks / dash.duration) : h.kind ? Math.max(ROAD_HORIZON[s.levelIndex] + 3, y) : y;
+};
+export const roadEnemyX = (s: GameState, index: number) => {
+  const h = getLevel(s.levelIndex).hazards[index], offset = h.kind === 'swarm' ? ((h.slot ?? 0) % 2 ? 3.8 : -3.8) : h.kind === 'bomber' ? -2 : h.kind === 'medic' ? 2 : 0;
+  return laneXAt(targetLane(s, 'hazard', index), roadEnemyY(s, index)) + offset;
+};
+export const targetY = (s: GameState, target: Target, index: number) => target === 'boss' ? bossY(s) : target === 'threat' ? enemyThreatY(s, s.threats.find(t => t.id === index) ?? { ticks: 0, duration: 1 } as BossThreat) : roadEnemyY(s, index);
+export const targetX = (s: GameState, target: Target, index: number) => target === 'hazard' ? roadEnemyX(s, index) : laneXAt(targetLane(s, target, index), targetY(s, target, index));
 const targetAlive = (s: GameState, target: Target, index: number) => target === 'boss' ? s.encounter === index && s.battleHp > 0 : target === 'threat' ? (s.threats.find(t => t.id === index)?.hp ?? 0) > 0 : (s.hazardHps[index] ?? 0) > 0;
 const laneMatches = (s: GameState, target: Target, index: number, lane: number) => target === 'boss' ? bossDamageLanes(s).includes(lane) : targetLane(s, target, index) === lane;
 const targetsInLane = (s: GameState, lane: number) => {
@@ -212,7 +228,7 @@ const targetsInLane = (s: GameState, lane: number) => {
   const targets: { target: Target; index: number; y: number; progress: number }[] = [];
   if (s.status === 'running') level.hazards.forEach((h, index) => {
     if (s.hazardHps[index] > 0 && s.progress >= h.progress - 14 && s.progress < h.progress && targetLane(s, 'hazard', index) === lane)
-      targets.push({ target: 'hazard', index, y: hazardY(s.progress, h.progress), progress: 200 - hazardY(s.progress, h.progress) });
+      targets.push({ target: 'hazard', index, y: roadEnemyY(s, index), progress: 200 - roadEnemyY(s, index) });
   });
   s.threats.forEach(threat => {
     if (threat.hp > 0 && threat.lane === lane) targets.push({ target: 'threat', index: threat.id, y: enemyThreatY(s, threat), progress: 200 - enemyThreatY(s, threat) });
@@ -231,8 +247,21 @@ const damageTarget = (s: GameState, target: Target, index: number, raw: number, 
   const hp = target === 'hazard' ? s.hazardHps[index] : threat ? threat.hp : s.battleHp;
   const damage = Math.min(hp, Number(Math.max(1, Math.round(raw * multiplier / s.garageDamageScale) * s.garageDamageScale - armor).toFixed(2)));
   if (target === 'hazard') s.hazardHps[index] = Number((hp - damage).toFixed(2)); else if (threat) threat.hp = Number((hp - damage).toFixed(2)); else s.battleHp = Number((hp - damage).toFixed(2));
-  s.impactSequence++; s.impactDamage = damage; s.impactWeaponLevel = tier; s.impactTarget = target; s.impactLane = lane; s.impactY = targetY(s, target, index);
-  if (target === 'hazard' && s.hazardHps[index] === 0) s.score += 45;
+  s.impactSequence++; s.impactDamage = damage; s.impactWeaponLevel = tier; s.impactTarget = target; s.impactLane = lane; s.impactY = targetY(s, target, index); s.impactX = targetX(s, target, index);
+  if (target === 'hazard' && s.hazardHps[index] === 0) {
+    const h = level.hazards[index], kind = h.kind ?? 'drone';
+    s.kills++; s.combo = s.comboTicks > 0 ? s.combo + 1 : 1; s.comboTicks = 25; s.bestCombo = Math.max(s.bestCombo, s.combo);
+    const points = kind === 'swarm' ? 15 : kind === 'medic' ? 60 : kind === 'drone' ? 45 : 55;
+    s.score += Math.round(points * (1 + Math.min(3, Math.floor(s.combo / 3)) * .25));
+    if (s.combo % 3 === 0) s.playerHp = Math.min(s.playerMaxHp, s.playerHp + 2);
+    s.killEffects = [...s.killEffects, { id: ++s.killSequence, kind, lane, x: roadEnemyX(s, index), y: roadEnemyY(s, index), ticks: 7, combo: s.combo }].slice(-10);
+    // The target is already dead before this cascade. Explosions only affect
+    // nearby targets in its own lane, so chains cannot jump across the road.
+    if (kind === 'bomber') level.hazards.forEach((other, i) => {
+      if (i !== index && s.hazardHps[i] > 0 && s.progress >= other.progress - 14 && s.progress < other.progress && Math.abs(other.progress - h.progress) <= 6 && targetLane(s, 'hazard', i) === lane)
+        damageTarget(s, 'hazard', i, 6 + tier * 2, tier, lane);
+    });
+  }
   if (threat && threat.hp === 0) { s.score += threat.kind === 'minion' ? 20 : 15; s.playerHp = Math.min(s.playerMaxHp, s.playerHp + 2); }
   if (target === 'boss' && s.battleHp === 0) {
     s.score += level.encounters[index].reward; s.bossDefeated = true; s.status = 'boss-victory'; s.bossPhaseTicks = 0;
@@ -280,23 +309,26 @@ const relocateBoss = (s: GameState) => {
   s.bossMoveTicks = BOSS_MOVE_TICKS;
 };
 const sourceAlive = (s: GameState, a: EnemyAttack) => a.source === 'hazard' ? (s.hazardHps[a.sourceId] ?? 0) > 0 : (s.threats.find(t => t.id === a.sourceId)?.hp ?? 0) > 0;
-const queueEnemyAttack = (s: GameState, source: EnemyAttack['source'], sourceId: number, kind: EnemyAttack['kind'], lane: number, fromLane: number, fromY: number) => {
+const queueEnemyAttack = (s: GameState, source: EnemyAttack['source'], sourceId: number, kind: EnemyAttack['kind'], lane: number, fromLane: number, fromY: number, lanes = [lane]) => {
   const key = source + ':' + sourceId; if (s.enemyAttackSources.includes(key)) return;
   s.enemyAttackSources.push(key);
-  s.enemyAttacks.push({ id: ++s.enemyAttackSequence, source, sourceId, kind, lane, fromLane, fromY, phase: 'warning', ticks: 12, duration: 12, damage: kind === 'drone-burst' ? 7 : kind === 'shockwave' ? 12 : 14, shotsRemaining: kind === 'drone-burst' ? 2 : 1 });
+  const warning = kind === 'sniper-shot' || kind === 'bombard' ? 18 : kind === 'charge' ? 10 : 12;
+  const damage = kind === 'sniper-shot' ? 13 : kind === 'bombard' ? 12 : kind === 'charge' ? 8 : kind === 'drone-burst' ? 7 : kind === 'shockwave' ? 12 : 14;
+  lanes.forEach(targetLane => s.enemyAttacks.push({ id: ++s.enemyAttackSequence, source, sourceId, kind, lane: targetLane, fromLane, fromY, fromX: source === 'hazard' ? roadEnemyX(s, sourceId) : laneXAt(fromLane, fromY), phase: 'warning', ticks: warning, duration: warning, damage, shotsRemaining: kind === 'drone-burst' ? 2 : 1 }));
 };
 const advanceEnemyAttacks = (s: GameState) => {
   s.enemyAttacks = s.enemyAttacks.filter(a => {
-    if (!sourceAlive(s, a) && (a.phase === 'warning' || a.kind !== 'drone-burst')) return false;
+    if (!sourceAlive(s, a) && (a.phase === 'warning' || !['drone-burst', 'sniper-shot', 'bombard'].includes(a.kind))) return false;
     if (--a.ticks > 0) return true;
     if (a.phase === 'warning') {
-      if (a.source === 'hazard') { const h = getLevel(s.levelIndex).hazards[a.sourceId]; a.fromY = hazardY(s.progress, h.progress); a.fromLane = hazardLaneAt(s.layoutIndex, a.sourceId, s.progress, s.levelIndex); }
-      else { const t = s.threats.find(t => t.id === a.sourceId); if (t) { a.fromY = threatY(t); a.fromLane = t.lane; } }
-      a.phase = 'flight'; a.duration = a.kind === 'drone-burst' ? 8 : 6; a.ticks = a.duration; return true; }
+      if (a.source === 'hazard') { a.fromY = roadEnemyY(s, a.sourceId); a.fromLane = hazardLaneAt(s.layoutIndex, a.sourceId, s.progress, s.levelIndex); a.fromX = roadEnemyX(s, a.sourceId); }
+      else { const t = s.threats.find(t => t.id === a.sourceId); if (t) { a.fromY = threatY(t); a.fromLane = t.lane; a.fromX = laneXAt(t.lane, a.fromY); } }
+      a.phase = 'flight'; a.duration = a.kind === 'bombard' ? 12 : a.kind === 'drone-burst' ? 8 : 6; a.ticks = a.duration; return true; }
     if (s.lane === a.lane) applySquadHit(s, a.damage);
     if (a.kind === 'pounce') { const bot = s.threats.find(t => t.id === a.sourceId); if (bot) bot.hp = 0; }
+    if (a.kind === 'charge') s.hazardHps[a.sourceId] = -1;
     if (--a.shotsRemaining > 0 && sourceAlive(s, a)) {
-      if (a.source === 'hazard') { const h = getLevel(s.levelIndex).hazards[a.sourceId]; a.fromY = hazardY(s.progress, h.progress); a.fromLane = hazardLaneAt(s.layoutIndex, a.sourceId, s.progress, s.levelIndex); }
+      if (a.source === 'hazard') { a.fromY = roadEnemyY(s, a.sourceId); a.fromLane = hazardLaneAt(s.layoutIndex, a.sourceId, s.progress, s.levelIndex); a.fromX = roadEnemyX(s, a.sourceId); }
       a.ticks = a.duration = 6; return true;
     }
     return false;
@@ -305,6 +337,37 @@ const advanceEnemyAttacks = (s: GameState) => {
 export const enemyThreatY = (s: GameState, threat: BossThreat) => {
   const dash = s.enemyAttacks.find(a => a.source === 'threat' && a.sourceId === threat.id && a.kind === 'pounce' && a.phase === 'flight');
   return dash ? dash.fromY + (59 - dash.fromY) * (1 - dash.ticks / dash.duration) : threatY(threat);
+};
+const advanceRoadEnemies = (s: GameState) => {
+  const level = getLevel(s.levelIndex); s.roadTicks++; s.medicPulses = [];
+  const visible = level.hazards.flatMap((h, i) => s.hazardHps[i] > 0 && s.progress >= h.progress - 14 && s.progress < h.progress ? [i] : []);
+  if (s.roadTicks % 14 === 0) visible.filter(i => level.hazards[i].kind === 'medic').forEach(i => {
+    const lane = targetLane(s, 'hazard', i), mark = level.hazards[i].progress;
+    const ally = visible.filter(j => j !== i && targetLane(s, 'hazard', j) === lane && Math.abs(level.hazards[j].progress - mark) <= 6 && s.hazardHps[j] < level.hazards[j].hp)
+      .sort((a, b) => s.hazardHps[a] / level.hazards[a].hp - s.hazardHps[b] / level.hazards[b].hp)[0];
+    if (ally !== undefined) { s.hazardHps[ally] = Math.min(level.hazards[ally].hp, s.hazardHps[ally] + 2); s.medicPulses.push(i); }
+  });
+  // Limit road pressure to two lanes, including imminent body collisions. Each
+  // source attacks once; queueing never retargets a warning already on screen.
+  const busy = new Set(s.enemyAttacks.map(a => a.lane));
+  // A salvo lasts at most three seconds. Reserve space for bodies that can
+  // arrive during that same window, including a patrol's impending lane shift.
+  visible.filter(i => level.hazards[i].progress - s.progress < 7).forEach(i => busy.add(hazardLaneAt(s.layoutIndex, i, level.hazards[i].progress, s.levelIndex)));
+  const gate = s.gateChoices[s.gate]?.[0], mark = level.gateMarks[s.gate];
+  const protectedLane = gate?.polarity === 'reward' && !s.gateResolved && Math.abs(mark - s.progress) < 7 ? gate.lane : -1;
+  if (s.enemyAttacks.length >= 2) return;
+  // Keep the original patrol priority; later specialists fill gaps between salvos.
+  for (const i of visible) {
+    const h = level.hazards[i], kind = h.kind ?? 'drone';
+    const until = h.progress - s.progress;
+    if (kind === 'medic' || s.enemyAttackSources.includes('hazard:' + i) || until > (kind === 'swarm' ? 5 : 10) || until <= 4) continue;
+    const ownLane = targetLane(s, 'hazard', i);
+    const attack: EnemyAttack['kind'] = kind === 'swarm' ? 'charge' : kind === 'sniper' ? 'sniper-shot' : kind === 'bomber' ? 'bombard' : 'drone-burst';
+    const lanes = kind === 'bomber' ? [ownLane, (ownLane + 1) % 3] : [kind === 'swarm' ? ownLane : s.lane];
+    if (lanes.includes(protectedLane) || new Set([...busy, ...lanes]).size > 2 || s.enemyAttacks.length + lanes.length > 2) continue;
+    queueEnemyAttack(s, 'hazard', i, attack, lanes[0], ownLane, roadEnemyY(s, i), lanes);
+    break;
+  }
 };
 const advanceBoss = (s: GameState): GameState => {
   s.battleTime++;
@@ -388,6 +451,7 @@ const enterArena = (s: GameState) => {
   s.status = 'boss-intro'; s.battleTime = 0; s.bossPhaseTicks = 0; s.bossMoveTicks = 0;
   s.battleMaxHp = bossHealthFor(s); s.battleHp = s.battleMaxHp;
   s.hazardHps = s.hazardHps.map(() => -1); s.gate = getLevel(s.levelIndex).gateMarks.length;
+  s.killEffects = []; s.combo = 0; s.comboTicks = 0; s.medicPulses = [];
   s.gateResolved = false; s.gateCollected = false; s.enemyAttackSources = []; s.pendingShots = []; s.burns = []; s.threats = []; s.enemyAttacks = []; s.bossAttackLanes = [];
 };
 
@@ -427,7 +491,8 @@ export function gameReducer(state: GameState, action: Action): GameState {
   if (!canMove(state.status)) return state;
   if (state.bots <= 0 || state.playerHp <= 0) return fail(state, isBossArena(state) ? 'boss-wipe' : null);
   const level = getLevel(state.levelIndex);
-  const s: GameState = { ...state, pendingShots: [], hazardHps: [...state.hazardHps], threats: state.threats.map(t => ({ ...t })), enemyAttacks: state.enemyAttacks.map(a => ({ ...a })), enemyAttackSources: [...state.enemyAttackSources], burns: [], visitedZones: [...state.visitedZones], bossAttackLanes: [...state.bossAttackLanes], laneMoveTicks: Math.max(0, state.laneMoveTicks - 1), bossMoveTicks: Math.max(0, state.bossMoveTicks - Number(canShoot(state.status))), invulnerableTicks: Math.max(0, state.invulnerableTicks - Number(canShoot(state.status))), overloadTicks: Math.max(0, state.overloadTicks - Number(canShoot(state.status))), jamTicks: Math.max(0, state.jamTicks - Number(canShoot(state.status))) };
+  const s: GameState = { ...state, killEffects: state.killEffects.filter(e => e.ticks > 1).map(e => ({ ...e, ticks: e.ticks - 1 })), comboTicks: Math.max(0, state.comboTicks - 1), medicPulses: [], pendingShots: [], hazardHps: [...state.hazardHps], threats: state.threats.map(t => ({ ...t })), enemyAttacks: state.enemyAttacks.map(a => ({ ...a })), enemyAttackSources: [...state.enemyAttackSources], burns: [], visitedZones: [...state.visitedZones], bossAttackLanes: [...state.bossAttackLanes], laneMoveTicks: Math.max(0, state.laneMoveTicks - 1), bossMoveTicks: Math.max(0, state.bossMoveTicks - Number(canShoot(state.status))), invulnerableTicks: Math.max(0, state.invulnerableTicks - Number(canShoot(state.status))), overloadTicks: Math.max(0, state.overloadTicks - Number(canShoot(state.status))), jamTicks: Math.max(0, state.jamTicks - Number(canShoot(state.status))) };
+  if (s.comboTicks === 0) s.combo = 0;
   for (const burn of state.burns) {
     if (!targetAlive(s, burn.target, burn.index) || !laneMatches(s, burn.target, burn.index, burn.lane)) continue;
     if (burn.ticks % 5 === 0) damageTarget(s, burn.target, burn.index, burn.damage, 3, burn.lane);
@@ -500,10 +565,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
       s.hazardHps[index] = -1;
     });
     if (s.bots <= 0) return fail(s, null);
-    if (s.enemyAttacks.length === 0) {
-      const index = level.hazards.findIndex((h, i) => s.hazardHps[i] > 0 && s.progress >= h.progress - 10 && s.progress < h.progress - 4 && !s.enemyAttackSources.includes('hazard:' + i));
-      if (index >= 0) queueEnemyAttack(s, 'hazard', index, 'drone-burst', s.lane, hazardLaneAt(s.layoutIndex, index, s.progress, s.levelIndex), hazardY(s.progress, level.hazards[index].progress));
-    }
+    advanceRoadEnemies(s);
     const boss = level.encounters[s.encounter];
     if (boss && s.progress >= boss.progress) { s.progress = boss.progress; enterArena(s); }
     if (s.progress >= 100) { s.status = 'result'; s.won = s.bots > 0 && s.bossDefeated; s.score += s.won ? s.bots * 20 + 100 : 0; s.pendingShots = []; s.burns = []; s.threats = []; s.enemyAttacks = []; }

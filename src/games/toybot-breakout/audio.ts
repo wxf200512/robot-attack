@@ -12,6 +12,7 @@ export function gameSoundEvents(previous:GameState,current:GameState):AudioCue[]
  }
  if(current.damageSequence>previous.damageSequence)cues.push(current.damageKind==='shield'||current.damageKind==='armor'?'shield':'damage');
  if(current.gateCollected&&!previous.gateCollected)cues.push('gate');
+ if(current.status==='running'&&current.enemyAttackSequence>previous.enemyAttackSequence)cues.push('warning');
  if(current.status==='battle'&&current.bossStep==='warning'&&(previous.status!=='battle'||previous.bossStep!=='warning'||previous.bossWave!==current.bossWave))cues.push('warning');
  if(current.status==='boss-victory'&&previous.status!=='boss-victory')cues.push('victory');
  if(current.status==='defeat'&&previous.status!=='defeat')cues.push('defeat');

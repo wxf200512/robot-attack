@@ -8,9 +8,11 @@ const garage=progression.normalizeGarage({mechClass:'pulse',parts:16,runs:5,wins
 global.window={localStorage:{getItem:key=>key.includes('settings')?JSON.stringify({muted:true,volume:.45,quality:'high'}):key.includes('garage')?JSON.stringify(garage):null,setItem(){throw Error('Static fixtures must not save');}},matchMedia:()=>({matches:false})};
 const defeat=process.argv.includes('--defeat');
 preview={...sim.createInitialState(garage,0,0),status:'result',won:!defeat,bossDefeated:!defeat,progress:defeat?93:100,bots:defeat?0:6,playerHp:defeat?0:110,score:1280,battleHp:0,battleMaxHp:1400};
+const encounter=process.argv.includes('--encounter');
+if(encounter){preview={...sim.createInitialState(garage,4,0),status:'running',progress:46,gate:4,bots:5,combo:6,comboTicks:20,kills:16};}
 const App=load('index.tsx').default;
 const css=fs.readdirSync(path.resolve(__dirname,'../../../dist/assets')).find(n=>/^main-.*\.css$/.test(n));
 if(!css)throw Error('Run npm run build first');
 const html='<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>胜利页 · 只读布局验收</title><link rel="stylesheet" href="/dist/assets/'+css+'"></head><body>'+renderToStaticMarkup(React.createElement(MemoryRouter,null,React.createElement(App)))+'</body></html>';
-const output=defeat?'defeat-review.html':'victory-review.html';
+const output=encounter?'encounter-review.html':defeat?'defeat-review.html':'victory-review.html';
 fs.writeFileSync(path.join(__dirname,output),html.replace(/<style>([\s\S]*?)<\/style>/g,(_,css)=>'<style>'+css.replaceAll('&#x27;',String.fromCharCode(39)).replaceAll('&quot;',String.fromCharCode(34)).replaceAll('&amp;','&').replaceAll('&lt;','<').replaceAll('&gt;','>')+'</style>'));console.log('Generated read-only '+output+' from actual component');

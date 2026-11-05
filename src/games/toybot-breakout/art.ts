@@ -8,6 +8,7 @@ export const BOSS_RUSH_ART = `${ROOT}boss-rush-ai-v5.png`;
 export const GATE_ART = `${ROOT}gate-3d-ai-v2.png`;
 export const PLAYER_ART = `${ROOT}player-evolution-ai-v2.png`;
 export const THREAT_ART = `${ROOT}boss-threats-ai-v2.png`;
+export const ENEMY_ART = `${ROOT}enemy-roster-ai-v9.png`;
 export const BOSS_NAMES = ['铸炉监工', '苍穹蜂后', '赤铁堡垒', '风暴先知', '星核帝皇'];
 
 export const UI_HANGAR_ART = ROOT + 'ui-hangar-ai-v6.jpg';

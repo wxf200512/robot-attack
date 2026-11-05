@@ -1,0 +1,26 @@
+/* Four original AI sprites, not recolors of the patrol drone. */
+.toybot-shell .toybot-hazard:not(.enemy-kind-drone) .toybot-drone-sprite{background-image:url('/games/toybot-breakout/optimized/enemy-roster-ai-v9.png');background-size:200% 200%;aspect-ratio:1;animation:none;filter:drop-shadow(0 3px 3px #07152388)}
+.toybot-shell .enemy-kind-swarm .toybot-drone-sprite{width:42px;background-position:0 0}
+.toybot-shell .enemy-kind-swarm .toybot-hazard-hp{width:28px;height:3px}
+.toybot-shell .enemy-kind-sniper .toybot-drone-sprite{width:72px;background-position:100% 0}
+.toybot-shell .enemy-kind-bomber .toybot-drone-sprite{width:80px;background-position:0 100%}
+.toybot-shell .enemy-kind-medic .toybot-drone-sprite{width:64px;background-position:100% 100%}
+.toybot-shell .toybot-enemy-role{position:absolute;top:-14px;padding:1px 5px;background:#102131df;font-size:8px;font-weight:600;letter-spacing:1px;border:1px solid #a3c2cc44;border-radius:3px;color:#cfedf1}
+.toybot-shell .enemy-kind-sniper .toybot-enemy-role{color:#efc1ff}
+.toybot-shell .enemy-kind-bomber .toybot-enemy-role{color:#ffbf83}
+.toybot-shell .enemy-kind-medic .toybot-enemy-role{color:#a0f5c1}
+.toybot-shell .toybot-medic-pulse{position:absolute;inset:0;display:grid;place-items:center;color:#b9ffdd;font-size:16px;text-shadow:0 0 8px #55ffaf;pointer-events:none}
+.toybot-shell .is-repairing .toybot-medic-pulse{border:1px solid #9affe0;border-radius:50%;background:#64ffab33;box-shadow:0 0 15px #6affae}
+.toybot-shell .attack-sniper-shot{height:19%;top:43%;border-radius:3px;border-color:#e794ff;background:linear-gradient(90deg,transparent,#c97fff22,transparent)}
+.toybot-shell .attack-bombard{height:13%;top:50%;border-radius:8px;border-color:#ffad62;background:repeating-linear-gradient(135deg,#ff9a5222 0 6px,transparent 6px 12px)}
+.toybot-shell .attack-charge{height:13%;top:50%;border-radius:5px;border-color:#f3bd69;background:linear-gradient(transparent,#ffbc5525)}
+.toybot-shell .bolt-sniper-shot{width:14px;height:42px;filter:hue-rotate(90deg) drop-shadow(0 0 7px #e28cff)}
+.toybot-shell .bolt-bombard{width:33px;height:36px;filter:hue-rotate(185deg) drop-shadow(0 0 8px #ffae66)}
+.toybot-shell .toybot-enemy-break{position:absolute;pointer-events:none;width:1px;height:1px}
+.toybot-shell .toybot-enemy-break span{position:absolute;width:64px;height:64px;translate:-50% -50%;background:url('/games/toybot-breakout/optimized/plasma-impact.png') center/contain no-repeat;scale:calc(.55 + var(--break-progress)*.8);opacity:calc(1 - var(--break-progress));filter:hue-rotate(190deg)}
+.toybot-shell .toybot-enemy-break.kind-bomber span{width:100px;height:100px;filter:hue-rotate(160deg) brightness(1.3)}
+.toybot-shell .toybot-enemy-break b{position:absolute;white-space:nowrap;left:0;top:-28px;translate:-50% calc(var(--break-progress)*-18px);opacity:calc(1 - var(--break-progress));font-size:10px;font-weight:700;color:#e1f9ff;text-shadow:0 1px 4px #071e2c}
+.toybot-shell .toybot-combo{position:absolute;z-index:1200;right:5%;top:25%;display:grid;gap:3px;min-width:88px;pointer-events:none;color:#c8f8ff;text-shadow:0 1px 5px #061929}
+.toybot-shell .toybot-combo b{font-size:26px;line-height:1;font-variant-numeric:tabular-nums}.toybot-shell .toybot-combo small{font-size:11px}.toybot-shell .toybot-combo span{font-size:8px;color:#9dbdcd}.toybot-shell .toybot-combo i{height:2px;background:#88f3f9;transform-origin:left}
+.toybot-page.quality-low .toybot-enemy-break span{filter:none}
+@media(prefers-reduced-motion:reduce){.toybot-shell .toybot-enemy-break span{scale:1}.toybot-shell .toybot-enemy-break b{translate:-50% 0}}

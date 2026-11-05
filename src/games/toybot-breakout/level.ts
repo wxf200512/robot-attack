@@ -1,4 +1,6 @@
-export type HazardSpec = { progress: number; hp: number; lane: number; armor?: number; moving?: boolean };
+export type EnemyKind = 'drone' | 'swarm' | 'sniper' | 'bomber' | 'medic';
+export const ENEMY_NAMES: Record<EnemyKind, string> = { drone: '巡逻机', swarm: '突击蜂', sniper: '狙击哨', bomber: '轰炸机', medic: '维修机' };
+export type HazardSpec = { progress: number; hp: number; lane: number; armor?: number; moving?: boolean; kind?: EnemyKind; wave?: number; slot?: number };
 export type LevelSpec = {
   title: string; focus: string; gateMarks: number[]; hazards: HazardSpec[];
   encounters: { progress: number; reward: number; label: string }[];
@@ -24,6 +26,19 @@ export const LEVELS: LevelSpec[] = [
     hazards: [{ progress: 24, hp: 28, lane: 0, armor: 1 }, { progress: 28, hp: 30, lane: 0, armor: 1 }, { progress: 40, hp: 34, lane: 2, moving: true }, { progress: 54, hp: 38, lane: 1, armor: 2 }, { progress: 58, hp: 40, lane: 1, armor: 2 }, { progress: 72, hp: 44, lane: 2, moving: true }],
     encounters: [{ progress: 97, reward: 240, label: '星核帝皇' }], bossTargetSeconds: 125, bossDamage: 3, shield: true, doubleStrike: true, zones: [], layouts },
 ];
+// Fixed encounter recipes, rotated by the existing layout. Small weak targets
+// provide clear-through moments; specialists arrive only after their introduction.
+LEVELS.forEach((level, sector) => {
+  const patrols = [...level.hazards];
+  [38, 54, 72].forEach((mark, wave) => {
+    const lane = [...patrols].sort((a, b) => Math.abs(a.progress - mark) - Math.abs(b.progress - mark))[0].lane;
+    const count = 3 + Math.floor(sector / 2);
+    for (let i = 0; i < count; i++) level.hazards.push({ progress: mark + i * 1.1, hp: 2 + sector, lane, kind: 'swarm', wave, slot: i });
+    if (sector >= 1 || wave === 2) level.hazards.push({ progress: mark + 1.5, hp: 6 + sector * 2, lane: (lane + 1) % 3, kind: 'sniper', wave });
+    if (sector >= 2 && wave !== 0) level.hazards.push({ progress: mark + 3, hp: 8 + sector * 2, lane, kind: 'bomber', wave });
+    if (sector >= 3) level.hazards.push({ progress: mark + 4.5, hp: 5 + sector, lane, kind: 'medic', wave });
+  });
+});
 export const getLevel = (index: number): LevelSpec => LEVELS[Math.max(0, Math.min(LEVELS.length - 1, index))];
 export const hazardLaneAt = (layout: number, index: number, progress: number, levelIndex = 0): number => {
   const hazard = getLevel(levelIndex).hazards[index];

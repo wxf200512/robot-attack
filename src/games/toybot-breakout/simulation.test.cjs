@@ -18,6 +18,12 @@ const sim = load('simulation'), levels = load('level'), progression = load('prog
 const garage = { completedLevels: [true,true,true,true,false], tutorialCompleted: true, parts: 0, runs: 4, wins: 4, bestScore: 0, coreLevel: 0, unlockedLevel: 4, unlocked: { weapon: false, armor: false, core: false }, equipped: { weapon: false, armor: false, core: false } };
 const initial = (level = 0) => ({ ...sim.createInitialState(garage, level, 0), bossRandomSeed: 42 });
 const tick = s => sim.gameReducer(s, { type: 'TICK' });
+function roadSpecialist(kind, levelIndex = 4, approach = 9.5) {
+  const base = initial(levelIndex), spec = levels.getLevel(levelIndex);
+  const index = spec.hazards.findIndex(h => h.kind === kind), h = spec.hazards[index];
+  assert.ok(index >= 0, kind + ' must exist');
+  return { index, state: { ...base, status: 'running', progress: h.progress - approach, lane: levels.hazardLaneAt(0,index,h.progress-approach,levelIndex), gate: spec.gateMarks.length, fireCooldown: 1000, hazardHps: spec.hazards.map((enemy,i) => i === index ? enemy.hp : -1) } };
+}
 function incoming(s, changes = {}) {
   return { id: 100, ticks: 1, duration: 3, target: 'boss', targetIndex: 0, damage: 20, count: 1, origins: [{ index: 0, x: 27, y: 59 }], weaponLevel: 1, lane: s.battleLane, y: 48, charged: false, pierce: 0, muzzle: true, ...changes };
 }
@@ -691,8 +697,129 @@ test('training checkpoints resume safely, save only a lesson index, and do not t
  }finally{if(before===undefined)delete global.window;else global.window=before;}
 });
 test('optimized art URLs resolve, transparent character sheets keep alpha, and original art is archived', () => {
- const art=load('art'),urls=[...art.MAP_ART,...Object.values(art.MECH_CLASS_ART),...Object.values(art.MECH_FRONT_ART),art.BOSS_ART,art.BOSS_INTRO_ART,art.BOSS_STAGE2_ART,art.BOSS_DEFEAT_ART,art.BOSS_RUSH_ART,art.GATE_ART,art.PLAYER_ART,art.THREAT_ART,art.UI_HANGAR_ART,art.UI_RESULT_CRESTS,art.BLADE_SLASH_ART];
+ const art=load('art'),urls=[...art.MAP_ART,...Object.values(art.MECH_CLASS_ART),...Object.values(art.MECH_FRONT_ART),art.BOSS_ART,art.BOSS_INTRO_ART,art.BOSS_STAGE2_ART,art.BOSS_DEFEAT_ART,art.BOSS_RUSH_ART,art.GATE_ART,art.PLAYER_ART,art.THREAT_ART,art.UI_HANGAR_ART,art.UI_RESULT_CRESTS,art.BLADE_SLASH_ART,art.ENEMY_ART];
  for(const url of urls){assert.ok(url.includes('/optimized/'));const file=path.resolve(__dirname,'../../../public',url.slice(1));assert.ok(fs.existsSync(file),url);}
  for(const url of Object.values(art.MECH_CLASS_ART)){const b=fs.readFileSync(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(b[25],6,'mech PNG must keep RGBA alpha');}
  assert.ok(fs.existsSync(path.join(__dirname,'art-source','ui-hangar-ai-v6.png')));
+});
+
+test('road encounter density grows by sector and introduces specialists gradually', () => {
+  const totals = levels.LEVELS.map(l => l.hazards.length);
+  assert.deepEqual(totals, [14,18,23,26,29]);
+  assert.ok(totals.every((n,i) => i===0 || n>totals[i-1]));
+  for(const [sector,l] of levels.LEVELS.entries()) {
+    assert.equal(new Set(l.hazards.filter(h=>h.wave!==undefined).map(h=>h.wave)).size,3);
+    assert.ok(l.hazards.filter(h=>h.kind==='swarm').every(h=>h.hp<=6));
+    if(sector<2) assert.ok(!l.hazards.some(h=>h.kind==='bomber'));
+    if(sector<3) assert.ok(!l.hazards.some(h=>h.kind==='medic'));
+  }
+});
+
+test('sniper locks its warning, can be interrupted, and launched fire survives its source', () => {
+  const {state,index}=roadSpecialist('sniper');let s=tick(state);
+  assert.equal(s.enemyAttacks[0].kind,'sniper-shot');assert.equal(s.enemyAttacks[0].ticks,18);
+  const lane=s.enemyAttacks[0].lane;
+  const interrupted=tick({...s,hazardHps:s.hazardHps.map(()=>0)});assert.equal(interrupted.enemyAttacks.length,0);
+  let dodge=sim.gameReducer(s,{type:'MOVE_LANE',lane:(lane+1)%3});
+  for(let i=0;i<24;i++)dodge=tick(dodge);assert.equal(dodge.playerHp,100);
+  for(let i=0;i<18;i++)s=tick(s);
+  assert.equal(s.enemyAttacks[0].phase,'flight');
+  s={...s,hazardHps:s.hazardHps.map(()=>0)};
+  for(let i=0;i<6;i++)s=tick(s);
+  assert.equal(s.playerHp,87);assert.equal(s.enemyAttacks.length,0);assert.equal(s.enemyAttackSources.filter(k=>k==='hazard:'+index).length,1);
+});
+
+test('bomber advertises two fixed lanes with one safe gap and cannot release after interruption', () => {
+  const {state}=roadSpecialist('bomber');let s=tick(state);
+  assert.equal(s.enemyAttacks.length,2);assert.ok(s.enemyAttacks.every(a=>a.kind==='bombard'&&a.phase==='warning'&&a.ticks===18));
+  const lanes=s.enemyAttacks.map(a=>a.lane),safe=[0,1,2].find(l=>!lanes.includes(l));assert.notEqual(safe,undefined);
+  const interrupted=tick({...s,hazardHps:s.hazardHps.map(()=>0)});assert.equal(interrupted.enemyAttacks.length,0);
+  s=sim.gameReducer(s,{type:'MOVE_LANE',lane:safe});
+  for(let i=0;i<30;i++)s=tick(s);
+  assert.equal(s.playerHp,100);assert.equal(s.enemyAttacks.length,0);
+});
+
+test('assault swarm moves with its hitbox, deals one contact and cannot collide twice', () => {
+  const {state,index}=roadSpecialist('swarm',0,4.9);let s=tick(state);
+  assert.equal(s.enemyAttacks[0].kind,'charge');
+  for(let i=0;i<10;i++)s=tick(s);
+  const before=sim.roadEnemyY(s,index);s=tick(s);assert.ok(sim.roadEnemyY(s,index)>before);
+  assert.equal(sim.targetY(s,'hazard',index),sim.roadEnemyY(s,index));
+  for(let i=0;i<12;i++)s=tick(s);
+  assert.equal(s.playerHp,92);assert.equal(s.hazardHps[index],-1);assert.equal(s.enemyAttacks.length,0);
+});
+
+test('repair drone heals a wounded living ally only in its lane, never resurrects or exceeds maximum', () => {
+  const {state,index}=roadSpecialist('medic',3,9.5),spec=levels.getLevel(3),h=spec.hazards[index];
+  const ally=spec.hazards.findIndex(e=>e.kind==='swarm'&&e.wave===h.wave);
+  let s={...state,roadTicks:13,hazardHps:state.hazardHps.map((hp,i)=>i===ally?1:hp)};
+  const healed=tick(s);assert.equal(healed.hazardHps[ally],3);assert.deepEqual(healed.medicPulses,[index]);assert.equal(healed.enemyAttacks.some(a=>a.sourceId===index),false);
+  const dead=tick({...s,hazardHps:s.hazardHps.map((hp,i)=>i===ally?0:hp)});assert.equal(dead.hazardHps[ally],0);
+  const stopped=tick({...s,hazardHps:s.hazardHps.map((hp,i)=>i===index?0:hp)});assert.equal(stopped.hazardHps[ally],1);
+  const capped=tick({...s,hazardHps:s.hazardHps.map((hp,i)=>i===ally?spec.hazards[ally].hp-1:hp)});assert.equal(capped.hazardHps[ally],spec.hazards[ally].hp);
+});
+
+test('bomber destruction chains through nearby same-lane enemies, with bounded independent kill effects', () => {
+  const {state,index}=roadSpecialist('bomber',4,4),spec=levels.getLevel(4),h=spec.hazards[index];
+  const ally=spec.hazards.findIndex(e=>e.kind==='swarm'&&e.wave===h.wave);
+  const other=spec.hazards.findIndex(e=>e.kind==='sniper'&&e.wave===h.wave);
+  const s={...state,hazardHps:state.hazardHps.map((hp,i)=>i===ally?2:i===other?5:hp),pendingShots:[incoming(state,{target:'hazard',targetIndex:index,lane:state.lane,damage:999,weaponLevel:2})]};
+  const snapshot=JSON.stringify(s),n=tick(s);
+  assert.equal(JSON.stringify(s),snapshot);assert.equal(n.hazardHps[index],0);assert.equal(n.hazardHps[ally],0);assert.equal(n.hazardHps[other],5);
+  assert.equal(n.kills,2);assert.equal(n.combo,2);assert.equal(n.killEffects.length,2);assert.equal(new Set(n.killEffects.map(e=>e.id)).size,2);
+  let expired=n;for(let i=0;i<26;i++)expired=tick(expired);
+  assert.equal(expired.combo,0);assert.equal(expired.killEffects.length,0);assert.equal(expired.bestCombo,2);
+});
+
+test('three kills grant a score multiplier and small capped recovery without changing gun cadence', () => {
+  const {state,index}=roadSpecialist('swarm',0,4.9),lane=state.lane;
+  const n=tick({...state,playerHp:99,combo:2,comboTicks:20,kills:2,fireCooldown:6,pendingShots:[incoming(state,{target:'hazard',targetIndex:index,lane,damage:99})]});
+  assert.equal(n.combo,3);assert.equal(n.kills,3);assert.equal(n.playerHp,100);assert.equal(n.score,19);assert.equal(n.fireCooldown,5);
+  const paused=sim.gameReducer(n,{type:'PAUSE'});assert.deepEqual(tick(paused),paused);
+  const restarted=sim.gameReducer(n,{type:'RESTART',garage});assert.equal(restarted.combo,0);assert.equal(restarted.kills,0);assert.deepEqual(restarted.killEffects,[]);
+});
+
+test('mixed road pressure is bounded to two attack lanes and safely cleans up on arena entry', () => {
+  for(let sector=0;sector<5;sector++)for(let layout=0;layout<3;layout++) {
+    const spec=levels.getLevel(sector);let s={...sim.createInitialState(garage,sector,layout),status:'running',gate:spec.gateMarks.length,fireCooldown:10000,playerHp:10000,playerMaxHp:10000};
+    let maxVisible=0;
+    for(let i=0;i<450&&s.status==='running';i++) {
+      s=tick(s);assert.ok(new Set(s.enemyAttacks.map(a=>a.lane)).size<=2);assert.ok(s.enemyAttacks.length<=2);
+      maxVisible=Math.max(maxVisible,spec.hazards.filter((h,j)=>s.hazardHps[j]>0&&s.progress>=h.progress-14&&s.progress<h.progress).length);
+    }
+    assert.equal(s.status,'boss-intro');assert.deepEqual(s.enemyAttacks,[]);assert.ok(s.hazardHps.every(hp=>hp===-1));assert.ok(maxVisible<=12);
+  }
+});
+
+test('enemy formation uses distinct horizontal muzzles and matched aiming positions without changing lanes', () => {
+  const s={...initial(4),status:'running',progress:46},spec=levels.getLevel(4);
+  const group=spec.hazards.map((h,i)=>({h,i})).filter(e=>e.h.kind==='swarm'&&e.h.wave===1);
+  assert.equal(new Set(group.map(e=>[sim.roadEnemyX(s,e.i),sim.roadEnemyY(s,e.i)].join(':'))).size,group.length);
+  for(const {i}of group) {
+    assert.equal(sim.targetX(s,'hazard',i),sim.roadEnemyX(s,i));assert.equal(sim.targetY(s,'hazard',i),sim.roadEnemyY(s,i));
+    const lane=levels.hazardLaneAt(0,i,s.progress,4);
+    assert.ok(Math.abs(sim.roadEnemyX(s,i)-sim.laneXAt(lane,sim.roadEnemyY(s,i)))<=4);
+    const hit=tick({...s,fireCooldown:1000,pendingShots:[incoming(s,{target:'hazard',targetIndex:i,lane,damage:1})]});
+    assert.equal(hit.impactX,sim.roadEnemyX(s,i));
+  }
+});
+
+test('road attacks and incoming body collisions never remove the final escape lane', () => {
+  for(let sector=0;sector<5;sector++)for(let layout=0;layout<3;layout++) {
+    const spec=levels.getLevel(sector);let s={...sim.createInitialState(garage,sector,layout),status:'running',gate:spec.gateMarks.length,fireCooldown:10000,playerHp:10000,playerMaxHp:10000};
+    for(let i=0;i<450&&s.status==='running';i++) {
+      const lanes=s.enemyAttacks.map(a=>a.lane);
+      spec.hazards.forEach((h,j)=>{if(s.hazardHps[j]>0&&h.progress-s.progress<1.5&&h.progress>s.progress)lanes.push(levels.hazardLaneAt(layout,j,h.progress,sector));});
+      assert.ok(new Set(lanes).size<=2,`sector ${sector} layout ${layout} progress ${s.progress}: ${lanes}`);
+      s=tick(s);
+    }
+  }
+});
+
+test('specialist spacing converges at contact and enemy shots start at the actual unit center', () => {
+  for(const kind of ['swarm','sniper','bomber','medic']) {
+    const {state,index}=roadSpecialist(kind),h=levels.getLevel(4).hazards[index];
+    const contact={...state,progress:h.progress-.1};assert.ok(sim.roadEnemyY(contact,index)>57);
+    if(kind!=='medic') {const queued=tick({...state,progress:h.progress-(kind==='swarm'?4.9:9.5)});assert.equal(queued.enemyAttacks[0].fromX,sim.roadEnemyX(queued,index));}
+  }
 });

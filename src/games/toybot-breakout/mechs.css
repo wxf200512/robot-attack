@@ -1,0 +1,50 @@
+/* Mech-class presentation. Atlas columns are upgrades; rows are poses. */
+.toybot-shell .toybot-class-sprite { position:absolute;top:0;left:-16.6667%;width:133.3333%;height:100%;display:block;background-repeat:no-repeat;background-size:400% 900%;pointer-events:none; }
+.toybot-shell .class-blade .toybot-class-sprite { width:225%;left:-62.5%; }
+.toybot-shell .toybot-mech-showcase .toybot-class-portrait { position:absolute;z-index:1;inset:0;display:block;width:100%;height:100%;background-size:400% 900%;background-position-y:0;background-repeat:no-repeat; }
+.toybot-shell .toybot-mech-showcase.class-blade .toybot-class-portrait { left:-34.375%;width:168.75%; }
+.toybot-shell .toybot-mech-showcase.class-heavy .toybot-mech-core-wing,
+.toybot-shell .toybot-mech-showcase.class-heavy .toybot-mech-core-light,
+.toybot-shell .toybot-mech-showcase.class-blade .toybot-mech-core-wing,
+.toybot-shell .toybot-mech-showcase.class-blade .toybot-mech-core-light { display:none; }
+.toybot-shell .toybot-workshop { grid-template-rows:auto auto auto minmax(236px,1fr) auto auto auto; }
+.toybot-shell .toybot-mech-picker { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px; }
+.toybot-shell .toybot-mech-picker button { display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-height:76px;padding:10px 8px;border:1px solid #7394a84d;border-radius:8px;background:#10283be8;color:#dcecf5;text-align:left;cursor:pointer; }
+.toybot-shell .toybot-mech-picker button[aria-pressed=true] { border-color:#94e7ed;background:linear-gradient(145deg,#235566,#18394d);box-shadow:inset 0 -2px #8aeaf0; }
+.toybot-shell .toybot-mech-picker small { color:#91bbca;font-size:9px; }
+.toybot-shell .toybot-mech-picker strong { color:#e9f5f8;font-size:12px;font-weight:650; }
+.toybot-shell .toybot-mech-picker span { color:#96b4c5;font-size:9px; }
+.toybot-shell .toybot-mech-picker button:focus-visible { outline:2px solid white;outline-offset:3px; }
+.toybot-shell .toybot-shot.is-heavy-round { width:35px;height:48px;border:0;background:none;box-shadow:none;filter:drop-shadow(0 0 5px #b4f3ff); }
+.toybot-shell .toybot-shot.is-heavy-round:after { display:none; }
+.toybot-shell .toybot-melee-slash { position:absolute;width:66px;height:66px;transform:translate(-50%,-55%);background-size:400% 400%;background-repeat:no-repeat;pointer-events:none;filter:drop-shadow(0 0 4px #b4ebff88); }
+.toybot-shell .toybot-melee-finisher { position:absolute;width:70px;height:70px;transform:translate(-50%,-55%);background-size:400% 400%;background-repeat:no-repeat;pointer-events:none;animation:toybot-melee-finish .4s ease-out both; }
+@keyframes toybot-melee-finish { from{opacity:1} to{opacity:0;scale:1.1} }
+@media(max-height:740px) { .toybot-shell .toybot-workshop { grid-template-rows:auto auto auto minmax(172px,1fr) auto auto auto; } .toybot-shell .toybot-mech-picker button{min-height:70px;padding:8px 6px} }
+@media(max-width:360px) { .toybot-shell .toybot-mech-picker strong{font-size:11px}.toybot-shell .toybot-mech-picker small,.toybot-shell .toybot-mech-picker span{font-size:8px} }
+@media(prefers-reduced-motion:reduce) { .toybot-shell .toybot-melee-finisher{animation:none} }
+.toybot-shell .toybot-blade-upgrade-icon{display:block;width:100%;height:100%;background-size:400% 400%;background-position:33.333% 0;background-repeat:no-repeat;}
+/* Garage v2: scrollable engineering workspace with explicit upgrade comparisons. */
+.toybot-shell .toybot-workshop.garage-v2 { display:flex;flex-direction:column;height:auto;min-height:100%;gap:12px;padding-bottom:20px; }
+.toybot-shell .garage-v2 .toybot-workshop-preview { flex:0 0 180px;min-height:180px;padding-bottom:43px; }
+.toybot-shell .garage-v2 .toybot-workshop-mech { width:137px; }
+.toybot-shell .toybot-garage-performance { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;width:100%; }
+.toybot-shell .toybot-garage-performance>div { min-width:0;padding:10px 2px;text-align:center;background:#0a1c2ee6;border:1px solid #6c94ac44;border-radius:6px; }
+.toybot-shell .toybot-garage-performance small { display:block;font-size:9px;color:#92b2c5; }
+.toybot-shell .toybot-garage-performance b { display:block;margin-top:5px;font-size:17px;font-weight:650;color:#dbf4f7; }
+.toybot-shell .toybot-garage-performance em { margin-left:2px;font-size:9px;font-weight:400;font-style:normal;color:#9db6c5; }
+.toybot-shell .toybot-equip-all { min-height:32px;padding:5px 9px;border:1px solid #6ba7ba66;border-radius:5px;background:#173748;color:#c2e8ed;font-size:10px;cursor:pointer; }
+.toybot-shell .toybot-equip-all:disabled { opacity:.4;cursor:default; }
+.toybot-shell .garage-v2 .toybot-workshop-item { min-height:112px;gap:9px;padding:11px 9px; }
+.toybot-shell .garage-v2 .toybot-workshop-copy { gap:5px; }
+.toybot-shell .garage-v2 .toybot-workshop-copy small { min-height:28px;font-size:10px;line-height:1.6;overflow-wrap:anywhere; }
+.toybot-shell .toybot-module-levels { display:flex;gap:3px; }
+.toybot-shell .toybot-module-levels i { height:3px;width:15px;max-width:16%;border-radius:1px;background:#43647a77; }
+.toybot-shell .toybot-module-levels i.filled { background:#97e6e9;box-shadow:0 0 5px #8ce9e544; }
+.toybot-shell .garage-v2 .toybot-workshop-actions { min-width:74px; }
+.toybot-shell .garage-v2 .toybot-workshop-action { min-width:74px;min-height:36px; }
+.toybot-shell .garage-v2 .toybot-workshop-action b { font-size:10px;white-space:nowrap; }
+.toybot-shell .garage-v2 .toybot-workshop-action small { display:block;font-size:9px;font-weight:400;margin-top:3px; }
+.toybot-shell .toybot-module-maxed { text-align:center;color:#d8cc9d;font-size:10px;padding:7px 0; }
+.toybot-shell .toybot-garage-note { margin:0;padding:0 2px;color:#92adbf;font-size:10px;line-height:1.8;text-align:left; }
+@media(max-width:360px) { .toybot-shell .garage-v2 .toybot-workshop-icon { width:34px;height:42px; }.toybot-shell .garage-v2 .toybot-workshop-item{gap:7px;padding:9px 7px}.toybot-shell .garage-v2 .toybot-workshop-actions,.toybot-shell .garage-v2 .toybot-workshop-action{min-width:67px} }

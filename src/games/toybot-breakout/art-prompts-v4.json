@@ -1,0 +1,16 @@
+{
+  "tool": "built-in image_gen",
+  "purpose": "Correct anticipation frames so only actual firing shows discharged attacks",
+  "jobs": [
+    {
+      "key": "boss-intro-ai-v4",
+      "reference": "boss-intro-ai-v3.png",
+      "prompt": "Precise sprite-atlas correction. Preserve exactly this transparent 4-column x5-row atlas, its FIVE boss identities, colors, camera, pixel registration, scale and each mechanical pose. This sheet is ONLY a peaceful entrance/deployment sequence. REMOVE ALL discharged attacks from ALL20 cells: no flying missiles, no laser beam below any boss, no projected lightning, no muzzle blast. In particular remove the descending violet lightning under row4 column3 and the gold downward laser beneath row5 column3. Keep contained glowing reactors, dim muzzle lighting, mechanical panel changes, small landing dust and exhaust. Each of the4 frames must read as deploying and aligning weapons, NEVER firing at player. Replace removed projected attacks with genuine transparent alpha. Do not change grid, crop, character proportions or add a background, text or labels. Retain genuine transparent background."
+    },
+    {
+      "key": "boss-stage2-ai-v4",
+      "reference": "boss-stage2-ai-v3.png",
+      "prompt": "Precise sprite-atlas correction. Preserve this transparent sprite atlas EXACT4 columns x5 rows, all FIVE existing mecha boss designs, colors, camera, scale and cell registration. The first THREE columns are NON-FIRING mechanical unfolding/charge poses. ONLY the FOURTH column is allowed to discharge an attack. Remove every flying missile, muzzle blast, extended laser or projected lightning from column3 in ALLfive rows. Row2 column3 must show loaded missiles still inside opened pods, never leaving. Row3 column3 glowing core/cannon bore only, no external flash. Row4 column3 contained violet crystal core only, NO downward lightning outside the body. Row5 column3 contained gold core/halo charge only, NO beam below body. Keep fourth column's actual firing effects intact. Keep all panels and expanded second-stage armor intact, restrained localized charge glow. Transparent alpha where removed attacks were. No new background, text, watermark, grid lines or resizing."
+    }
+  ]
+}

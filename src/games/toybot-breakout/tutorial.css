@@ -1,0 +1,57 @@
+/* Interactive training reuses game art and a separate, non-rewarding simulation. */
+.toybot-shell .toybot-overlay.toybot-tutorial{z-index:20;display:flex;align-items:stretch;justify-content:flex-start;gap:12px;padding:17px 16px 20px;overflow-y:auto;background:linear-gradient(145deg,#102c40,#071728 70%);text-align:left;backdrop-filter:none}
+.toybot-shell .toybot-training-top{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#8db7c8;font-size:9px;letter-spacing:.06em}
+.toybot-shell .toybot-training-top button{min-height:32px;padding:6px 7px;border:1px solid #6a9bb64d;border-radius:5px;background:#19394d;color:#c9e8f1;font-size:10px;cursor:pointer}
+.toybot-shell .toybot-training-dots{display:flex;gap:5px;height:3px;flex:none}
+.toybot-shell .toybot-training-dots i{flex:1;border-radius:2px;background:#345265}.toybot-shell .toybot-training-dots i.complete{background:#7bc7b1}.toybot-shell .toybot-training-dots i.current{background:#9ce7f1}
+.toybot-shell .toybot-training-heading small{color:#7eacbf;font-size:8px;letter-spacing:.15em}
+.toybot-shell .toybot-training-heading h2{margin:5px 0 8px;font-size:24px;line-height:1.3;letter-spacing:.06em}
+.toybot-shell .toybot-training-heading p{margin:0;color:#c3d8e4;font-size:12px;line-height:1.8}
+.toybot-shell .toybot-training-board{position:relative;flex:0 0 auto;height:clamp(245px,40svh,345px);overflow:hidden;border:1px solid #6d9bb366;border-radius:12px;background:#182e42;touch-action:none;cursor:grab;outline-offset:3px}
+.toybot-shell .toybot-training-board:active{cursor:grabbing}
+.toybot-shell .training-map{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 80%;pointer-events:none;opacity:.68}
+.toybot-shell .training-shade{position:absolute;inset:0;background:linear-gradient(#07182988,#07182922 48%,#07182988);pointer-events:none}
+.toybot-shell .training-mode{position:absolute;top:10px;left:10px;color:#b8d3df;font-size:8px;letter-spacing:.05em}
+.toybot-shell .training-hp{position:absolute;top:10px;right:10px;width:85px;height:12px;overflow:hidden;border:1px solid #a9d3b655;border-radius:9px;background:#142a35}
+.toybot-shell .training-hp>span{display:block;height:100%;background:#67bca0;transition:width .2s}
+.toybot-shell .training-hp>b{position:absolute;inset:0;text-align:center;font-size:8px;line-height:10px;color:white;font-weight:500;text-shadow:0 1px 2px #071526}
+.toybot-shell .training-track{position:absolute;top:29%;bottom:10%;width:22%;transform:translateX(-50%);border-left:1px solid #9cbac944;border-right:1px solid #9cbac944;border-radius:3px;background:#07172622;pointer-events:none}
+.toybot-shell .training-track.selected{background:#6cdbf20d;border-color:#9fe6ef55}
+.toybot-shell .training-player{position:absolute;width:45px;transform:translate(-50%,-100%);transition:left .12s ease-out;pointer-events:none;z-index:5}
+.toybot-shell .training-player .robot-run-sprite{animation:training-run .8s steps(4,end) infinite}
+.toybot-shell .training-target{position:absolute;top:36%;width:46px;height:46px;transform:translate(-50%,-50%);pointer-events:none;z-index:4}
+.toybot-shell .training-target.boss{width:68px;height:68px}
+.toybot-shell .training-target>span{position:absolute;inset:0;background-repeat:no-repeat;background-size:400% 300%;background-position:0 100%}
+.toybot-shell .training-target.boss>span{background-size:400% 500%;background-position:0 0}
+.toybot-shell .training-target>i{position:absolute;left:15%;right:15%;bottom:-5px;height:4px;overflow:hidden;border-radius:4px;background:#3b2730}
+.toybot-shell .training-target>i b{display:block;height:100%;background:#ffbd88;transition:width .1s}
+.toybot-shell .training-gate{position:absolute;width:76px;height:103px;transform:translate(-50%,-100%);background-size:400% 200%;background-position:33.333% 0;z-index:3;pointer-events:none}
+.toybot-shell .training-gate>b{position:absolute;top:38%;left:0;right:0;text-align:center;color:#d8ffff;font-size:12px;text-shadow:0 1px 4px #06121c}
+.toybot-shell .training-gate>span{position:absolute;bottom:0;left:0;right:0;height:3px;background:#aafff0;box-shadow:0 0 8px #4ce5d9}
+.toybot-shell .training-obstacle{position:absolute;width:63px;height:63px;transform:translate(-50%,-100%);background-size:400% 300%;background-position:0 50%;z-index:3;pointer-events:none}
+.toybot-shell .training-danger{position:absolute;top:31%;height:39%;width:21%;transform:translateX(-50%);border:1px solid #ff8c7a;border-radius:7px;background:repeating-linear-gradient(180deg,#fb77600d 0 15px,#fb776044 16px 21px);box-shadow:inset 0 0 12px #ee775233;pointer-events:none;animation:training-alert .6s ease-in-out infinite alternate;z-index:2}
+.toybot-shell .training-danger.boss-warning{border-color:#ffc383;background-color:#ffb85111}.toybot-shell .training-danger.firing{background:#f7a46955}
+.toybot-shell .training-hostile{position:absolute;width:27px;height:32px;transform:translate(-50%,-50%);background-size:400% 300%;background-position:0 0;z-index:6;transition:top .1s linear,left .1s linear;pointer-events:none}
+.toybot-shell .training-shot{position:absolute;z-index:6;width:5px;height:17px;transform:translate(-50%,-50%);border-radius:50%;background:#e5ffff;box-shadow:0 0 7px #7ef7ff;transition:top .1s linear;pointer-events:none}
+.toybot-shell .training-gesture{position:absolute;z-index:7;left:15%;right:15%;bottom:10%;text-align:center;pointer-events:none;color:#d1f5f9}
+.toybot-shell .training-gesture>span{display:block;width:30px;height:30px;line-height:26px;margin:0 auto 5px;border:1px solid #c2f5fa;border-radius:50%;font-size:24px;background:#133f57bb;box-shadow:0 0 14px #9eeaf74d;animation:training-gesture 3s ease-in-out infinite}
+.toybot-shell .training-gesture small{font-size:9px}
+.toybot-shell .training-window{position:absolute;top:17%;left:0;right:0;z-index:7;color:#a9ecdc;text-align:center;font-size:11px}
+.toybot-shell .training-success,.toybot-shell .training-pause-mask{position:absolute;inset:0;z-index:9;display:grid;place-items:center;background:#071a3280;color:#d5fff2;font-size:21px;letter-spacing:.06em;pointer-events:none}
+.toybot-shell .training-success{background:linear-gradient(transparent,#081c3a88 45%,transparent);font-size:18px}
+.toybot-shell .training-hit{position:absolute;inset:0;z-index:8;box-shadow:inset 0 0 45px #f25c6899;animation:training-hit .6s ease-out both;pointer-events:none}
+.toybot-shell .toybot-training-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.toybot-shell .toybot-training-controls button{min-height:40px;padding:8px;border:1px solid #6c9eb755;border-radius:6px;background:#17374a;color:#b2cfdd;font-size:11px;cursor:pointer}
+.toybot-shell .toybot-training-controls button[aria-pressed=true]{border-color:#9bdfe7;background:#2b5966;color:#e3feff}
+.toybot-shell .toybot-training-brief{padding:10px 12px;border-left:2px solid #8ed6e2;border-radius:0 6px 6px 0;background:#17425555}
+.toybot-shell .toybot-training-brief strong{font-size:12px;color:#d7f7f8;line-height:1.7;font-weight:650}.toybot-shell .toybot-training-brief p{margin:5px 0 0;color:#99b6c8;font-size:10px;line-height:1.8}
+.toybot-shell .toybot-tutorial .toybot-primary:disabled{opacity:.4;cursor:default;filter:none}
+.toybot-shell .toybot-training-restart{min-height:34px;border:0;background:transparent;color:#85a7ba;font-size:9px;cursor:pointer}
+.toybot-shell .training-paused *,.toybot-shell .training-paused *:before,.toybot-shell .training-paused *:after{animation-play-state:paused!important}
+.toybot-shell .toybot-home-training{min-height:36px;margin-top:-5px;border:0;background:transparent;color:#86bbcd;font-size:10px;cursor:pointer}
+.toybot-shell .toybot-level-rule{margin:-2px 0 0;color:#86a9bb;font-size:9px;text-align:center}
+@keyframes training-gesture{0%,100%{translate:0 0}25%{translate:-60px 0}70%{translate:60px 0}}
+@keyframes training-alert{to{opacity:.45}}
+@keyframes training-hit{to{opacity:0}}
+@keyframes training-run{to{background-position-x:133.333333%}}
+@media(prefers-reduced-motion:reduce){.toybot-shell .training-gesture>span,.toybot-shell .training-danger,.toybot-shell .training-player .robot-run-sprite{animation:none}.toybot-shell .training-shot,.toybot-shell .training-hostile,.toybot-shell .training-player{transition:none}}

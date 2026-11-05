@@ -1,0 +1,79 @@
+/* Mobile layout, player settings and economical visual feedback. */
+.toybot-page .toybot-shell{min-height:0;height:min(850px,calc(100svh - 24px))}
+.toybot-page .toybot-top{gap:7px;padding-top:max(12px,env(safe-area-inset-top));padding-left:14px;padding-right:14px}
+.toybot-page .toybot-brand{flex:1;min-width:0;font-size:11px;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toybot-shell .toybot-live-settings{flex:none;width:38px;min-height:40px;border:1px solid #789eb74d;border-radius:9px;background:#142c3fe6;color:#bfe4ed;font-size:18px;cursor:pointer;touch-action:manipulation}
+.toybot-page .toybot-pause{flex:none;min-height:40px;font-size:11px;padding:8px 10px}
+.toybot-page .toybot-back{left:14px;top:58px;min-height:36px;width:92px;padding:8px 5px;font-size:10px}
+.toybot-page .toybot-stats{left:114px;right:14px;top:58px;transform:none;width:auto;gap:6px;justify-content:flex-end}
+.toybot-page .toybot-pill{min-width:0;max-width:96px;flex:1;padding:5px 6px;border-radius:9px}
+.toybot-page .toybot-pill small{font-size:8px;letter-spacing:0}.toybot-page .toybot-pill b{font-size:17px}
+.toybot-page .toybot-meter{top:108px}
+.toybot-page .toybot-bottom{left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom))}
+.toybot-page .toybot-squad-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;padding:6px 8px}
+.toybot-page .toybot-squad-card>div:first-child{min-width:0}
+.toybot-page .toybot-squad-card small{font-size:8px;line-height:1.4;white-space:normal;overflow-wrap:anywhere}
+.toybot-page .toybot-squad-card strong{font-size:24px;line-height:1.1}
+.toybot-page .toybot-squad-avatars{display:none}
+.toybot-page .toybot-lane-controls{margin:0;gap:2px;padding:2px}
+.toybot-page .toybot-lane-controls button{width:42px;height:44px;min-width:0;font-size:12px}
+.toybot-page .toybot-player-health{padding:5px 8px;margin-bottom:5px}
+.toybot-page .toybot-health-caption{font-size:9px}.toybot-page .toybot-health-caption strong{font-size:10px}
+.toybot-page .toybot-health-track{height:6px}.toybot-page .toybot-status-effects:empty{display:none}
+.toybot-page .in-boss-arena>.toybot-stats,.toybot-page .in-boss-arena>.toybot-meter,.toybot-page .in-boss-arena>.toybot-back{display:none}
+.toybot-page .in-boss-arena .toybot-boss-top-hud{top:62px;left:14px;right:14px}
+.toybot-shell .toybot-home-tools{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
+.toybot-shell .toybot-home-tools .toybot-home-training{margin:0;min-height:40px;padding:6px 3px}
+.toybot-shell .toybot-pause-settings{min-height:40px;width:100%;margin-top:12px;border:1px solid #769eb54d;border-radius:6px;background:#142c3e;color:#b7d7e3;font-size:11px;cursor:pointer}
+.toybot-shell .toybot-garage-gain{margin:0;padding:7px 9px;border:1px solid #7dcbb644;border-radius:6px;background:#16403466;color:#a2dace;font-size:10px;line-height:1.6}
+.toybot-shell .toybot-overlay.toybot-settings{z-index:35;overflow-y:auto;padding:20px;background:#05101edb;backdrop-filter:blur(6px)}
+.toybot-shell .toybot-settings-panel{flex:none;width:100%;max-width:350px;margin:auto;border:1px solid #8bb9c866;border-radius:16px;padding:20px;background:linear-gradient(145deg,#18354b,#0c1e30);text-align:left;box-shadow:0 20px 50px #0008}
+.toybot-shell .toybot-settings-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.toybot-shell .toybot-settings-heading small{font-size:8px;letter-spacing:.15em;color:#85adbf}
+.toybot-shell .toybot-settings-heading button{width:38px;height:36px;border:1px solid #648ca455;border-radius:6px;background:#19374c;color:#d5edf4;font-size:24px;cursor:pointer}
+.toybot-shell .toybot-settings-panel h2{margin:10px 0 23px;font-size:25px;letter-spacing:.08em}
+.toybot-shell .toybot-settings-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;font-size:13px}
+.toybot-shell .toybot-settings-row small{display:block;margin-top:5px;font-size:10px;line-height:1.7;color:#91b0c2}
+.toybot-shell .toybot-settings-row button{min-width:68px;min-height:40px;border:1px solid #7ab9c955;border-radius:6px;background:#1c4b57;color:#c5f1f0;font-size:11px;cursor:pointer}
+.toybot-shell .toybot-volume-label{display:flex;justify-content:space-between;font-size:11px;color:#afcbd8}
+.toybot-shell .toybot-settings-panel input[type=range]{width:100%;height:38px;margin:7px 0 13px;accent-color:#9edce8;cursor:pointer}
+.toybot-shell .toybot-quality-label{font-size:12px;margin:9px 0 10px}
+.toybot-shell .toybot-quality-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.toybot-shell .toybot-quality-options button{min-height:44px;border:1px solid #648ba44d;border-radius:6px;background:#10273b;color:#91b5c7;font-size:11px;cursor:pointer}
+.toybot-shell .toybot-quality-options button[aria-pressed=true]{border-color:#9adbe7;background:#285360;color:#e0f9f9}
+.toybot-shell .toybot-settings-note{margin:15px 0 20px;color:#8fb1c4;font-size:10px;line-height:1.8}
+.toybot-shell .toybot-training-brief details{margin-top:5px;color:#99b6c8;font-size:10px;line-height:1.8}
+.toybot-shell .toybot-training-brief summary{cursor:pointer;color:#86bdcc}
+.toybot-shell .toybot-training-brief details p{margin-top:5px}
+.toybot-shell .toybot-training-top{letter-spacing:0}.toybot-shell .toybot-training-top button{min-height:36px}
+.toybot-shell .class-heavy.is-attacking .toybot-class-sprite{animation:toybot-heavy-recoil .35s ease-out both}
+.toybot-shell .class-blade.is-attacking .toybot-class-sprite{animation:toybot-blade-follow .3s ease-out both}
+.toybot-shell .mech-hit-heavy .toybot-impact-burst{width:90px;height:90px;animation-duration:.6s}
+.toybot-shell .mech-hit-blade .toybot-hit-damage{color:#e7fdff;text-shadow:0 0 7px #a6efff}
+.toybot-page.quality-low .toybot-cloud,.toybot-page.quality-low .toybot-sun{display:none}
+.toybot-page.quality-low .robot-player-art,.toybot-page.quality-low .toybot-obstacle,.toybot-page.quality-low .toybot-shot,.toybot-page.quality-low .toybot-boss-threat,.toybot-page.quality-low .toybot-impact-burst{filter:none}
+.toybot-page.quality-low .toybot-home-mech{animation:none}
+.toybot-page.quality-low .toybot-mech-core-light,.toybot-page.quality-low .robot-armor-aura{box-shadow:none}
+@keyframes toybot-heavy-recoil{0%{translate:0 0}25%{translate:0 4px;filter:brightness(1.35)}100%{translate:0 0}}
+@keyframes toybot-blade-follow{0%{rotate:0deg}45%{rotate:-3deg}100%{rotate:0deg}}
+@media(max-width:600px){main.toybot-page{padding:0;min-height:100svh}.toybot-page .toybot-shell{width:100%;max-width:430px;min-height:0;height:100svh;border-radius:0;border-width:0}.toybot-shell .toybot-home-heading{padding-top:calc(20px + env(safe-area-inset-top))}.toybot-shell .toybot-overlay.toybot-tutorial{padding-top:calc(14px + env(safe-area-inset-top));padding-bottom:calc(15px + env(safe-area-inset-bottom))}}
+@media(max-width:350px){.toybot-page .toybot-lane-controls button{width:36px;height:44px}.toybot-page .toybot-squad-card small{font-size:7px}.toybot-page .toybot-brand{font-size:10px}.toybot-page .toybot-stats{left:109px;right:10px}.toybot-shell .toybot-attack-name{font-size:9px;letter-spacing:0}}
+@media(prefers-reduced-motion:reduce){.toybot-shell .class-heavy.is-attacking .toybot-class-sprite,.toybot-shell .class-blade.is-attacking .toybot-class-sprite{animation:none}}
+.toybot-shell .toybot-training-brief .training-notice{margin:5px 0 0;color:#a4d8c8;font-size:10px;line-height:1.7}
+@media(max-height:620px){
+ .toybot-page .toybot-overlay.toybot-result{padding:10px 10px}
+ .toybot-page .toybot-debrief-panel{padding:12px 14px 7px}
+ .toybot-page .toybot-result-crest{width:86px;margin:6px auto 2px}
+ .toybot-page .toybot-result h2{font-size:24px;margin:6px 0}
+ .toybot-page .toybot-result .toybot-result-summary{font-size:10px;line-height:1.5}
+ .toybot-page .toybot-debrief-score{margin:10px 0;padding:8px 0;gap:2px}
+ .toybot-page .toybot-debrief-score>strong{font-size:32px}
+ .toybot-page .toybot-debrief-rewards{margin-bottom:8px;gap:5px}
+ .toybot-page .toybot-debrief-rewards>div{padding:6px 2px}
+ .toybot-page .toybot-result .toybot-debrief-tip{padding:6px 8px;margin-bottom:10px;line-height:1.6}
+ .toybot-page .toybot-debrief-tip>span{margin-bottom:1px}
+ .toybot-page .toybot-debrief-actions{gap:7px}
+ .toybot-page .toybot-debrief-actions .toybot-primary{min-height:44px;padding:10px 14px}
+ .toybot-page .toybot-debrief-actions .toybot-secondary,.toybot-page .toybot-debrief-actions .toybot-result-garage{min-height:36px;padding:8px 12px}
+ .toybot-page .toybot-debrief-actions .toybot-home-exit{min-height:32px;padding:6px}
+}

@@ -1,0 +1,698 @@
+// Run from repository root: node --test src/games/toybot-breakout/simulation.test.cjs
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const ts = require('typescript');
+const cache = new Map();
+function load(name) {
+  const file = path.resolve(__dirname, name + '.ts');
+  if (cache.has(file)) return cache.get(file);
+  const module = { exports: {} };
+  cache.set(file, module.exports);
+  const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS } }).outputText;
+  new Function('require', 'module', 'exports', code)((id) => id.startsWith('./') ? load(id) : require(id), module, module.exports);
+  return module.exports;
+}
+const sim = load('simulation'), levels = load('level'), progression = load('progression');
+const garage = { completedLevels: [true,true,true,true,false], tutorialCompleted: true, parts: 0, runs: 4, wins: 4, bestScore: 0, coreLevel: 0, unlockedLevel: 4, unlocked: { weapon: false, armor: false, core: false }, equipped: { weapon: false, armor: false, core: false } };
+const initial = (level = 0) => ({ ...sim.createInitialState(garage, level, 0), bossRandomSeed: 42 });
+const tick = s => sim.gameReducer(s, { type: 'TICK' });
+function incoming(s, changes = {}) {
+  return { id: 100, ticks: 1, duration: 3, target: 'boss', targetIndex: 0, damage: 20, count: 1, origins: [{ index: 0, x: 27, y: 59 }], weaponLevel: 1, lane: s.battleLane, y: 48, charged: false, pierce: 0, muzzle: true, ...changes };
+}
+function battle(level = 0) { const base = initial(level); return { ...base, hazardHps: base.hazardHps.map(() => -1), gate: levels.getLevel(level).gateMarks.length, status: 'battle', progress: levels.getLevel(level).encounters[0].progress, bots: 5, battleHp: 300, battleMaxHp: 300, fireCooldown: 1000, battleTime: 0, bossStep: 'recovery', bossStepTicks: 0, bossCycle: 1 }; }
+test('each mech owns a captured muzzle and individual damage; lane changes leave fired shots fixed', () => {
+  const s = tick({ ...initial(), status: 'running', bots: 5, weaponLevel: 2 });
+  assert.equal(s.pendingShots.length, 5);
+  assert.equal(new Set(s.pendingShots.map(p => JSON.stringify(p.origins[0]))).size, 5);
+  assert.ok(s.pendingShots.every(p => p.damage === 3 && p.origins.length === 1));
+  const moved = sim.gameReducer(s, { type: 'MOVE_LANE', lane: 2 });
+  assert.deepEqual(moved.pendingShots, s.pendingShots);
+  assert.ok(s.pendingShots.some(p => p.duration > s.pendingShots[0].duration));
+});
+test('raw growth damage has no fraction-of-max-hp cap; cross-lane shots never damage boss', () => {
+  const s = battle(); s.battleHp = s.battleMaxHp = 100;
+  assert.equal(tick({ ...s, pendingShots: [incoming(s, { damage: 30 })] }).battleHp, 59);
+  assert.equal(tick({ ...s, pendingShots: [incoming(s, { lane: (s.battleLane + 1) % 3 })] }).battleHp, 100);
+});
+test('tier two pierces one further enemy in same lane and cannot hit a different lane', () => {
+  const s = { ...initial(1), status: 'running', progress: 20, gate: 2, fireCooldown: 100 };
+  s.pendingShots = [incoming(s, { target: 'hazard', targetIndex: 0, lane: 1, damage: 20, weaponLevel: 2, pierce: 1 })];
+  let n = tick(s);
+  assert.equal(n.hazardHps[0], 0);
+  const continuation = n.pendingShots.find(p => !p.muzzle);
+  assert.equal(continuation.targetIndex, 1);
+  assert.equal(continuation.lane, 1);
+  n = tick(tick(n));
+  assert.equal(n.hazardHps[1], 3);
+  assert.equal(n.hazardHps[2], s.hazardHps[2]);
+});
+test('tier three burn persists after leaving a lane and expires without retargeting', () => {
+  let s = { ...initial(), status: 'running', progress: 10, gate: 1, fireCooldown: 100 };
+  s.pendingShots = [incoming(s, { target: 'hazard', targetIndex: 0, lane: 1, damage: 4, weaponLevel: 3 })];
+  s = tick(s); assert.equal(s.hazardHps[0], 4); assert.equal(s.burns.length, 1);
+  s = sim.gameReducer(s, { type: 'MOVE_LANE', lane: 2 });
+  s = tick(s); assert.equal(s.hazardHps[0], 2);
+  for (let i = 0; i < 6; i++) s = tick(s);
+  assert.equal(s.hazardHps[0], 0);
+  assert.equal(s.hazardHps[1], levels.getLevel(0).hazards[1].hp);
+});
+test('tier four releases burst on fourth volley, preserving firing interval', () => {
+  let s = { ...initial(), status: 'running', weaponLevel: 4 };
+  const charged = [];
+  for (let i = 0; i < 13; i++) { s = tick(s); if (s.fireCooldown === 4) charged.push(s.pendingShots.filter(p => p.ticks === p.duration).at(-1).charged); }
+  assert.deepEqual(charged, [false, false, false, true]);
+});
+test('first attack has a fixed warning, one projectile, arrival damage, and a recovery window', () => {
+  let s = { ...battle(), bossCycle: 0, bossStep: 'warning', bossStepTicks: 0, bossAttackLanes: [1], lane: 1, bots: 3 };
+  for (let i = 0; i < 11; i++) { s = tick(s); assert.equal(s.threats.length, 0); }
+  s = tick(s); assert.equal(s.bossStep, 'flight'); assert.equal(s.threats.length, 1); assert.equal(s.bots, 3);
+  const launched = s;
+  for (let i = 0; i < 12; i++) s = tick(s);
+  assert.equal(s.bots, 3); assert.equal(s.playerHp, 86); assert.equal(s.bossStep, 'recovery');
+  for (let i = 0; i < sim.BOSS_RECOVERY_TICKS - 1; i++) { s = tick(s); assert.equal(s.bossStep, 'recovery'); }
+  let dodge = sim.gameReducer(launched, { type: 'MOVE_LANE', lane: 2 });
+  for (let i = 0; i < 12; i++) dodge = tick(dodge);
+  assert.equal(dodge.bots, 3);
+  const armored = { ...initial(), bots: 3, armorLevel: 4, armorPoints: 2 };
+  sim.applySquadHit(armored, 6); assert.equal(armored.playerHp, 100); assert.equal(armored.armorPoints, 0);
+  armored.invulnerableTicks = 0; sim.applySquadHit(armored, 12); assert.equal(armored.playerHp, 88); assert.equal(armored.bots, 3);
+});
+test('late-stage shield reduces damage and dual attacks always leave a safe lane', () => {
+  const s = { ...battle(2), bossStage: 2, bossStep: 'shield' };
+  const protectedHp = tick({ ...s, pendingShots: [incoming(s)] }).battleHp;
+  const exposedHp = tick({ ...s, bossStep: 'recovery', pendingShots: [incoming(s)] }).battleHp;
+  assert.ok(protectedHp > exposedHp);
+  const warning = tick({ ...battle(4), bossStage: 2, bossCycle: 1, bossStep: 'support', threats: [] });
+  assert.equal(warning.bossAttackLanes.length, 2);
+  assert.equal(new Set(warning.bossAttackLanes).size, 2);
+});
+test('temporary gates expire, pause freezes effects, and defeat cinematic finishes before result', () => {
+  let s = sim.applyGateEffect(initial(), { effect: 'jam', amount: 1 });
+  s = { ...s, status: 'running', weaponLevel: 3 };
+  assert.equal(sim.effectiveWeapon(s), 2);
+  const paused = sim.gameReducer(s, { type: 'PAUSE' }); assert.equal(tick(paused).jamTicks, 60);
+  for (let i = 0; i < 60; i++) s = tick(s);
+  assert.equal(s.jamTicks, 0); assert.equal(sim.effectiveWeapon(s), 3);
+  const shell = { id: 1, kind: 'shell', lane: 1, ticks: 1, duration: 12, hp: -1, maxHp: 0, damage: 1, fromLane: 0 };
+  s = tick({ ...battle(), bots: 1, playerHp: 1, lane: 1, threats: [shell] });
+  assert.equal(s.status, 'defeat'); assert.equal(s.defeatReason, 'boss-wipe'); assert.equal(s.bots, 0);
+  for (let i = 0; i < sim.BOSS_DEFEAT_TICKS - 1; i++) s = tick(s);
+  assert.equal(s.status, 'defeat'); assert.equal(tick(s).status, 'result');
+});
+test('gates remain staggered, supply before boss is guaranteed, danger lanes are avoided', () => {
+  for (let sector = 0; sector < 5; sector++) for (let repeat = 0; repeat < 100; repeat++) {
+    const layout = repeat % 3, level = levels.getLevel(sector), choices = sim.createGateChoices(sector, layout);
+    choices.forEach((options, i) => {
+      assert.equal(options.length, 1);
+      if (i && options[0].polarity === 'penalty') assert.equal(choices[i - 1][0].polarity, 'reward');
+      level.hazards.forEach((h, hi) => { if (Math.abs(h.progress - level.gateMarks[i]) <= 6) assert.notEqual(options[0].lane, levels.hazardLaneAt(layout, hi, level.gateMarks[i], sector)); });
+    });
+    assert.equal(choices[0][0].effect, 'coreUp'); assert.equal(choices[1][0].effect, 'weaponUp');
+    assert.ok(choices.slice(-2).every(options => options[0].polarity === 'reward'));
+  }
+});
+test('five levels are selectable only after unlock; next level resets combat, local save migrates', () => {
+  const locked = { ...garage, completedLevels: [false,false,false,false,false], unlockedLevel: 0, wins:0 };
+  let s = sim.gameReducer(initial(), { type: 'SELECT_LEVEL', garage: locked, levelIndex: 4 });
+  assert.equal(s.levelIndex, 0);
+  s = sim.gameReducer({ ...s, status: 'result', won: true, bossDefeated: true, progress:100 }, { type: 'NEXT_LEVEL', garage: locked });
+  assert.equal(s.levelIndex, 1); assert.equal(s.progress, 0); assert.equal(s.status, 'running');
+  assert.equal(s.bots, 1); assert.equal(s.pendingShots.length, 0);
+  assert.equal(progression.readGarage().unlockedLevel, 0);
+});
+test('all five levels and three classes complete roads and bosses by collecting rewards, aiming and dodging', () => {
+  for (let seed = 1; seed <= 12; seed++) for (let levelIndex = 0; levelIndex < 5; levelIndex++) {
+    let randomSeed = seed;
+    const random = () => { randomSeed = (randomSeed * 1664525 + 1013904223) >>> 0; return randomSeed / 4294967296; };
+    let s = { ...initial(levelIndex), mechClass: ['pulse','heavy','blade'][(seed-1)%3], status: 'running', gateChoices: sim.createGateChoices(levelIndex, 0, random) }, ticks = 0;
+    const level = levels.getLevel(levelIndex);
+    while (sim.isActiveStatus(s.status)) {
+      let lane = s.lane;
+      if (sim.isBossArena(s)) {
+        lane = s.battleLane;
+
+        const incomingLanes = s.threats.filter(t => t.hp !== 0 && t.ticks <= 8).map(t => t.lane);
+        if (sim.isRush(s) && (s.bossStep === 'rush' || (s.bossStep === 'warning' && s.bossStepTicks >= 10))) incomingLanes.push(...s.bossAttackLanes);
+        if (incomingLanes.includes(lane)) lane = [0,1,2].find(l => !incomingLanes.includes(l)) ?? lane;
+      } else {
+        const gate = s.gateChoices[s.gate]?.[0], mark = level.gateMarks[s.gate];
+        const enemy = level.hazards.findIndex((h, i) => s.hazardHps[i] > 0 && s.progress >= h.progress - 14 && s.progress < h.progress);
+        if (enemy >= 0) lane = levels.hazardLaneAt(s.layoutIndex, enemy, s.progress, levelIndex);
+        const danger = level.hazards.flatMap((h, index) => s.hazardHps[index] > 0 && h.progress - s.progress < 1.5 && h.progress > s.progress ? [levels.hazardLaneAt(s.layoutIndex, index, s.progress, levelIndex)] : []);
+        if (danger.includes(lane)) lane = [0,1,2].find(l => !danger.includes(l));
+        if (!s.bossDefeated && s.progress >= level.encounters[0].progress - 5) lane = s.battleLane;
+        if (gate && !s.gateResolved && s.progress >= mark - 2.5 && s.progress <= mark + 2) lane = gate.polarity === 'reward' ? gate.lane : (gate.lane + 1) % 3;
+      }
+      s = sim.gameReducer(s, { type: 'MOVE_LANE', lane }); s = tick(s); ticks++;
+      assert.ok(ticks < 3500, `run must terminate: seed=${seed}, level=${levelIndex}, status=${s.status}, step=${s.bossStep}, phase=${s.bossPhaseTicks}, hp=${s.battleHp}, bots=${s.bots}, time=${s.battleTime}, cooldown=${s.fireCooldown}`);
+    }
+    assert.equal(s.won, true, `seed ${seed} level ${levelIndex + 1}: ${s.status} ${s.defeatReason} hp=${s.battleHp}, bots=${s.bots}`);
+    assert.ok(ticks >= 450 && ticks <= 3500, `level ${levelIndex + 1}: ${ticks / 10}s`);
+  }
+});
+test('gate art threshold and simulation share exact contact point; passing is once-only and a missed lane is not collected', () => {
+  const mark = levels.getLevel(0).gateMarks[0];
+  assert.equal(sim.gateGroundY(mark - 1.5, mark), sim.GATE_CONTACT_Y);
+  const s = { ...initial(), status: 'running', progress: mark - 1.8, lane: 0, gateChoices: [[{ id: 'core', effect: 'coreUp', amount: 2, polarity: 'reward', lane: 0 }]], fireCooldown: 100 };
+  let before = tick(s); assert.equal(before.gateResolved, false);
+  const crossed = tick({ ...before, laneMoveTicks: 1 });
+  assert.equal(crossed.gateCollected, true); assert.equal(crossed.bots, 3);
+  assert.equal(tick(crossed).bots, 3);
+  before = tick({ ...s, lane: 2 }); const missed = tick(before);
+  assert.equal(missed.gateResolved, true); assert.equal(missed.gateCollected, false); assert.equal(missed.bots, 1);
+});
+test('mobile bosses still deploy shells, roadblocks and small robots', () => {
+  let s = { ...battle(4), battleTime: 0, bossStage: 2, bossCycle: 1, battleHp: 10000, battleMaxHp: 10000, armorPoints: 1000, fireCooldown: 1000 };
+  const lanes = new Set([s.battleLane]), kinds = new Set();
+  for (let i = 0; i < 230; i++) { s = tick(s); s.threats.forEach(t => kinds.add(t.kind)); lanes.add(s.battleLane); }
+  assert.deepEqual([...kinds].sort(), ['barrier', 'minion', 'shell']); assert.ok(lanes.size > 1);
+});
+test('summoned blockers take real same-lane hits by stable id and intercept shots ahead of boss', () => {
+  const minion = { id: 70, kind: 'minion', lane: 0, ticks: 20, duration: 42, hp: 5, maxHp: 5, damage: 1, fromLane: 0 };
+  const s = { ...battle(), fireCooldown: 0, lane: 0, threats: [minion] };
+  const fired = tick(s); assert.equal(fired.pendingShots[0].target, 'threat'); assert.equal(fired.pendingShots[0].targetIndex, 70);
+  const hit = tick({ ...s, fireCooldown: 100, pendingShots: [incoming(s, { target: 'threat', targetIndex: 70, lane: 0, damage: 10 })] });
+  assert.equal(hit.threats[0].hp, 0); assert.equal(hit.battleHp, s.battleHp); assert.equal(minion.hp, 5, 'reducer must not mutate previous entities');
+  const miss = tick({ ...s, pendingShots: [incoming(s, { target: 'threat', targetIndex: 70, lane: 1, damage: 10 })] });
+  assert.equal(miss.threats[0].hp, 5);
+});
+test('pause freezes hostile entities and boss defeat clears attacks before they can hit', () => {
+  const threat = { id: 42, kind: 'shell', lane: 0, ticks: 1, duration: 12, hp: -1, maxHp: 0, damage: 1, fromLane: 0 };
+  const s = { ...battle(), lane: 0, bots: 1, playerHp: 1, battleHp: 1, threats: [threat] };
+  const paused = sim.gameReducer(s, { type: 'PAUSE' }); assert.deepEqual(tick(paused).threats, paused.threats);
+  const victory = tick({ ...s, pendingShots: [incoming(s, { damage: 10 })] });
+  assert.equal(victory.bossDefeated, true); assert.equal(victory.threats.length, 0); assert.equal(victory.bots, 1);
+  const defeat = tick(s); assert.equal(defeat.status, 'defeat'); assert.equal(defeat.defeatReason, 'boss-wipe'); assert.equal(defeat.threats.length, 0);
+});
+test('untargeted bullets stay on the roadway and always travel forward', () => {
+  for (let levelIndex = 0; levelIndex < 5; levelIndex++) {
+    const s = tick({ ...initial(levelIndex), status: 'running', bots: 7 });
+    for (const shot of s.pendingShots) {
+      assert.equal(shot.target, null);
+      assert.ok(shot.y >= sim.ROAD_HORIZON[levelIndex]);
+      assert.ok(shot.y < shot.origins[0].y);
+    }
+  }
+});
+test('gate depth changes from behind the leader to in front only after crossing its ground line', () => {
+  const mark = levels.getLevel(0).gateMarks[0];
+  assert.ok(sim.gateGroundY(mark - 2, mark) < sim.GATE_CONTACT_Y);
+  assert.ok(sim.gateGroundY(mark - 1, mark) > sim.GATE_CONTACT_Y);
+  assert.equal(sim.laneXAt(0, sim.GATE_CONTACT_Y - 5), sim.LANE_CENTERS[0]);
+});
+test('arena entry cleans ordinary stage objects, preserves movement, and finishes the complete entrance before attacking', () => {
+  const level = levels.getLevel(0), mark = level.encounters[0].progress;
+  let s = { ...initial(), status: 'running', progress: mark - .1, gate: level.gateMarks.length, hazardHps: level.hazards.map(() => -1), pendingShots: [incoming(initial(), { target: null, ticks: 5 })], overloadTicks: 30 };
+  s = tick(s); assert.equal(s.status, 'boss-intro'); assert.equal(s.pendingShots.length, 0); assert.equal(s.gate, level.gateMarks.length);
+  const progress = s.progress, hp = s.battleHp;
+  s = sim.gameReducer(s, { type: 'MOVE_LANE', lane: 2 }); assert.equal(s.lane, 2);
+  for (let i = 0; i < sim.BOSS_INTRO_TICKS - 1; i++) { s = tick(s); assert.equal(s.status, 'boss-intro'); assert.equal(s.progress, progress); assert.equal(s.battleHp, hp); assert.equal(s.threats.length, 0); }
+  const remaining = s.overloadTicks;
+  s = tick(s); assert.equal(s.status, 'battle'); assert.equal(s.bossStep, 'warning'); assert.deepEqual(s.bossAttackLanes, [2]); assert.equal(s.overloadTicks, remaining);
+});
+test('selected tutorial cannon stays single, without roadblocks or robots mixed in', () => {
+  for (let level = 0; level < 5; level++) {
+    let s = { ...battle(level), bossCycle: 0, bossStage: 1, bossStep: 'warning', bossStepTicks: 0, bossAttackLanes: [1], lane: 2 };
+    for (let i = 0; i < sim.BOSS_WARNING_TICKS + 12; i++) {
+      s = tick(s); assert.ok(s.threats.every(t => t.kind === 'shell')); assert.ok(s.threats.length <= 1);
+    }
+    assert.equal(s.bossStep, 'recovery'); assert.equal(s.bots, 5);
+  }
+});
+test('half health shifts only at a safe attack boundary, unfolds once, and returns to an output window', () => {
+  let s = { ...battle(3), bossCycle: 0, bossStep: 'warning', bossStepTicks: 0, bossAttackLanes: [1], battleHp: 149 };
+  for (let i = 0; i < 12; i++) { s = tick(s); assert.equal(s.status, 'battle'); }
+  for (let i = 0; i < 12; i++) s = tick(s);
+  assert.equal(s.bossStep, 'recovery'); s = tick(s);
+  assert.equal(s.status, 'boss-shift'); assert.equal(s.bossStage, 2); assert.equal(s.battleHp, 149);
+  assert.equal(s.threats.length, 0); assert.equal(s.pendingShots.length, 0);
+  const hp = s.battleHp, time = s.battleTime;
+  for (let i = 0; i < sim.BOSS_SHIFT_TICKS; i++) s = tick(s);
+  assert.equal(s.status, 'battle'); assert.equal(s.bossStep, 'recovery'); assert.equal(s.bossStepTicks, 0); assert.equal(s.battleHp, hp); assert.equal(s.battleTime, time);
+  for (let i = 0; i < 100; i++) { s = tick(s); assert.notEqual(s.status, 'boss-shift'); }
+});
+test('support and shells never compete for a dodge task in the same wave', () => {
+  for (let level = 0; level < 5; level++) {
+    let s = { ...battle(level), bossStage: 2, bossCycle: 1, bossStep: 'recovery', armorPoints: 1000, fireCooldown: 1000 };
+    for (let i = 0; i < 220; i++) {
+      s = tick(s);
+      const active = s.threats.filter(t => t.hp !== 0);
+      assert.ok(!(active.some(t => t.kind === 'shell') && active.some(t => t.kind !== 'shell')), `level ${level + 1}`);
+      assert.ok(new Set(active.filter(t => t.kind !== 'shell').map(t => t.kind)).size <= 1);
+      if (active.some(t => t.kind === 'shell')) assert.equal(s.bossStep, 'flight');
+    }
+  }
+});
+test('long fights intensify instead of failing on the old short timer', () => {
+  let s = { ...battle(1), battleTime: sim.BOSS_ENRAGE_TICKS - 1, armorPoints: 1000, fireCooldown: 1000 };
+  const hp = s.battleHp;
+  s = tick(s); assert.equal(s.status, 'battle'); assert.equal(sim.bossEnrage(s), 1); assert.equal(s.battleHp, hp);
+  let intensifiedShell = false;
+  for (let i = 0; i < 220; i++) { s = tick(s); if (s.threats.some(t => t.kind === 'shell' && t.damage > levels.getLevel(1).bossDamage)) intensifiedShell = true; }
+  assert.equal(s.status, 'battle'); assert.ok(intensifiedShell);
+});
+test('victory animation finishes before rewards/result; subsequent ticks cannot score again', () => {
+  const base = { ...battle(), battleHp: 1, bots: 2, score: 10 };
+  let s = tick({ ...base, pendingShots: [incoming(base, { damage: 100 })] });
+  assert.equal(s.status, 'boss-victory'); assert.equal(s.won, false); assert.equal(s.pendingShots.length, 0); assert.equal(s.burns.length, 0); assert.equal(s.threats.length, 0);
+  const rewardScore = s.score;
+  for (let i = 0; i < sim.BOSS_VICTORY_TICKS - 1; i++) { s = tick(s); assert.equal(s.status, 'boss-victory'); assert.equal(s.score, rewardScore); }
+  s = tick(s); assert.equal(s.status, 'result'); assert.equal(s.won, true); assert.equal(s.progress, 100);
+  assert.equal(s.score, rewardScore + 140); assert.deepEqual(tick(s), s);
+});
+test('pause and restart preserve or reset all cinematic stages correctly', () => {
+  for (const status of ['boss-intro', 'boss-shift', 'boss-victory', 'defeat']) {
+    const s = { ...battle(), status, bossPhaseTicks: 4, defeatTicks: 4 };
+    const paused = sim.gameReducer(s, { type: 'PAUSE' }); assert.equal(paused.status, 'paused'); assert.deepEqual(tick(paused), paused);
+    const resumed = sim.gameReducer(paused, { type: 'RESUME' }); assert.equal(resumed.status, status); assert.equal(resumed.bossPhaseTicks, 4);
+    const reset = sim.gameReducer(paused, { type: 'RESTART', garage });
+    assert.equal(reset.status, 'running'); assert.equal(reset.bossStage, 1); assert.equal(reset.bossPhaseTicks, 0); assert.equal(reset.threats.length, 0); assert.equal(reset.won, false);
+  }
+});
+
+test('HP, shields, armor and invulnerability provide distinct non-stacking feedback', () => {
+  const s = { ...battle(), bots: 5, shieldCharges: 1, armorPoints: 2 };
+  sim.applySquadHit(s, 18); assert.equal(s.damageKind, 'shield'); assert.equal(s.playerHp, 100); assert.equal(s.shieldCharges, 0);
+  const sequence = s.damageSequence; sim.applySquadHit(s, 18); assert.equal(s.damageSequence, sequence);
+  s.invulnerableTicks = 0; sim.applySquadHit(s, 18); assert.equal(s.playerHp, 90); assert.equal(s.damageAbsorbed, 8); assert.equal(s.damageLoss, 10); assert.equal(s.bots, 5);
+  const healed = sim.applyGateEffect(s, { effect: 'repair', amount: 2 }); assert.equal(healed.playerHp, 100);
+  s.invulnerableTicks = 0; sim.applySquadHit(s, 999); assert.equal(s.playerHp, 0); assert.equal(s.bots, 0);
+  const roadDeath = tick({ ...initial(), status: 'running', playerHp: 0 }); assert.equal(roadDeath.status, 'defeat'); assert.equal(roadDeath.defeatReason, 'squad-wipe');
+});
+test('rush locks one lane or two adjacent lanes, lands once, and always allows escape', () => {
+  for (let level = 0; level < 5; level++) for (const lane of [0,1,2]) for (const stage of [1,2]) {
+    let s = tick({ ...battle(level), bossCycle: 1, bossStage: stage, bossStep: 'support', lane });
+    // Some bosses choose burst first; advance cycles to cover rush and sweep.
+    const seen = new Set();
+    for (let cycle = 1; cycle <= 4; cycle++) {
+      s = tick({ ...s, bossCycle: cycle, bossStep: 'support', threats: [] });
+      while (s.bossStep === 'shield') s = tick(s);
+      if (!sim.isRush(s)) continue;
+      seen.add(s.bossAttack); const locked = [...s.bossAttackLanes];
+      assert.ok(locked.length >= 1 && locked.length <= 2); if (locked.length === 2) assert.equal(locked[1] - locked[0], 1);
+      const safe = [0,1,2].find(l => !locked.includes(l)); assert.notEqual(safe, undefined);
+      const base = { ...s, playerHp: 100, invulnerableTicks: 0, armorPoints: 0, shieldCharges: 0, fireCooldown: 1000 };
+      let dodge = sim.gameReducer(base, { type: 'MOVE_LANE', lane: safe });
+      let hit = { ...base, lane: locked[0] };
+      for (let i=0;i<sim.RUSH_WARNING_TICKS;i++) { dodge=tick(dodge); hit=tick(hit); assert.deepEqual(dodge.bossAttackLanes, locked); assert.equal(hit.playerHp, 100); }
+      assert.equal(hit.bossStep, 'rush'); const x=sim.bossX(hit), y=sim.bossY(hit);
+      for(let i=0;i<sim.RUSH_CONTACT_TICK;i++) {dodge=tick(dodge);hit=tick(hit);}
+      assert.equal(dodge.playerHp, 100); assert.ok(hit.playerHp < 100); assert.ok(sim.bossY(hit)>y); assert.ok(Number.isFinite(x));
+      const hp=hit.playerHp, seq=hit.damageSequence;
+      for(let i=sim.RUSH_CONTACT_TICK;i<sim.RUSH_DURATION_TICKS;i++) hit=tick(hit);
+      assert.equal(hit.playerHp,hp); assert.equal(hit.damageSequence,seq); assert.equal(hit.bossStep,'recovery');
+      const paused=sim.gameReducer(dodge,{type:'PAUSE'}); assert.deepEqual(tick(paused),paused);
+    }
+    if ([0,2].includes(level) || (level === 4 && stage === 1)) assert.ok(seen.has('rush'));
+    if(level === 4 && stage === 2) assert.ok(seen.has('sweep'));
+    if([1,3].includes(level)) assert.equal(seen.size,0,'flying bosses should not reuse body charge');
+  }
+});
+test('five bosses take 1–3 minutes with representative loadouts and telegraph-aware dodging', () => {
+  const samples=[];
+  for(let level=0;level<5;level++) for(const [bots,weaponLevel] of [[3,2],[5,3],[7,4]]) {
+    const spec=levels.getLevel(level);
+    let s=tick({...initial(level),status:'running',progress:spec.encounters[0].progress-.1,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots,weaponLevel});
+    const maxHp=s.battleMaxHp; let ticks=0;
+    while(sim.isActiveStatus(s.status) && ticks<4000){
+      let lane=s.battleLane;
+      const danger=s.threats.filter(t=>t.hp!==0&&t.ticks<=8).map(t=>t.lane);
+      if(sim.isRush(s)&&(s.bossStep==='rush'||(s.bossStep==='warning'&&s.bossStepTicks>=10))) danger.push(...s.bossAttackLanes);
+      if(danger.includes(lane)) lane=[0,1,2].find(l=>!danger.includes(l))??lane;
+      s=tick(sim.gameReducer(s,{type:'MOVE_LANE',lane})); ticks++;
+      assert.equal(s.battleMaxHp,maxHp,'boss HP must not grow during combat');
+    }
+    assert.equal(s.won,true); const seconds=ticks/10; samples.push(seconds);
+    assert.ok(seconds>=60&&seconds<=180, 'level '+(level+1)+' bots '+bots+' W'+weaponLevel+': '+seconds+'s');
+  }
+  console.log('Boss balance sample seconds: '+samples.join(', '));
+});
+
+test('boss relocates between attacks, interpolates visually, and locks its lane through warning and flight', () => {
+  const visited=new Set();
+  for(const seed of [1,42,1000,1000000,4000000000]){
+    let s={...battle(),bossRandomSeed:seed,bossStep:'recovery',bossStepTicks:0};
+    const source=s, oldLane=s.battleLane, oldX=sim.bossX(s); s=tick(s); visited.add(s.battleLane);
+    assert.notEqual(s.battleLane,oldLane); assert.equal(s.bossMoveTicks,sim.BOSS_MOVE_TICKS); assert.equal(sim.bossX(s),oldX);
+    const movedLane=s.battleLane;
+    const paused=sim.gameReducer(s,{type:'PAUSE'}); assert.deepEqual(tick(paused),paused);
+    assert.deepEqual(tick(source),s,'same state must produce same random outcome');
+    s=tick(s); assert.ok(Math.abs(sim.bossX(s)-oldX)>0); assert.deepEqual(sim.bossDamageLanes(s),[]);
+    const hp=s.battleHp;
+    s=tick({...s,pendingShots:[incoming(s,{lane:oldLane,damage:100})]}); assert.equal(s.battleHp,hp,'old lane shots cannot hit a relocating boss');
+    while(s.bossMoveTicks>0)s=tick(s);
+    assert.equal(sim.bossX(s),sim.laneXAt(movedLane,sim.bossY(s))); assert.deepEqual(sim.bossDamageLanes(s),[movedLane]);
+    const hit=tick({...s,pendingShots:[incoming(s,{lane:movedLane,damage:20})]}); assert.ok(hit.battleHp<s.battleHp);
+    s={...s,bossAttack:'cannon',bossStep:'warning',bossStepTicks:0,bossCycle:0,bossAttackLanes:[s.lane]};
+    for(let i=0;i<24;i++){s=tick(s);assert.equal(s.battleLane,movedLane);}
+  }
+  assert.ok(visited.size>1,'different random seeds choose different lanes');
+});
+
+function signature(level, stage = 1, cycle = 1, lane = 1) {
+  let s = tick({ ...battle(level), bossStage: stage, bossCycle: cycle, bossStep: 'support', lane, threats: [] });
+  while (s.bossStep === 'shield') s = tick(s);
+  return s;
+}
+function launch(s) { while(s.bossStep === 'warning') s=tick(s); return s; }
+test('five bosses expose five different signature mechanics and never seal all three lanes', () => {
+  assert.deepEqual([0,1,2,3,4].map(l=>signature(l).bossAttack), ['mortar','swarm','bunker','storm','crossfire']);
+  for(let level=0;level<5;level++)for(const stage of [1,2])for(const lane of [0,1,2])for(let cycle=1;cycle<=4;cycle++){
+    const s=signature(level,stage,cycle,lane);
+    assert.ok(s.bossAttackLanes.length>0&&s.bossAttackLanes.length<3);
+    assert.equal(new Set(s.bossAttackLanes).size,s.bossAttackLanes.length);
+  }
+});
+test('forge lava lands after warning, lingers on ground, hurts on pulses and expires', () => {
+  let s=signature(0);const lane=s.bossAttackLanes[0];s=launch(s);
+  assert.equal(s.threats[0].kind,'lava');const id=s.threats[0].id;
+  for(let i=0;i<17;i++){s=tick(s);assert.equal(s.playerHp,100);}
+  s=tick(s);assert.equal(s.playerHp,92);assert.equal(sim.threatY(s.threats.find(t=>t.id===id)),59);assert.equal(s.bossStep,'flight');
+  const hp=s.playerHp; s=sim.gameReducer(s,{type:'MOVE_LANE',lane:(lane+1)%3});
+  const paused=sim.gameReducer(s,{type:'PAUSE'});assert.deepEqual(tick(paused),paused);
+  for(let i=0;i<18;i++)s=tick(s);
+  assert.equal(s.playerHp,hp);assert.equal(s.bossStep,'recovery');assert.ok(s.threats.every(t=>t.hp===0));
+  assert.equal(signature(0,2).bossAttackLanes.length,2);
+});
+test('queen swarm can be destroyed with same-lane shots or dodged; flight waits for every drone', () => {
+  const base=launch(signature(1,2));assert.equal(base.threats.length,2);assert.ok(base.threats.every(t=>t.kind==='minion'&&t.hp>0));
+  const drone=base.threats[0];let s=tick({...base,pendingShots:[incoming(base,{target:'threat',targetIndex:drone.id,lane:drone.lane,damage:999})]});
+  assert.equal(s.threats.find(t=>t.id===drone.id).hp,0);assert.equal(s.bossStep,'flight');
+  const safe=[0,1,2].find(l=>!base.bossAttackLanes.includes(l));s=sim.gameReducer(s,{type:'MOVE_LANE',lane:safe});
+  for(let i=0;i<32;i++)s=tick(s);assert.equal(s.playerHp,100);assert.equal(s.bossStep,'recovery');
+});
+test('bastion deploys tougher shootable shields and uses its exclusive ram without generic missiles', () => {
+  const s=launch(signature(2,2));assert.ok(s.threats.every(t=>t.kind==='barrier'&&t.hp>=22&&t.damage===22));
+  assert.equal(signature(2,2,2).bossAttack,'rush');
+  const barrier=s.threats[0];const hit=tick({...s,pendingShots:[incoming(s,{target:'threat',targetIndex:barrier.id,lane:barrier.lane,damage:999})]});assert.equal(hit.threats[0].hp,0);
+});
+test('oracle warns each sequential beam, changes lane in fixed order and never silently tracks the player', () => {
+  let s=signature(3,1,1,0);const lanes=[];
+  for(let wave=0;wave<3;wave++){
+    assert.equal(s.bossStep,'warning');lanes.push(s.bossAttackLanes[0]);const locked=[...s.bossAttackLanes];
+    s=sim.gameReducer(s,{type:'MOVE_LANE',lane:(locked[0]+1)%3});
+    for(let i=0;i<sim.BOSS_WARNING_TICKS;i++){s=tick(s);assert.deepEqual(s.bossAttackLanes,locked);}
+    assert.equal(s.threats.filter(t=>t.hp!==0)[0].kind,'beam');
+    for(let i=0;i<8;i++)s=tick(s);
+    assert.equal(s.playerHp,100);
+  }
+  assert.equal(new Set(lanes).size,3);assert.equal(s.bossStep,'recovery');
+});
+test('emperor crossfire advertises a safe gap, then warns again before changing it in phase two', () => {
+  let s=signature(4,2,1);const first=[...s.bossAttackLanes];const safe=[0,1,2].find(l=>!first.includes(l));
+  s=sim.gameReducer(s,{type:'MOVE_LANE',lane:safe});s=launch(s);assert.equal(s.threats.filter(t=>t.hp!==0).length,2);
+  for(let i=0;i<12;i++)s=tick(s);assert.equal(s.playerHp,100);assert.equal(s.bossStep,'warning');assert.notDeepEqual(s.bossAttackLanes,first);assert.ok(s.bossAttackLanes.includes(safe));
+  const nextSafe=[0,1,2].find(l=>!s.bossAttackLanes.includes(l));s=sim.gameReducer(s,{type:'MOVE_LANE',lane:nextSafe});s=launch(s);for(let i=0;i<12;i++)s=tick(s);
+  assert.equal(s.playerHp,100);assert.equal(s.bossStep,'recovery');
+});
+
+test('only the first boss uses a common tutorial; later bosses introduce their identity immediately', () => {
+  const attacks=[];
+  for(let level=0;level<5;level++) {
+    let s={...battle(level),status:'boss-intro',bossCycle:0,bossPhaseTicks:0};
+    for(let i=0;i<sim.BOSS_INTRO_TICKS;i++)s=tick(s);
+    attacks.push(s.bossAttack);assert.equal(s.bossStep,'warning');assert.equal(s.threats.length,0);
+  }
+  assert.deepEqual(attacks,['cannon','swarm','bunker','storm','crossfire']);
+});
+
+function roadDrone() {
+  const s=initial();return tick({...s,status:'running',progress:levels.getLevel(0).hazards[0].progress-9.9,gate:2,fireCooldown:1000});
+}
+function supportEnemy(kind) {
+  const s=battle(1),duration=kind==='minion'?32:36;
+  return tick({...s,bossStep:'flight',bossSalvos:0,lane:1,threats:[{id:888,kind,lane:1,ticks:duration-6,duration,hp:100,maxHp:100,damage:10,fromLane:1}]});
+}
+test('road drone captures a lane, warns, fires exactly two projectiles and cannot reroll or mutate prior state', () => {
+  let s=roadDrone();assert.equal(s.enemyAttacks.length,1);const attack=s.enemyAttacks[0];assert.equal(attack.kind,'drone-burst');assert.equal(attack.phase,'warning');
+  for(let i=0;i<11;i++){s=tick(s);assert.equal(s.playerHp,100);}
+  const previous=JSON.parse(JSON.stringify(s));s=tick(s);assert.equal(s.enemyAttacks[0].phase,'flight');assert.deepEqual(previous.enemyAttacks[0].phase,'warning');
+  for(let i=0;i<8;i++)s=tick(s);assert.equal(s.playerHp,93);assert.equal(s.enemyAttacks[0].shotsRemaining,1);
+  for(let i=0;i<6;i++)s=tick(s);assert.equal(s.playerHp,86);assert.equal(s.enemyAttacks.length,0);
+  const used=s.enemyAttackSources.length;for(let i=0;i<5;i++)s=tick(s);assert.equal(s.enemyAttackSources.length,used);
+  let dodge=roadDrone();const locked=dodge.enemyAttacks[0].lane;dodge=sim.gameReducer(dodge,{type:'MOVE_LANE',lane:(locked+1)%3});
+  for(let i=0;i<26;i++)dodge=tick(dodge);assert.equal(dodge.playerHp,100);
+});
+test('destroying a charging drone cancels its volley; an already launched projectile persists', () => {
+  const s=roadDrone();const canceled=tick({...s,hazardHps:s.hazardHps.map(()=>0)});assert.equal(canceled.enemyAttacks.length,0);
+  let flight=s;for(let i=0;i<12;i++)flight=tick(flight);
+  flight=tick({...flight,hazardHps:flight.hazardHps.map(()=>0)});assert.equal(flight.enemyAttacks.length,1);
+  for(let i=0;i<13;i++)flight=tick(flight);assert.equal(flight.playerHp,93); assert.equal(flight.enemyAttacks.length,0,'destroyed drone cannot launch its second shot');
+});
+test('roadblock charges a same-lane shockwave that can be dodged or interrupted', () => {
+  const s=supportEnemy('barrier');assert.equal(s.enemyAttacks[0].kind,'shockwave');assert.equal(s.bossStep,'flight');
+  let hit=s;for(let i=0;i<17;i++){hit=tick(hit);assert.equal(hit.playerHp,100);}hit=tick(hit);assert.equal(hit.playerHp,88);assert.equal(hit.enemyAttacks.length,0);
+  let dodge=sim.gameReducer(s,{type:'MOVE_LANE',lane:2});for(let i=0;i<18;i++)dodge=tick(dodge);assert.equal(dodge.playerHp,100);
+  const destroyed=tick({...s,pendingShots:[incoming(s,{target:'threat',targetIndex:888,lane:1,damage:999})]});assert.equal(destroyed.enemyAttacks.length,0);
+});
+test('small robot visibly pounces along its own lane, deals one hit and leaves no second contact', () => {
+  const s=supportEnemy('minion');assert.equal(s.enemyAttacks[0].kind,'pounce');let hit=s;
+  for(let i=0;i<12;i++)hit=tick(hit);
+  const from=sim.enemyThreatY(hit,hit.threats[0]);assert.equal(hit.enemyAttacks[0].phase,'flight');hit=tick(hit);assert.ok(sim.enemyThreatY(hit,hit.threats[0])>from);
+  for(let i=0;i<5;i++)hit=tick(hit);assert.equal(hit.playerHp,86);assert.equal(hit.threats[0].hp,0);const seq=hit.damageSequence;
+  for(let i=0;i<8;i++)hit=tick(hit);assert.equal(hit.playerHp,86);assert.equal(hit.damageSequence,seq);
+  let dodge=sim.gameReducer(s,{type:'MOVE_LANE',lane:2});for(let i=0;i<18;i++)dodge=tick(dodge);assert.equal(dodge.playerHp,100);
+});
+test('extra enemy attacks freeze on pause and are cleared on arena entry, victory or lethal damage', () => {
+  const s=roadDrone();const paused=sim.gameReducer(s,{type:'PAUSE'});assert.deepEqual(tick(paused),paused);
+  const spec=levels.getLevel(0);const arena=tick({...s,gate:spec.gateMarks.length,progress:spec.encounters[0].progress-.1,hazardHps:s.hazardHps.map(()=>-1)});assert.equal(arena.status,'boss-intro');assert.equal(arena.enemyAttacks.length,0);
+  const b=supportEnemy('barrier');const won=tick({...b,battleHp:1,pendingShots:[incoming(b,{lane:b.battleLane,damage:999})]});assert.equal(won.status,'boss-victory');assert.equal(won.enemyAttacks.length,0);
+  let death=roadDrone();for(let i=0;i<12;i++)death=tick(death);death=tick({...death,playerHp:1,enemyAttacks:death.enemyAttacks.map(a=>({...a,ticks:1}))});assert.equal(death.status,'defeat');assert.equal(death.enemyAttacks.length,0);
+});
+
+test('pulse and heavy classes use different real attack cadence and per-hit damage', () => {
+  for(const [mechClass,interval,power] of [['pulse',4,1],['heavy',10,3]]){
+    let s={...initial(),mechClass,status:'running',bots:1,weaponLevel:2};s=tick(s);
+    assert.equal(s.fireCooldown,interval);assert.equal(s.pendingShots[0].damage,3*power);assert.equal(s.pendingShots[0].attackStyle,mechClass);
+    const first=s.shotSequence;for(let i=0;i<interval-1;i++)s=tick(s);assert.equal(s.shotSequence,first);s=tick(s);assert.equal(s.shotSequence,first+1);
+  }
+});
+test('blade does not fire empty or distant shots and only resolves an in-range same-lane strike', () => {
+  const base={...initial(),mechClass:'blade',status:'running',gate:2,fireCooldown:0,bots:1,hazardHps:[500,-1,-1,-1],lane:1};
+  const empty=tick({...base,progress:0});assert.equal(empty.pendingShots.length,0);assert.equal(empty.fireCooldown,0);
+  const distant=tick({...base,progress:14});assert.equal(distant.pendingShots.length,0);
+  let close=tick({...base,progress:19});assert.equal(close.pendingShots.length,1);assert.equal(close.pendingShots[0].attackStyle,'blade');assert.equal(close.pendingShots[0].duration,3);assert.equal(close.pendingShots[0].muzzle,false);
+  let escaped=sim.gameReducer(close,{type:'MOVE_LANE',lane:2});for(let i=0;i<3;i++)escaped=tick(escaped);assert.equal(escaped.hazardHps[0],500);
+  for(let i=0;i<3;i++)close=tick(close);assert.equal(close.hazardHps[0],498);
+});
+test('blade squad attacks with every member, supports upgrades, and bosses enter its close arena', () => {
+  let s={...battle(),mechClass:'blade',lane:0,battleLane:0,bossStep:'warning',bossCycle:0,bossAttackLanes:[1],fireCooldown:0,weaponLevel:2};
+  assert.equal(sim.bossY(s),51);assert.equal(sim.bossY({...s,mechClass:'pulse'}),40);
+  s=tick(s);assert.equal(s.pendingShots.length,5);assert.ok(s.pendingShots.every(p=>p.attackStyle==='blade'&&p.damage>6&&p.origins.length===1));
+  const hp=s.battleHp;for(let i=0;i<3;i++)s=tick(s);assert.ok(s.battleHp<hp);
+  const paused=sim.gameReducer(s,{type:'PAUSE'});assert.deepEqual(tick(paused),paused);
+});
+test('old garage saves migrate to pulse and new class choice persists across start/restart/next-level', () => {
+  const before=global.window;
+  try {
+    let data={...garage,mechClass:'blade'};global.window={localStorage:{getItem:()=>JSON.stringify(data)}};
+    assert.equal(progression.readGarage().mechClass,'blade');data={...garage,mechClass:'invalid'};assert.equal(progression.readGarage().mechClass,'pulse');data={...garage};assert.equal(progression.readGarage().mechClass,'pulse');
+  } finally { if(before===undefined)delete global.window;else global.window=before; }
+  const selected={...garage,mechClass:'heavy'};
+  for(const type of ['START','RESTART','HOME'])assert.equal(sim.gameReducer(initial(),{type,garage:selected}).mechClass,'heavy');
+  assert.equal(sim.gameReducer({...initial(),won:true,status:'result',bossDefeated:true,progress:100},{type:'NEXT_LEVEL',garage:selected}).mechClass,'heavy');
+});
+test('all three mech classes can beat five bosses with telegraphed dodging in 1–3 minutes', () => {
+  const times=[];
+  for(const mechClass of ['pulse','heavy','blade']) for(let level=0;level<5;level++){
+    const spec=levels.getLevel(level);let s=tick({...initial(level),mechClass,status:'running',progress:spec.encounters[0].progress-.1,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3});let ticks=0;
+    while(sim.isActiveStatus(s.status)&&ticks<3500){
+      let lane=s.battleLane;const danger=s.threats.filter(t=>t.hp!==0&&t.ticks<=8).map(t=>t.lane);
+      danger.push(...s.enemyAttacks.filter(a=>a.phase==='flight'||a.ticks<=4).map(a=>a.lane));
+      if(sim.isRush(s)&&(s.bossStep==='rush'||(s.bossStep==='warning'&&s.bossStepTicks>=10)))danger.push(...s.bossAttackLanes);
+      if(danger.includes(lane))lane=[0,1,2].find(l=>!danger.includes(l))??lane;
+      s=tick(sim.gameReducer(s,{type:'MOVE_LANE',lane}));ticks++;
+    }
+    assert.equal(s.won,true,mechClass+' level '+(level+1));assert.ok(ticks>=600&&ticks<=1800,mechClass+' level '+(level+1)+' '+ticks/10+'s');times.push(mechClass+' L'+(level+1)+':'+ticks/10);
+  }
+  console.log('Class boss balance '+times.join(', '));
+});
+
+test('v1 garage migration keeps parts, class, equipped choices and paid core levels without adding starting bots', () => {
+  const old={...garage,parts:17,mechClass:'blade',coreLevel:2,unlocked:{weapon:true,armor:true,core:true},equipped:{weapon:true,armor:false,core:true}};
+  const migrated=progression.normalizeGarage(old);
+  assert.equal(migrated.version,2);assert.deepEqual(migrated.levels,{weapon:1,armor:1,core:2});assert.equal(migrated.parts,17);assert.equal(migrated.mechClass,'blade');assert.equal(migrated.equipped.armor,false);
+  assert.deepEqual(progression.normalizeGarage(migrated),migrated);
+  const s=sim.createInitialState(migrated);assert.equal(s.bots,1);assert.equal(s.garageCoreLevel,2);assert.equal(s.coreLevel,0);assert.equal(sim.attackIntervalFor(s),6);
+});
+test('all modules consume the exact tier cost, auto-equip, stop at five and refuse insufficient funds', () => {
+  for(const id of ['weapon','armor','core']){
+    let g=progression.normalizeGarage({...garage,parts:1000});let spent=0;
+    for(let level=0;level<5;level++){
+      const cost=progression.upgradeCost(g,id), before=JSON.parse(JSON.stringify(g));spent+=cost;
+      const preview=progression.previewUpgrade(g,id);assert.equal(preview.parts,g.parts);assert.equal(progression.moduleLevel(preview,id),level+1);
+      const next=progression.purchaseUpgrade(g,id);assert.deepEqual(g,before,'purchase must not mutate the prior save');g=next;
+      assert.equal(progression.moduleLevel(g,id),level+1);assert.equal(g.parts,1000-spent);assert.equal(g.equipped[id],true);
+    }
+    assert.equal(progression.upgradeCost(g,id),0);assert.equal(progression.purchaseUpgrade(g,id),g);
+    const broke=progression.normalizeGarage({...garage,parts:0});assert.equal(progression.purchaseUpgrade(broke,id),broke);assert.equal(progression.toggleUpgrade(broke,id),broke);
+  }
+});
+test('every mech and every core tier starts with exactly one unit on start, restart and next level', () => {
+  for(const mechClass of ['pulse','heavy','blade'])for(let core=0;core<=5;core++){
+    const g=progression.normalizeGarage({...garage,mechClass,levels:{weapon:5,armor:5,core},equipped:{weapon:true,armor:true,core:true}});
+    for(const type of ['START','RESTART','NEXT_LEVEL']){
+      const s=sim.gameReducer({...initial(),status:'result',won:true,bossDefeated:true,progress:100},{type,garage:g});assert.equal(s.bots,1);assert.equal(s.playerHp,150);assert.equal(s.armorPoints,10);
+      const recruited=sim.applyGateEffect(s,{effect:'coreUp',amount:2});assert.equal(recruited.bots,3,'in-run recruitment remains separate from permanent reactor tuning');
+    }
+  }
+});
+test('core improves actual cadence or fractional damage at every tier for all three classes', () => {
+  for(const mechClass of ['pulse','heavy','blade']){
+    let previousDamage=0,previousInterval=100;
+    for(let core=0;core<=5;core++){
+      const g=progression.normalizeGarage({...garage,mechClass,levels:{weapon:1,armor:0,core},equipped:{weapon:true,armor:false,core:true}});
+      const base={...sim.createInitialState(g,0,0),status:'running',gate:6,progress:19,lane:1,fireCooldown:1000,hazardHps:[500,-1,-1,-1]};
+      const shot=incoming(base,{target:'hazard',targetIndex:0,lane:1,damage:(1+base.weaponLevel)*load('mechs').mechSpec(mechClass).power*base.garageDamageScale,weaponLevel:0});
+      const hit=tick({...base,pendingShots:[shot]}),damage=Number((500-hit.hazardHps[0]).toFixed(2)),interval=sim.attackIntervalFor(base);
+      assert.ok(damage>previousDamage,mechClass+' core '+core+' must change actual damage');assert.ok(interval<=previousInterval);
+      assert.ok(Math.abs(damage-progression.garageStats(g).damage)<.01);previousDamage=damage;previousInterval=interval;
+    }
+  }
+});
+test('module unequip retains paid levels and parts while removing its bonuses only from the next loadout', () => {
+  const bought=progression.normalizeGarage({...garage,parts:100,levels:{weapon:3,armor:4,core:5},equipped:{weapon:true,armor:true,core:true}});
+  const active=sim.createInitialState(bought),snapshot=JSON.parse(JSON.stringify(active));
+  let off=bought;for(const id of ['weapon','armor','core'])off=progression.toggleUpgrade(off,id);
+  assert.deepEqual(off.levels,bought.levels);assert.equal(off.parts,100);assert.deepEqual(progression.garageStats(off),{weapon:0,armor:0,core:0,damageScale:1,damage:1,interval:4,maxHp:100,armorPoints:0,startingBots:1});assert.deepEqual(active,snapshot);
+  const on=progression.equipAllUpgrades(off);assert.deepEqual(on.levels,bought.levels);assert.deepEqual(on.equipped,bought.equipped);assert.deepEqual(progression.garageStats(on),progression.garageStats(bought));
+  assert.equal(sim.createInitialState(off).bots,1);assert.equal(sim.createInitialState(on).bots,1);
+});
+test('garage read/write round trips levels safely and clamps corrupt or nonfinite progression values', () => {
+  const before=global.window;let saved='';
+  try{
+    global.window={localStorage:{setItem:(key,value)=>{saved=value;},getItem:()=>saved}};
+    const g=progression.normalizeGarage({...garage,parts:43,levels:{weapon:5,armor:3,core:4},equipped:{weapon:true,armor:false,core:true}});progression.saveGarage(g);assert.deepEqual(progression.readGarage(),g);
+    const corrupt=progression.normalizeGarage({parts:Infinity,levels:{weapon:90,armor:-2,core:NaN},coreLevel:2});assert.equal(corrupt.parts,0);assert.deepEqual(corrupt.levels,{weapon:5,armor:0,core:0});
+    saved='invalid json';assert.equal(progression.readGarage().parts,0);
+  } finally { if(before===undefined)delete global.window;else global.window=before; }
+});
+
+test('each paid weapon tier increases actual enemy damage and core cadence controls the real volley timer', () => {
+  for(const mechClass of ['pulse','heavy','blade']){
+    let last=0;
+    for(let weapon=0;weapon<=5;weapon++){
+      const g=progression.normalizeGarage({...garage,mechClass,levels:{weapon,armor:0,core:0},equipped:{weapon:true,armor:false,core:false}});
+      const base={...sim.createInitialState(g,0,0),status:'running',progress:19,gate:6,lane:1,fireCooldown:1000,hazardHps:[500,-1,-1,-1]};
+      const raw=(1+base.weaponLevel)*load('mechs').mechSpec(mechClass).power*base.garageDamageScale;
+      const n=tick({...base,pendingShots:[incoming(base,{target:'hazard',targetIndex:0,lane:1,damage:raw,weaponLevel:0})]});const damage=Number((500-n.hazardHps[0]).toFixed(2));assert.ok(damage>last);last=damage;
+    }
+    const upgraded=progression.normalizeGarage({...garage,mechClass,levels:{weapon:1,armor:0,core:5},equipped:{weapon:true,armor:false,core:true}});
+    let s={...sim.createInitialState(upgraded,0,0),status:'running',progress:19,gate:6,lane:1,hazardHps:[10000,-1,-1,-1]};s=tick(s);const count=s.shotSequence,interval=sim.attackIntervalFor(s);assert.equal(s.fireCooldown,interval);for(let i=0;i<interval-1;i++)s=tick(s);assert.equal(s.shotSequence,count);assert.equal(tick(s).shotSequence,count+1);
+  }
+});
+
+test('campaign unlocks exactly one next sector after a real completed boss victory', () => {
+  let g=progression.normalizeGarage(null);
+  assert.equal(g.unlockedLevel,0);assert.equal(g.tutorialCompleted,false);
+  assert.equal(progression.canEnterLevel(g,1),false);
+  const win=levelIndex=>({status:'result',won:true,bossDefeated:true,progress:100,levelIndex});
+  assert.equal(progression.recordLevelCompletion(g,win(3)).unlockedLevel,0);
+  for(let level=0;level<5;level++){
+    for(const invalid of [{...win(level),won:false},{...win(level),bossDefeated:false},{...win(level),status:'boss-victory'},{...win(level),progress:99},{...win(level),progress:NaN}])assert.deepEqual(progression.recordLevelCompletion(g,invalid),g);
+    g=progression.recordLevelCompletion(g,win(level));assert.equal(g.completedLevels[level],true);assert.equal(g.unlockedLevel,Math.min(4,level+1));
+    assert.deepEqual(progression.recordLevelCompletion(g,win(0)),g,'replaying earlier clears must not skip a new sector');
+  }
+  assert.ok(g.completedLevels.every(Boolean));
+});
+test('locked selection, forged start and premature next-level actions cannot enter unopened sectors', () => {
+  const g=progression.normalizeGarage(null),s=sim.createInitialState(g);
+  assert.equal(sim.gameReducer(s,{type:'SELECT_LEVEL',levelIndex:4,garage:g}),s);
+  assert.equal(sim.createInitialState(g,4).levelIndex,0);
+  assert.equal(sim.gameReducer({...s,levelIndex:4},{type:'START',garage:g}).levelIndex,0);
+  const invalid={...s,status:'result',won:true,progress:100,bossDefeated:false};assert.equal(sim.gameReducer(invalid,{type:'NEXT_LEVEL',garage:g}),invalid);
+  const complete={...invalid,bossDefeated:true};const next=sim.gameReducer(complete,{type:'NEXT_LEVEL',garage:g});assert.equal(next.status,'running');assert.equal(next.levelIndex,1);
+  const bad={...complete,levelIndex:3};assert.equal(sim.gameReducer(bad,{type:'NEXT_LEVEL',garage:g}),bad);
+});
+test('campaign save migration rejects development unlocks and noncontiguous clear records', () => {
+  const forged=progression.normalizeGarage({unlockedLevel:4,wins:0});assert.equal(forged.unlockedLevel,0);assert.equal(forged.tutorialCompleted,false);
+  const old=progression.normalizeGarage({unlockedLevel:2,wins:3,parts:17});assert.equal(old.unlockedLevel,2);assert.equal(old.tutorialCompleted,true);assert.equal(old.parts,17);
+  const holes=progression.normalizeGarage({completedLevels:[true,false,true,true,true],unlockedLevel:4,wins:20});assert.deepEqual(holes.completedLevels,[true,false,false,false,false]);assert.equal(holes.unlockedLevel,1);
+  const replay=progression.normalizeGarage({...old,tutorialCompleted:false});assert.equal(replay.tutorialCompleted,false);
+});
+const training=load('training'),trainTick=s=>training.trainingReducer(s,{type:'TICK'}),trainMove=(s,lane)=>training.trainingReducer(s,{type:'MOVE',lane}),trainNext=s=>training.trainingReducer(s,{type:'NEXT'});
+function trainUntil(s,predicate,limit=200){for(let i=0;i<limit&&!predicate(s);i++)s=trainTick(s);assert.ok(predicate(s),'training objective should remain achievable');return s;}
+test('training cannot skip objectives; movement and aimed automatic fire complete real tasks', () => {
+  let s=training.createTrainingState();assert.equal(trainNext(s),s);s=trainMove(s,0);assert.equal(s.done,false);s=trainMove(s,2);assert.equal(s.done,true);
+  s=trainNext(s);assert.equal(s.step,1);s=trainMove(s,0);for(let i=0;i<30;i++)s=trainTick(s);assert.equal(s.enemyHp,6);assert.equal(s.done,false);
+  s=trainMove(s,2);s=trainUntil(s,n=>n.done);assert.equal(s.enemyHp,0);assert.equal(s.bots,1);
+});
+test('reward practice needs same-lane crossing and can retry a missed gate without duplicate recruits', () => {
+  let s={...training.createTrainingState(),step:2,lane:2};for(let i=0;i<46;i++)s=trainTick(s);assert.equal(s.done,false);assert.equal(s.bots,1);assert.match(s.notice,/再试/);
+  s=trainMove(s,0);s=trainUntil(s,n=>n.done);assert.equal(s.bots,3);for(let i=0;i<100;i++)s=trainTick(s);assert.equal(s.bots,3);
+});
+test('hazard training shows damage, permits retries and protects against permanent defeat', () => {
+  let s={...training.createTrainingState(),step:3,lane:0,lockedLane:0};s=trainUntil(s,n=>n.damageSequence>0);assert.equal(s.health,85);assert.equal(s.done,false);
+  for(let i=0;i<600;i++)s=trainTick(s);assert.ok(s.health>=1);s=trainMove(s,2);s=trainUntil(s,n=>n.done);assert.ok(s.health>=1);
+});
+test('boss practice locks warning lane, requires dodge plus counterattack and completes the whole tutorial', () => {
+  let s=training.createTrainingState();s=trainNext(trainMove(trainMove(s,0),2));s=trainUntil(s,n=>n.done);s=trainNext(s);s=trainMove(s,0);s=trainUntil(s,n=>n.done);s=trainNext(s);s=trainMove(s,2);s=trainUntil(s,n=>n.done);s=trainNext(s);
+  assert.equal(s.step,4);const locked=s.lockedLane;s=trainMove(s,(locked+1)%3);for(let i=0;i<30;i++){s=trainTick(s);assert.equal(s.lockedLane,locked);}assert.equal(s.dodged,true);assert.equal(s.health,100);
+  s=trainMove(s,1);s=trainUntil(s,n=>n.done);assert.equal(s.enemyHp,0);s=trainNext(s);assert.equal(s.step,5);assert.equal(s.bots,3);
+  const g=progression.normalizeGarage(null);assert.equal(progression.recordLevelCompletion(g,{status:'training',won:true,bossDefeated:true,progress:100,levelIndex:0}).unlockedLevel,0);
+});
+test('training pause freezes simulation and retry resets only the training state', () => {
+  let s={...training.createTrainingState(),step:2,clock:20};s=training.trainingReducer(s,{type:'PAUSE'});assert.deepEqual(trainTick(s),s);assert.deepEqual(trainMove(s,0),s);assert.deepEqual(trainNext(s),s);
+  assert.deepEqual(training.trainingReducer(s,{type:'RESTART'}),training.createTrainingState());
+});
+
+test('permanent tuning does not increase boss HP and visibly reduces simulated defeat time', () => {
+  const times=[];
+  for(const mechClass of ['pulse','heavy','blade'])for(const level of [0,4]){
+    const results=[];let hp;
+    for(const tuned of [false,true]){
+      const g=progression.normalizeGarage({...garage,mechClass,levels:{weapon:tuned?5:0,armor:tuned?5:0,core:tuned?5:0},equipped:{weapon:tuned,armor:tuned,core:tuned}}),spec=levels.getLevel(level);
+      let s=tick({...sim.createInitialState(g,level,0),bossRandomSeed:42,status:'running',progress:spec.encounters[0].progress-.1,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3}),ticks=0;
+      if(hp===undefined)hp=s.battleMaxHp;else assert.equal(s.battleMaxHp,hp,'permanent upgrades must not strengthen this boss');
+      while(sim.isActiveStatus(s.status)&&ticks<3500){let lane=s.battleLane;const danger=s.threats.filter(t=>t.hp!==0&&t.ticks<=8).map(t=>t.lane);danger.push(...s.enemyAttacks.filter(a=>a.phase==='flight'||a.ticks<=4).map(a=>a.lane));if(sim.isRush(s)&&(s.bossStep==='rush'||(s.bossStep==='warning'&&s.bossStepTicks>=10)))danger.push(...s.bossAttackLanes);if(danger.includes(lane))lane=[0,1,2].find(l=>!danger.includes(l))??lane;s=tick(sim.gameReducer(s,{type:'MOVE_LANE',lane}));ticks++;}
+      assert.equal(s.won,true);results.push(ticks/10);
+    }
+    assert.ok(results[1]<results[0]*.8,mechClass+' permanent tuning should be clearly faster');times.push(mechClass+' L'+(level+1)+' '+results.join(' -> '));
+  }
+  console.log('Permanent upgrade TTK: '+times.join(', '));
+});
+test('relative drag anchors make edge reversal responsive without jitter or invalid-coordinate jumps', () => {
+ const interaction=load('interaction'),start={anchorX:200,lane:1,moved:false};assert.equal(interaction.advanceDrag(start,205,390),start);
+ const left=interaction.advanceDrag(start,-100,390);assert.equal(left.lane,0);const reversed=interaction.advanceDrag(left,-60,390);assert.equal(reversed.lane,1);
+ const right=interaction.advanceDrag(start,800,390);assert.equal(right.lane,2);assert.equal(interaction.advanceDrag(right,760,390).lane,1);
+ assert.equal(interaction.advanceDrag(start,400,0),start);assert.equal(interaction.advanceDrag(start,NaN,390),start);
+});
+test('audio events coalesce a squad volley and distinguish weapons, armor, damage and outcomes', () => {
+ const audio=load('audio'),s=battle();
+ for(const mechClass of ['pulse','heavy','blade']){const n={...s,mechClass,shotSequence:11,fireCooldown:load('mechs').mechSpec(mechClass).interval};assert.deepEqual(audio.gameSoundEvents(s,n),[mechClass]);}
+ assert.deepEqual(audio.gameSoundEvents(s,{...s,damageSequence:1,damageKind:'shield'}),['shield']);
+ assert.deepEqual(audio.gameSoundEvents(s,{...s,damageSequence:1,damageKind:'health'}),['damage']);
+ assert.deepEqual(audio.gameSoundEvents(s,{...s,status:'defeat'}),['defeat']);
+ assert.deepEqual(audio.gameSoundEvents(s,{...s,status:'boss-victory'}),['victory']);
+ assert.deepEqual(audio.gameSoundEvents(s,{...s,status:'paused',shotSequence:11}),[]);
+ assert.deepEqual(audio.gameSoundEvents(s,{...s,runId:s.runId+1,shotSequence:11}),[]);
+});
+test('audio is gesture-unlocked, volume/mute aware, background-safe and disposable without browser audio', () => {
+ const beforeWindow=global.window,beforeDocument=global.document;let created=0,started=0,closed=0;
+ const parameter=()=>({value:0,setValueAtTime(){},exponentialRampToValueAtTime(){},setTargetAtTime(){}});
+ class FakeAudio {constructor(){created++;this.state='suspended';this.currentTime=0;this.destination={};}createGain(){return {gain:parameter(),connect(){},disconnect(){}};}createOscillator(){return {frequency:parameter(),connect(){},disconnect(){},start(){started++;},stop(){this.onended?.();}};}resume(){this.state='running';return Promise.resolve();}suspend(){this.state='suspended';return Promise.resolve();}close(){closed++;this.state='closed';return Promise.resolve();}}
+ try{global.window={AudioContext:FakeAudio};global.document={hidden:false};const engine=load('audio').createGameAudio();assert.equal(created,0);engine.play('pulse');assert.equal(started,0);engine.unlock();assert.equal(created,1);engine.play('heavy');assert.equal(started,2);engine.setSettings({muted:true,volume:.5,quality:'auto'});engine.play('blade');assert.equal(started,2);engine.setSettings({muted:false,volume:.5,quality:'auto'});global.document.hidden=true;engine.play('gate');assert.equal(started,2);global.document.hidden=false;engine.suspend();engine.play('victory');assert.equal(started,2);engine.dispose();assert.equal(closed,1);engine.unlock();assert.equal(created,1);}
+ finally{if(beforeWindow===undefined)delete global.window;else global.window=beforeWindow;if(beforeDocument===undefined)delete global.document;else global.document=beforeDocument;}
+});
+test('sound and quality settings normalize and persist independently of player progression', () => {
+ const settings=load('settings'),before=global.window;let saved='';
+ try{global.window={localStorage:{getItem:()=>saved,setItem:(_,value)=>{saved=value;}}};assert.equal(settings.readSettings().volume,.45);const choice={muted:true,volume:.37,quality:'low'};settings.saveSettings(choice);assert.deepEqual(settings.readSettings(),choice);assert.equal(settings.normalizeSettings({volume:100}).volume,1);assert.equal(settings.normalizeSettings({volume:NaN}).volume,.45);assert.equal(settings.resolveQuality({quality:'auto'},2,false),'low');assert.equal(settings.resolveQuality({quality:'high'},2,true),'high');}
+ finally{if(before===undefined)delete global.window;else global.window=before;}
+});
+test('training checkpoints resume safely, save only a lesson index, and do not touch campaign records', () => {
+ const before=global.window,store=new Map();
+ try{global.window={localStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value),removeItem:key=>store.delete(key)}};
+ const g=progression.normalizeGarage({...garage,parts:17});progression.saveGarage(g);const campaign=[...store.entries()][0];
+ training.saveTrainingCheckpoint({...training.createTrainingState(),step:4,health:1,clock:29,paused:true});const resumed=training.readTrainingCheckpoint();assert.equal(resumed.step,4);assert.equal(resumed.clock,0);assert.equal(resumed.health,100);assert.equal(resumed.paused,false);assert.equal(resumed.shots.length,0);assert.equal(resumed.bots,3);
+ const checkpoint=JSON.parse([...store.entries()].find(([key])=>key.includes('training'))[1]);assert.deepEqual(Object.keys(checkpoint).sort(),['step','version']);
+ training.clearTrainingCheckpoint();assert.equal(training.readTrainingCheckpoint().step,0);assert.equal(store.get(campaign[0]),campaign[1]);assert.equal(training.restoreTrainingCheckpoint({version:1,step:100}).step,0);
+ }finally{if(before===undefined)delete global.window;else global.window=before;}
+});
+test('optimized art URLs resolve, transparent character sheets keep alpha, and original art is archived', () => {
+ const art=load('art'),urls=[...art.MAP_ART,...Object.values(art.MECH_CLASS_ART),...Object.values(art.MECH_FRONT_ART),art.BOSS_ART,art.BOSS_INTRO_ART,art.BOSS_STAGE2_ART,art.BOSS_DEFEAT_ART,art.BOSS_RUSH_ART,art.GATE_ART,art.PLAYER_ART,art.THREAT_ART,art.UI_HANGAR_ART,art.UI_RESULT_CRESTS,art.BLADE_SLASH_ART];
+ for(const url of urls){assert.ok(url.includes('/optimized/'));const file=path.resolve(__dirname,'../../../public',url.slice(1));assert.ok(fs.existsSync(file),url);}
+ for(const url of Object.values(art.MECH_CLASS_ART)){const b=fs.readFileSync(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(b[25],6,'mech PNG must keep RGBA alpha');}
+ assert.ok(fs.existsSync(path.join(__dirname,'art-source','ui-hangar-ai-v6.png')));
+});

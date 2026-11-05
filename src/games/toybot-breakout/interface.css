@@ -1,0 +1,159 @@
+/* Interface art direction: navy metal, cyan energy, ivory surfaces, restrained gold. */
+main.toybot-page { background:radial-gradient(ellipse at 50% 25%,#173145,#080f1c 64%); }
+.toybot-shell .toybot-overlay { --ui-ink:#ecf6fa;--ui-muted:#9bb3c4;--ui-line:#7198ad40;--ui-accent:#80e9f4;color:var(--ui-ink);font-family:Inter,'Segoe UI','Microsoft YaHei',sans-serif; }
+.toybot-shell .toybot-overlay * { box-sizing:border-box; }
+.toybot-shell .toybot-overlay button { font-family:inherit;touch-action:manipulation;transition:background .16s,border-color .16s,filter .16s,transform .16s; }
+.toybot-shell .toybot-overlay button:focus-visible { outline:2px solid #f8fcff;outline-offset:3px; }
+.toybot-shell .toybot-overlay button:active:not(:disabled) { transform:translateY(1px); }
+.toybot-shell .toybot-overlay .toybot-primary { min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin:0;padding:12px 17px;border:1px solid #c0f7fa;border-radius:10px;background:linear-gradient(120deg,#d2fbfa,#7fdee9);box-shadow:inset 0 1px #fff9,0 4px 0 #27778d,0 8px 19px #00101e66;color:#0a293a;font-size:15px;font-weight:850;letter-spacing:.04em;cursor:pointer; }
+.toybot-shell .toybot-overlay .toybot-primary>span { font-size:23px;line-height:1; }
+.toybot-shell .toybot-overlay .toybot-home-exit { min-height:40px;margin:0;padding:8px 10px;color:#a1b9c8;font-size:11px;text-decoration:none; }
+.toybot-shell .toybot-overlay .toybot-home-exit:hover { color:#e1f8ff; }
+/* Deployment screen */
+.toybot-shell .toybot-overlay.toybot-home { background:#091625;scrollbar-width:thin;scrollbar-color:#427087 #0b1e2b; }
+.toybot-shell .toybot-home-backdrop { object-position:50% 48%;opacity:.95; }
+.toybot-shell .toybot-home:before { background:linear-gradient(180deg,#07142455,transparent 28%,#06132205 53%,#071625b8 71%,#071421 100%); }
+.toybot-shell .toybot-home-content { display:grid;grid-template-rows:auto minmax(190px,1fr) auto;align-items:stretch;height:100%;min-height:100%;padding:0 16px 10px; }
+.toybot-shell .toybot-home-heading { padding:25px 5px 0;text-align:left; }
+.toybot-shell .toybot-home-kicker { display:flex;align-items:center;justify-content:space-between;gap:10px;color:#91becf;font-size:9px;letter-spacing:.2em;font-weight:700; }
+.toybot-shell .toybot-online { display:inline-flex;align-items:center;gap:5px;flex:none;color:#b9e9dc;letter-spacing:.04em;font-size:9px; }
+.toybot-shell .toybot-online:before { content:'';width:4px;height:4px;border-radius:50%;background:#85e9bd;box-shadow:0 0 7px #85e9bd77; }
+.toybot-shell .toybot-home h1 { margin:13px 0 7px;font-size:34px;line-height:1.1;letter-spacing:.1em;color:#f3f4e9;text-shadow:0 3px 10px #0008; }
+.toybot-shell .toybot-home .toybot-home-subtitle { margin:0;color:#a9c6d4;font-size:11px;font-weight:500;letter-spacing:.06em; }
+.toybot-shell .toybot-home-hero { min-height:190px;align-items:center;padding:5px 0 25px;overflow:visible; }
+.toybot-shell .toybot-home-mech { width:clamp(165px,60%,238px);max-height:none;filter:drop-shadow(0 9px 8px #03101abb);animation:toybot-ui-hover 4s ease-in-out infinite alternate; }
+.toybot-shell .toybot-mech-caption { position:absolute;top:23px;left:5px;text-align:left;color:#e1eff4; }
+.toybot-shell .toybot-mech-caption small { display:block;color:#90b6c5;font-size:9px;letter-spacing:.16em; }
+.toybot-shell .toybot-mech-caption b { display:block;margin-top:3px;font-size:13px;font-weight:600;letter-spacing:.11em; }
+.toybot-shell .toybot-home-equipped { left:0;right:0;bottom:9px;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:5px; }
+.toybot-shell .toybot-home-equipped span { padding:4px 7px;border:1px solid #8cccd64d;border-radius:4px;background:#0c2637d9;color:#d1edf3;font-size:9px;font-weight:500; }
+.toybot-shell .toybot-home-dashboard { width:100%;padding:15px 14px 2px;gap:10px;border:1px solid #7bafc153;border-radius:17px;background:linear-gradient(155deg,#102a3df5,#0a1929f5 80%);box-shadow:0 15px 35px #0005,inset 0 1px #bdefff12; }
+.toybot-shell .toybot-mission-heading { display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%; }
+.toybot-shell .toybot-mission-heading>span { color:#87b1c1;font-size:9px;letter-spacing:.08em; }
+.toybot-shell .toybot-mission-heading>b { color:#e1eff4;font-size:12px;font-weight:650; }
+.toybot-shell .toybot-level-select { display:grid;grid-template-columns:repeat(5,minmax(0,1fr));width:100%;margin:0;gap:6px; }
+.toybot-shell .toybot-level-select button { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:auto;height:47px;min-height:44px;border:1px solid #7293a643;border-radius:6px;background:#0a1929;color:#9eb5c5;box-shadow:none; }
+.toybot-shell .toybot-level-select button small { font-size:7px;letter-spacing:.08em;font-weight:500; }
+.toybot-shell .toybot-level-select button b { font-size:16px;line-height:1.1;font-weight:650; }
+.toybot-shell .toybot-level-select button[aria-pressed=true] { border-color:#92dce7;background:linear-gradient(145deg,#244f60,#173446);color:#d9fbfc;box-shadow:inset 0 -2px #8fe9f2; }
+.toybot-shell .toybot-level-select button:disabled { opacity:.5;color:#7e95a6; }
+.toybot-shell .toybot-home-record { width:100%;padding:0 0 2px;color:#91adbd;font-size:10px;font-weight:500; }
+.toybot-shell .toybot-home-record b { margin:0 2px;color:#e8f5f9;font-size:12px;font-weight:650; }
+.toybot-shell .toybot-home .toybot-home-start { width:100%;min-height:50px;padding:12px 16px;font-size:17px; }
+.toybot-shell .toybot-home-garage { width:100%;min-height:44px;border:1px solid #7095a650;border-radius:8px;background:#152d3f;color:#deedf4;font-size:12px;font-weight:600; }
+.toybot-shell .toybot-home-garage small { color:#91b7c8;font-size:10px;font-weight:500; }
+/* Engineering bay */
+.toybot-shell .is-workshop:before { background:linear-gradient(180deg,#08172599,#08172540 32%,#081725e0 56%,#081725 100%); }
+.toybot-shell .toybot-workshop { display:grid;grid-template-rows:auto auto minmax(236px,1fr) auto auto auto;align-content:start;align-items:stretch;gap:10px;min-height:100%;height:100%;padding:18px 17px 16px;text-align:left; }
+.toybot-shell .toybot-workshop-top { max-width:none; }
+.toybot-shell .toybot-workshop-back { min-height:36px;padding:0 4px;font-size:11px;color:#b8d3df;font-weight:600; }
+.toybot-shell .toybot-workshop-parts { border:1px solid #a7ad7855;border-radius:6px;background:#142b37;color:#f1dca6;font-size:11px;font-weight:600; }
+.toybot-shell .toybot-workshop-title { margin:0 4px; }
+.toybot-shell .toybot-workshop-title small { color:#77adbf;font-size:8px;letter-spacing:.2em;font-weight:600; }
+.toybot-shell .toybot-workshop-title h2 { margin:5px 0 4px;font-size:29px;line-height:1.2;letter-spacing:.1em; }
+.toybot-shell .toybot-workshop-title p { color:#a1bfcd;font-size:11px; }
+.toybot-shell .toybot-workshop-preview { position:relative;min-height:236px;max-width:none;justify-content:center;padding-bottom:41px; }
+.toybot-shell .toybot-workshop-mech { width:clamp(140px,54%,195px);max-height:none; }
+.toybot-shell .toybot-workshop-loadout { position:absolute;left:0;bottom:0;margin:0;padding:7px 10px;border:1px solid #8cc3d14a;border-radius:7px;background:#0d2738e6;color:#c7e9f1;font-size:11px;font-weight:650;text-align:center; }
+.toybot-shell .toybot-workshop-loadout span { color:#8eb2c4;font-size:9px;line-height:1.4;font-weight:500; }
+.toybot-shell .toybot-workshop-section-label { display:flex;align-items:center;justify-content:space-between;padding:0 3px;gap:8px; }
+.toybot-shell .toybot-workshop-section-label span { color:#daedf5;font-size:11px;font-weight:650; }
+.toybot-shell .toybot-workshop-section-label small { color:#85a6b8;font-size:9px; }
+.toybot-shell .toybot-workshop-list { gap:8px;max-width:none; }
+.toybot-shell .toybot-workshop-item { gap:10px;min-height:80px;padding:10px;border:1px solid #688c9d55;border-radius:10px;background:linear-gradient(115deg,#142d40f2,#0d1f30f5);box-shadow:inset 0 1px #bdefff0a; }
+.toybot-shell .toybot-workshop-item.is-equipped { border-color:#79d0dc99;background:linear-gradient(115deg,#1c414ff5,#102b3af5);box-shadow:inset 3px 0 #82dce6; }
+.toybot-shell .toybot-workshop-icon { width:53px;height:58px;border:1px solid #749baf55;border-radius:8px;background:radial-gradient(ellipse,#39586b,#162b3e 75%); }
+.toybot-shell .toybot-workshop-copy { gap:4px; }
+.toybot-shell .toybot-workshop-copy em { color:#72a7ba;font-size:7px;font-style:normal;letter-spacing:.08em;line-height:1.3; }
+.toybot-shell .is-equipped .toybot-workshop-copy em { color:#92d9df; }
+.toybot-shell .toybot-workshop-copy strong { font-size:12px;line-height:1.4;font-weight:650; }
+.toybot-shell .toybot-workshop-copy small { color:#a4bccb;font-size:9px;line-height:1.6; }
+.toybot-shell .toybot-workshop-actions { gap:5px;min-width:65px; }
+.toybot-shell .toybot-workshop-action { min-width:65px;min-height:36px;padding:7px;border:1px solid #b9edf477;border-radius:5px;background:#b9e6ed;color:#123245;font-size:10px;font-weight:700; }
+.toybot-shell .toybot-workshop-action.equip { background:#204252;border-color:#6cabb866;color:#cbebf2; }
+.toybot-shell .toybot-workshop-action:disabled { border-color:#456074;background:#233b4d;color:#a5bac7;opacity:.85; }
+.toybot-shell .toybot-workshop .toybot-workshop-done { max-width:none;margin-top:2px;font-size:13px; }
+/* Pause console */
+.toybot-shell .toybot-overlay.toybot-paused { display:flex;overflow-y:auto;padding:22px 18px;background:#030c17c9;backdrop-filter:blur(8px); }
+.toybot-shell .toybot-pause-panel { flex:none;width:100%;max-width:350px;max-height:none;margin:auto;padding:0 20px 14px;border:1px solid #739eaf88;border-radius:18px;background:linear-gradient(160deg,#183246,#0c1d2e 60%);box-shadow:0 24px 70px #0009,inset 0 1px #d5f8ff16; }
+.toybot-shell .toybot-pause-art { height:160px;margin:0 -20px 18px;background-image:linear-gradient(#09203633,#0d223944),url('/games/toybot-breakout/optimized/ui-hangar-ai-v6.jpg');background-position:center 57%;border-color:#7fbbcd44; }
+.toybot-shell .toybot-pause-art .toybot-mech-showcase { width:172px;bottom:-17px;filter:drop-shadow(0 4px 12px #041021bb); }
+.toybot-shell .toybot-pause-label { color:#80bbcc;letter-spacing:.2em;font-size:9px;font-weight:600; }
+.toybot-shell .toybot-pause-panel h2 { margin:7px 0;font-size:28px;letter-spacing:.12em; }
+.toybot-shell .toybot-pause-context { margin:0 0 20px;color:#9cb9c8;font-size:11px; }
+.toybot-shell .toybot-pause-stats { gap:0;border:1px solid #779db33d;border-radius:8px;background:#07172666; }
+.toybot-shell .toybot-pause-stats>div { padding:12px 3px;border:0;border-radius:0;background:transparent; }
+.toybot-shell .toybot-pause-stats>div+div { border-left:1px solid #779db329; }
+.toybot-shell .toybot-pause-stats small { color:#8faebf;font-size:10px;font-weight:500; }
+.toybot-shell .toybot-pause-stats strong { margin-top:5px;font-size:18px;font-weight:650; }
+.toybot-shell .toybot-pause-stats strong small { display:inline;font-size:10px; }
+.toybot-shell .toybot-pause-progress { margin:16px 0 19px;height:3px;background:#233d51; }
+.toybot-shell .toybot-pause-progress span { background:#94e0e9; }
+.toybot-shell .toybot-pause-panel .toybot-pause-resume { margin:0; }
+.toybot-shell .toybot-pause-home { min-height:44px;margin-top:9px;font-size:11px;font-weight:500;color:#a6c2d0; }
+/* Mission reports: same structure, clearly different outcome color. */
+.toybot-shell .toybot-overlay.toybot-result { --ui-accent:#f1d397;display:flex;justify-content:flex-start;padding:22px 18px;overflow-y:auto;background:radial-gradient(ellipse at 50% 10%,#30545c99,#05111af5 70%),url('/games/toybot-breakout/optimized/ui-hangar-ai-v6.jpg') center/cover;backdrop-filter:blur(8px); }
+.toybot-shell .toybot-result.is-failure { --ui-accent:#f2a597;background:radial-gradient(ellipse at 50% 10%,#603d4299,#0b1422f5 70%),url('/games/toybot-breakout/optimized/ui-hangar-ai-v6.jpg') center/cover; }
+.toybot-shell .toybot-debrief-panel { flex:none;position:relative;width:100%;max-width:354px;margin:auto;padding:18px 20px 12px;overflow:hidden;border:1px solid #8babbc66;border-top:2px solid var(--ui-accent);border-radius:15px;background:linear-gradient(155deg,#1b3449ed,#0c1c2df5 65%);box-shadow:0 25px 60px #0009,inset 0 1px #d7f6ff0d; }
+.toybot-shell .toybot-debrief-topline { display:flex;justify-content:space-between;gap:8px;color:#86a6b8;font-size:9px;letter-spacing:.08em; }
+.toybot-shell .toybot-debrief-topline>span:last-child { color:var(--ui-accent); }
+.toybot-shell .toybot-result-crest { width:152px;aspect-ratio:1;margin:15px auto 3px;background-size:200% 100%;background-repeat:no-repeat;filter:drop-shadow(0 6px 13px #04111c66); }
+.toybot-shell .toybot-debrief-kicker { color:var(--ui-accent);font-size:9px;font-weight:650;letter-spacing:.2em; }
+.toybot-shell .toybot-result h2 { margin:8px 0;font-size:30px;line-height:1.25;letter-spacing:.12em;color:#f3f4ed; }
+.toybot-shell .toybot-result .toybot-result-summary { margin:0;color:#a8c1ce;font-size:11px;line-height:1.7; }
+.toybot-shell .toybot-debrief-score { display:flex;flex-direction:column;gap:3px;margin:20px 0 16px;padding:15px 0;border-top:1px solid #7e9eb638;border-bottom:1px solid #7e9eb638; }
+.toybot-shell .toybot-debrief-score>span { color:#93b3c5;font-size:10px;letter-spacing:.08em; }
+.toybot-shell .toybot-debrief-score>strong { color:#f5f8f3;font-size:39px;font-weight:600;line-height:1.15;letter-spacing:.04em;font-variant-numeric:tabular-nums; }
+.toybot-shell .toybot-debrief-score>small { color:#82a1b3;font-size:9px; }
+.toybot-shell .toybot-debrief-rewards { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0 0 18px; }
+.toybot-shell .toybot-debrief-rewards>div { min-width:0;padding:9px 2px;border:1px solid #6e94aa33;border-radius:6px;background:#08192b66; }
+.toybot-shell .toybot-debrief-rewards small { display:block;margin-bottom:5px;color:#93b1c2;font-size:9px; }
+.toybot-shell .toybot-debrief-rewards b { color:var(--ui-accent);font-size:15px;font-weight:650; }
+.toybot-shell .toybot-result .toybot-debrief-tip { margin:-2px 0 16px;padding:10px 11px;border-left:2px solid #e6a58f88;border-radius:0 5px 5px 0;background:#a9655010;text-align:left;color:#b8c6d0;font-size:10px;line-height:1.7; }
+.toybot-shell .toybot-debrief-tip>span { display:block;margin-bottom:3px;color:#dfb8a7;font-size:9px;letter-spacing:.06em; }
+.toybot-shell .toybot-debrief-actions { display:flex;flex-direction:column;gap:9px; }
+.toybot-shell .is-victory .toybot-debrief-actions .toybot-primary { background:linear-gradient(120deg,#ffedc3,#deb978);border-color:#ffe7b3;color:#3c2f20;box-shadow:inset 0 1px #fff9,0 4px 0 #89693b,0 8px 19px #00101e66; }
+.toybot-shell .is-failure .toybot-debrief-actions .toybot-primary { background:linear-gradient(120deg,#fbd5bb,#eaa18a);border-color:#f8cbb1;color:#3d2930;box-shadow:inset 0 1px #fff8,0 4px 0 #8e5a56,0 8px 19px #00101e66; }
+.toybot-shell .toybot-debrief-actions .toybot-secondary,.toybot-shell .toybot-debrief-actions .toybot-result-garage { display:flex;align-items:center;justify-content:space-between;width:100%;min-height:44px;margin:0;padding:10px 14px;border:1px solid #6c95a955;border-radius:8px;background:#193347;color:#c6dde8;font-size:12px;font-weight:600;cursor:pointer; }
+.toybot-shell .toybot-debrief-actions .toybot-result-garage { min-height:40px;background:#102537;color:#a8cbd9;font-size:11px; }
+@keyframes toybot-ui-hover { to { translate:0 -4px; } }
+@media (hover:hover) { .toybot-shell .toybot-overlay button:hover:not(:disabled) { filter:brightness(1.1); } }
+@media (max-height:740px) {
+  .toybot-shell .toybot-home-content { grid-template-rows:auto minmax(195px,1fr) auto;padding:0 13px 7px; }
+  .toybot-shell .toybot-home-heading { padding-top:17px; }
+  .toybot-shell .toybot-home h1 { margin:9px 0 5px;font-size:30px; }
+  .toybot-shell .toybot-home-hero { min-height:195px;padding-bottom:22px; }
+  .toybot-shell .toybot-home-mech { width:170px; }
+  .toybot-shell .toybot-home-dashboard { padding:11px 12px 1px;gap:8px; }
+  .toybot-shell .toybot-home-equipped span { font-size:8px; }
+  .toybot-shell .toybot-workshop { gap:8px;grid-template-rows:auto auto minmax(172px,1fr) auto auto auto;padding:12px; }
+  .toybot-shell .toybot-workshop-preview { min-height:172px;padding-bottom:36px; }
+  .toybot-shell .toybot-workshop-mech { width:136px; }
+  .toybot-shell .toybot-workshop-title h2 { font-size:25px; }
+  .toybot-shell .toybot-workshop-item { min-height:74px;padding:8px; }
+  .toybot-shell .toybot-workshop-icon { width:45px;height:50px; }
+  .toybot-shell .toybot-workshop-list { gap:6px; }
+  .toybot-shell .toybot-pause-art { height:126px; }
+  .toybot-shell .toybot-pause-art .toybot-mech-showcase { width:144px;bottom:-13px; }
+  .toybot-shell .toybot-pause-context { margin-bottom:13px; }
+  .toybot-shell .toybot-result-crest { width:118px;margin:10px auto 2px; }
+  .toybot-shell .toybot-debrief-panel { padding:15px 17px 7px; }
+  .toybot-shell .toybot-debrief-score { margin:13px 0;padding:10px 0; }
+  .toybot-shell .toybot-debrief-rewards { margin-bottom:13px; }
+  .toybot-shell .toybot-result h2 { font-size:27px; }
+}
+@media (max-width:360px) {
+  .toybot-shell .toybot-home-kicker { font-size:8px;letter-spacing:.12em; }
+  .toybot-shell .toybot-home h1 { font-size:29px; }
+  .toybot-shell .toybot-workshop { padding-left:11px;padding-right:11px; }
+  .toybot-shell .toybot-workshop-item { gap:7px; }
+  .toybot-shell .toybot-workshop-icon { width:40px;height:46px; }
+  .toybot-shell .toybot-workshop-copy strong { font-size:11px; }
+  .toybot-shell .toybot-workshop-actions,.toybot-shell .toybot-workshop-action { min-width:59px; }
+  .toybot-shell .toybot-workshop-copy small { font-size:9px; }
+  .toybot-shell .toybot-mech-caption { top:12px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .toybot-shell .toybot-home-mech { animation:none; }
+  .toybot-shell .toybot-overlay button { transition:none; }
+}

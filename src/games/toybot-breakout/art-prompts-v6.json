@@ -1,0 +1,13 @@
+{
+  "tool": "built-in image_gen",
+  "assets": [
+    {
+      "file": "public/games/toybot-breakout/ui-hangar-ai-v6.png",
+      "prompt": "Use case: stylized-concept. Asset type: portrait mobile sci-fi toy mecha game hangar background, production art with no text and no characters. Primary request: a beautifully composed premium clean futuristic hangar interior, navy blue brushed metal architecture, subtle cyan light strips, ivory mechanical panels with warm amber maintenance lights. Stylized polished painted 3D game illustration, friendly toy-mecha proportions, visually restrained not grim photorealism. Portrait 2:3 composition: upper 20 percent is quiet dark navy architecture for title typography; middle center has an EMPTY circular deployment platform at around 58 percent height where a transparent mech character will be composited by code, symmetrical side service arms parked out of the center, a luminous thin cyan energy ring in the platform; lower 32 percent dark calm negative space for menu controls, not a busy floor. Wide readable architectural depth and soft atmospheric light from a high rear bay window, balanced very dark navy foreground and teal midtones, small warm gold details only. Center area must remain unoccupied. No weapons, robots, people, text, logos, glyphs, UI buttons, frames, HUD, watermark, or baked fake interface. Full bleed opaque background."
+    },
+    {
+      "file": "public/games/toybot-breakout/ui-result-crests-ai-v6.png",
+      "prompt": "Use case: stylized-concept. Asset type: transparent PNG game UI result crest atlas for a clean sci-fi toy-mecha mobile game. EXACT 2 equal square cells horizontally, landscape 2:1 image, no cell dividers. Left cell: VICTORY reactor crest, a beautifully crafted ivory and navy metal hexagonal reactor with luminous warm golden core, gold star inset, short symmetrical mechanical laurel wing plates, restrained cyan edge light and a few tiny gold glints, triumphant elegant silhouette. Right cell: DEFEAT / REPAIR reactor crest, matching same design language, same size and silhouette with asymmetric chipped ivory wing plates, cracked navy hexagonal reactor with small warm coral-red warning core and exposed amber circuitry, repairable damage without fire or gore, dignified rather than scary. Both are discrete full complete cutout objects centered in own cell, 15 percent transparent margins, no overlap and no broad opaque glow. Polished painted 3D mobile game illustration with crisp clear simplified forms and directional metallic lighting. No characters, words, numbers, lettering, logos, watermarks, ribbon banners, backgrounds or opaque panel shapes. Genuine transparent alpha."
+    }
+  ]
+}

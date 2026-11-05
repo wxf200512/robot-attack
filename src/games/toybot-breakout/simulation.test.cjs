@@ -28,6 +28,19 @@ function incoming(s, changes = {}) {
   return { id: 100, ticks: 1, duration: 3, target: 'boss', targetIndex: 0, damage: 20, count: 1, origins: [{ index: 0, x: 27, y: 59 }], weaponLevel: 1, lane: s.battleLane, y: 48, charged: false, pierce: 0, muzzle: true, ...changes };
 }
 function battle(level = 0) { const base = initial(level); return { ...base, hazardHps: base.hazardHps.map(() => -1), gate: levels.getLevel(level).gateMarks.length, status: 'battle', progress: levels.getLevel(level).encounters[0].progress, bots: 5, battleHp: 300, battleMaxHp: 300, fireCooldown: 1000, battleTime: 0, bossStep: 'recovery', bossStepTicks: 0, bossCycle: 1 }; }
+// Counterplay-aware driver: early warning reaction accounts for the real .4s
+// sidestep; aim at the advertised objective instead of blindly firing at shields.
+function bossTactic(s) {
+  if(s.dodgeTicks>0)return s.lane;
+  const targets=s.threats.filter(t=>t.hp>0).sort((a,b)=>Math.abs(a.lane-s.lane)-Math.abs(b.lane-s.lane));
+  let aim=targets[0]?.lane??s.battleLane;
+  const danger=s.threats.filter(t=>t.hp!==0&&(t.kind==='field'||(t.kind==='lava'&&t.ticks===0)||t.damage>0&&t.ticks<=10)).map(t=>t.lane);
+  danger.push(...s.enemyAttacks.filter(a=>a.phase==='flight'||a.ticks<=10).map(a=>a.lane));
+  if(s.bossStep==='warning'&&sim.bossWarningTicks(s)-s.bossStepTicks<=10&&['vents','smelt','orbits','polarity','judgement','mortar','storm','crossfire'].includes(s.bossAttack))danger.push(...s.bossAttackLanes);
+  if(sim.isRush(s)&&(s.bossStep==='rush'||(s.bossStep==='warning'&&s.bossStepTicks>=6)))danger.push(...s.bossAttackLanes);
+  if(danger.includes(aim))aim=[0,1,2].filter(l=>!danger.includes(l)).sort((a,b)=>Math.abs(a-s.lane)-Math.abs(b-s.lane))[0]??s.lane;
+  return aim;
+}
 test('each mech owns a captured muzzle and individual damage; lane changes leave fired shots fixed', () => {
   const s = tick({ ...initial(), status: 'running', bots: 5, weaponLevel: 2 });
   assert.equal(s.pendingShots.length, 5);
@@ -142,6 +155,7 @@ test('all five levels and three classes complete roads and bosses by collecting 
         const incomingLanes = s.threats.filter(t => t.hp !== 0 && t.ticks <= 8).map(t => t.lane);
         if (sim.isRush(s) && (s.bossStep === 'rush' || (s.bossStep === 'warning' && s.bossStepTicks >= 10))) incomingLanes.push(...s.bossAttackLanes);
         if (incomingLanes.includes(lane)) lane = [0,1,2].find(l => !incomingLanes.includes(l)) ?? lane;
+        lane=bossTactic(s);
       } else {
         const gate = s.gateChoices[s.gate]?.[0], mark = level.gateMarks[s.gate];
         const enemy = level.hazards.findIndex((h, i) => s.hazardHps[i] > 0 && s.progress >= h.progress - 14 && s.progress < h.progress);
@@ -169,11 +183,11 @@ test('gate art threshold and simulation share exact contact point; passing is on
   before = tick({ ...s, lane: 2 }); const missed = tick(before);
   assert.equal(missed.gateResolved, true); assert.equal(missed.gateCollected, false); assert.equal(missed.bots, 1);
 });
-test('mobile bosses still deploy shells, roadblocks and small robots', () => {
+test('emperor combines seals, judgement and crossfire without generic support summons', () => {
   let s = { ...battle(4), battleTime: 0, bossStage: 2, bossCycle: 1, battleHp: 10000, battleMaxHp: 10000, armorPoints: 1000, fireCooldown: 1000 };
   const lanes = new Set([s.battleLane]), kinds = new Set();
-  for (let i = 0; i < 230; i++) { s = tick(s); s.threats.forEach(t => kinds.add(t.kind)); lanes.add(s.battleLane); }
-  assert.deepEqual([...kinds].sort(), ['barrier', 'minion', 'shell']); assert.ok(lanes.size > 1);
+  for (let i = 0; i < 400; i++) { s = tick(s); s.threats.forEach(t => kinds.add(t.kind)); lanes.add(s.battleLane); }
+  assert.ok(kinds.has('seal')&&kinds.has('field')&&kinds.has('shell'));assert.ok(!kinds.has('barrier')&&!kinds.has('minion'));assert.ok(lanes.size>1);
 });
 test('summoned blockers take real same-lane hits by stable id and intercept shots ahead of boss', () => {
   const minion = { id: 70, kind: 'minion', lane: 0, ticks: 20, duration: 42, hp: 5, maxHp: 5, damage: 1, fromLane: 0 };
@@ -216,7 +230,7 @@ test('arena entry cleans ordinary stage objects, preserves movement, and finishe
   s = sim.gameReducer(s, { type: 'MOVE_LANE', lane: 2 }); assert.equal(s.lane, 2);
   for (let i = 0; i < sim.BOSS_INTRO_TICKS - 1; i++) { s = tick(s); assert.equal(s.status, 'boss-intro'); assert.equal(s.progress, progress); assert.equal(s.battleHp, hp); assert.equal(s.threats.length, 0); }
   const remaining = s.overloadTicks;
-  s = tick(s); assert.equal(s.status, 'battle'); assert.equal(s.bossStep, 'warning'); assert.deepEqual(s.bossAttackLanes, [2]); assert.equal(s.overloadTicks, remaining);
+  s = tick(s); assert.equal(s.status, 'battle'); assert.equal(s.bossStep, 'warning'); assert.deepEqual(s.bossAttackLanes, [0]); assert.equal(s.bossAttack,'vents');assert.equal(s.overloadTicks, remaining);
 });
 test('selected tutorial cannon stays single, without roadblocks or robots mixed in', () => {
   for (let level = 0; level < 5; level++) {
@@ -255,9 +269,9 @@ test('long fights intensify instead of failing on the old short timer', () => {
   let s = { ...battle(1), battleTime: sim.BOSS_ENRAGE_TICKS - 1, armorPoints: 1000, fireCooldown: 1000 };
   const hp = s.battleHp;
   s = tick(s); assert.equal(s.status, 'battle'); assert.equal(sim.bossEnrage(s), 1); assert.equal(s.battleHp, hp);
-  let intensifiedShell = false;
-  for (let i = 0; i < 220; i++) { s = tick(s); if (s.threats.some(t => t.kind === 'shell' && t.damage > levels.getLevel(1).bossDamage)) intensifiedShell = true; }
-  assert.equal(s.status, 'battle'); assert.ok(intensifiedShell);
+  let intensifiedSwarm = false;
+  for (let i = 0; i < 300; i++) { s = tick(s); if (s.threats.some(t => t.kind === 'minion' && t.maxHp > 6)) intensifiedSwarm = true; }
+  assert.equal(s.status, 'battle'); assert.ok(intensifiedSwarm);
 });
 test('victory animation finishes before rewards/result; subsequent ticks cannot score again', () => {
   const base = { ...battle(), battleHp: 1, bots: 2, score: 10 };
@@ -287,33 +301,14 @@ test('HP, shields, armor and invulnerability provide distinct non-stacking feedb
   s.invulnerableTicks = 0; sim.applySquadHit(s, 999); assert.equal(s.playerHp, 0); assert.equal(s.bots, 0);
   const roadDeath = tick({ ...initial(), status: 'running', playerHp: 0 }); assert.equal(roadDeath.status, 'defeat'); assert.equal(roadDeath.defeatReason, 'squad-wipe');
 });
-test('rush locks one lane or two adjacent lanes, lands once, and always allows escape', () => {
-  for (let level = 0; level < 5; level++) for (const lane of [0,1,2]) for (const stage of [1,2]) {
-    let s = tick({ ...battle(level), bossCycle: 1, bossStage: stage, bossStep: 'support', lane });
-    // Some bosses choose burst first; advance cycles to cover rush and sweep.
-    const seen = new Set();
-    for (let cycle = 1; cycle <= 4; cycle++) {
-      s = tick({ ...s, bossCycle: cycle, bossStep: 'support', threats: [] });
-      while (s.bossStep === 'shield') s = tick(s);
-      if (!sim.isRush(s)) continue;
-      seen.add(s.bossAttack); const locked = [...s.bossAttackLanes];
-      assert.ok(locked.length >= 1 && locked.length <= 2); if (locked.length === 2) assert.equal(locked[1] - locked[0], 1);
-      const safe = [0,1,2].find(l => !locked.includes(l)); assert.notEqual(safe, undefined);
-      const base = { ...s, playerHp: 100, invulnerableTicks: 0, armorPoints: 0, shieldCharges: 0, fireCooldown: 1000 };
-      let dodge = sim.gameReducer(base, { type: 'MOVE_LANE', lane: safe });
-      let hit = { ...base, lane: locked[0] };
-      for (let i=0;i<sim.RUSH_WARNING_TICKS;i++) { dodge=tick(dodge); hit=tick(hit); assert.deepEqual(dodge.bossAttackLanes, locked); assert.equal(hit.playerHp, 100); }
-      assert.equal(hit.bossStep, 'rush'); const x=sim.bossX(hit), y=sim.bossY(hit);
-      for(let i=0;i<sim.RUSH_CONTACT_TICK;i++) {dodge=tick(dodge);hit=tick(hit);}
-      assert.equal(dodge.playerHp, 100); assert.ok(hit.playerHp < 100); assert.ok(sim.bossY(hit)>y); assert.ok(Number.isFinite(x));
-      const hp=hit.playerHp, seq=hit.damageSequence;
-      for(let i=sim.RUSH_CONTACT_TICK;i<sim.RUSH_DURATION_TICKS;i++) hit=tick(hit);
-      assert.equal(hit.playerHp,hp); assert.equal(hit.damageSequence,seq); assert.equal(hit.bossStep,'recovery');
-      const paused=sim.gameReducer(dodge,{type:'PAUSE'}); assert.deepEqual(tick(paused),paused);
-    }
-    if ([0,2].includes(level) || (level === 4 && stage === 1)) assert.ok(seen.has('rush'));
-    if(level === 4 && stage === 2) assert.ok(seen.has('sweep'));
-    if([1,3].includes(level)) assert.equal(seen.size,0,'flying bosses should not reuse body charge');
+test('new skill telegraphs remain locked while the player sidesteps and never fall back to ramming', () => {
+  for(let level=0;level<5;level++)for(const stage of [1,2])for(const lane of [0,1,2])for(let cycle=1;cycle<=3;cycle++){
+    let s=signature(level,stage,cycle,lane);assert.equal(sim.isRush(s),false);
+    const locked=[...s.bossAttackLanes],warning=sim.bossWarningTicks(s);
+    s=sim.gameReducer(s,{type:'MOVE_LANE',lane:(lane+1)%3});
+    for(let i=0;i<warning-1;i++){s=tick(s);assert.equal(s.bossStep,'warning');assert.deepEqual(s.bossAttackLanes,locked);}
+    assert.ok(new Set(locked).size<=2);assert.equal(s.damageSequence,0);
+    const released=tick(s);assert.equal(released.bossStep,'flight');
   }
 });
 test('five bosses take 1–3 minutes with representative loadouts and telegraph-aware dodging', () => {
@@ -327,7 +322,7 @@ test('five bosses take 1–3 minutes with representative loadouts and telegraph-
       const danger=s.threats.filter(t=>t.hp!==0&&t.ticks<=8).map(t=>t.lane);
       if(sim.isRush(s)&&(s.bossStep==='rush'||(s.bossStep==='warning'&&s.bossStepTicks>=10))) danger.push(...s.bossAttackLanes);
       if(danger.includes(lane)) lane=[0,1,2].find(l=>!danger.includes(l))??lane;
-      s=tick(sim.gameReducer(s,{type:'MOVE_LANE',lane})); ticks++;
+      s=tick(sim.gameReducer(s,{type:'MOVE_LANE',lane:bossTactic(s)})); ticks++;
       assert.equal(s.battleMaxHp,maxHp,'boss HP must not grow during combat');
     }
     assert.equal(s.won,true); const seconds=ticks/10; samples.push(seconds);
@@ -364,7 +359,7 @@ function signature(level, stage = 1, cycle = 1, lane = 1) {
 }
 function launch(s) { while(s.bossStep === 'warning') s=tick(s); return s; }
 test('five bosses expose five different signature mechanics and never seal all three lanes', () => {
-  assert.deepEqual([0,1,2,3,4].map(l=>signature(l).bossAttack), ['mortar','swarm','bunker','storm','crossfire']);
+  assert.deepEqual([0,1,2,3,4].map(l=>signature(l).bossAttack), ['vents','eggs','pylons','orbits','seals']);
   for(let level=0;level<5;level++)for(const stage of [1,2])for(const lane of [0,1,2])for(let cycle=1;cycle<=4;cycle++){
     const s=signature(level,stage,cycle,lane);
     assert.ok(s.bossAttackLanes.length>0&&s.bossAttackLanes.length<3);
@@ -372,7 +367,7 @@ test('five bosses expose five different signature mechanics and never seal all t
   }
 });
 test('forge lava lands after warning, lingers on ground, hurts on pulses and expires', () => {
-  let s=signature(0);const lane=s.bossAttackLanes[0];s=launch(s);
+  let s=signature(0,1,3);const lane=s.bossAttackLanes[0];s=launch(s);
   assert.equal(s.threats[0].kind,'lava');const id=s.threats[0].id;
   for(let i=0;i<17;i++){s=tick(s);assert.equal(s.playerHp,100);}
   s=tick(s);assert.equal(s.playerHp,92);assert.equal(sim.threatY(s.threats.find(t=>t.id===id)),59);assert.equal(s.bossStep,'flight');
@@ -380,22 +375,22 @@ test('forge lava lands after warning, lingers on ground, hurts on pulses and exp
   const paused=sim.gameReducer(s,{type:'PAUSE'});assert.deepEqual(tick(paused),paused);
   for(let i=0;i<18;i++)s=tick(s);
   assert.equal(s.playerHp,hp);assert.equal(s.bossStep,'recovery');assert.ok(s.threats.every(t=>t.hp===0));
-  assert.equal(signature(0,2).bossAttackLanes.length,2);
+  assert.equal(signature(0,2,3).bossAttackLanes.length,2);
 });
 test('queen swarm can be destroyed with same-lane shots or dodged; flight waits for every drone', () => {
-  const base=launch(signature(1,2));assert.equal(base.threats.length,2);assert.ok(base.threats.every(t=>t.kind==='minion'&&t.hp>0));
+  const base=launch(signature(1,2,3));assert.equal(base.threats.length,2);assert.ok(base.threats.every(t=>t.kind==='minion'&&t.hp>0));
   const drone=base.threats[0];let s=tick({...base,pendingShots:[incoming(base,{target:'threat',targetIndex:drone.id,lane:drone.lane,damage:999})]});
   assert.equal(s.threats.find(t=>t.id===drone.id).hp,0);assert.equal(s.bossStep,'flight');
   const safe=[0,1,2].find(l=>!base.bossAttackLanes.includes(l));s=sim.gameReducer(s,{type:'MOVE_LANE',lane:safe});
   for(let i=0;i<32;i++)s=tick(s);assert.equal(s.playerHp,100);assert.equal(s.bossStep,'recovery');
 });
-test('bastion deploys tougher shootable shields and uses its exclusive ram without generic missiles', () => {
-  const s=launch(signature(2,2));assert.ok(s.threats.every(t=>t.kind==='barrier'&&t.hp>=22&&t.damage===22));
-  assert.equal(signature(2,2,2).bossAttack,'rush');
+test('bastion deploys shootable shields and now alternates with moving walls instead of ramming', () => {
+  const s=launch(signature(2,2,3));assert.ok(s.threats.every(t=>t.kind==='barrier'&&t.hp>=22&&t.damage===22));
+  assert.equal(signature(2,2,2).bossAttack,'lockdown');
   const barrier=s.threats[0];const hit=tick({...s,pendingShots:[incoming(s,{target:'threat',targetIndex:barrier.id,lane:barrier.lane,damage:999})]});assert.equal(hit.threats[0].hp,0);
 });
 test('oracle warns each sequential beam, changes lane in fixed order and never silently tracks the player', () => {
-  let s=signature(3,1,1,0);const lanes=[];
+  let s=signature(3,1,3,0);const lanes=[];
   for(let wave=0;wave<3;wave++){
     assert.equal(s.bossStep,'warning');lanes.push(s.bossAttackLanes[0]);const locked=[...s.bossAttackLanes];
     s=sim.gameReducer(s,{type:'MOVE_LANE',lane:(locked[0]+1)%3});
@@ -407,21 +402,21 @@ test('oracle warns each sequential beam, changes lane in fixed order and never s
   assert.equal(new Set(lanes).size,3);assert.equal(s.bossStep,'recovery');
 });
 test('emperor crossfire advertises a safe gap, then warns again before changing it in phase two', () => {
-  let s=signature(4,2,1);const first=[...s.bossAttackLanes];const safe=[0,1,2].find(l=>!first.includes(l));
+  let s=signature(4,2,3);const first=[...s.bossAttackLanes];const safe=[0,1,2].find(l=>!first.includes(l));
   s=sim.gameReducer(s,{type:'MOVE_LANE',lane:safe});s=launch(s);assert.equal(s.threats.filter(t=>t.hp!==0).length,2);
   for(let i=0;i<12;i++)s=tick(s);assert.equal(s.playerHp,100);assert.equal(s.bossStep,'warning');assert.notDeepEqual(s.bossAttackLanes,first);assert.ok(s.bossAttackLanes.includes(safe));
   const nextSafe=[0,1,2].find(l=>!s.bossAttackLanes.includes(l));s=sim.gameReducer(s,{type:'MOVE_LANE',lane:nextSafe});s=launch(s);for(let i=0;i<12;i++)s=tick(s);
   assert.equal(s.playerHp,100);assert.equal(s.bossStep,'recovery');
 });
 
-test('only the first boss uses a common tutorial; later bosses introduce their identity immediately', () => {
+test('every boss opens with its own mechanic instead of a shared tutorial cannon', () => {
   const attacks=[];
   for(let level=0;level<5;level++) {
     let s={...battle(level),status:'boss-intro',bossCycle:0,bossPhaseTicks:0};
     for(let i=0;i<sim.BOSS_INTRO_TICKS;i++)s=tick(s);
     attacks.push(s.bossAttack);assert.equal(s.bossStep,'warning');assert.equal(s.threats.length,0);
   }
-  assert.deepEqual(attacks,['cannon','swarm','bunker','storm','crossfire']);
+  assert.deepEqual(attacks,['vents','eggs','pylons','orbits','seals']);
 });
 
 function roadDrone() {
@@ -509,7 +504,7 @@ test('all three mech classes can beat five bosses with telegraphed dodging in 1�
       danger.push(...s.enemyAttacks.filter(a=>a.phase==='flight'||a.ticks<=4).map(a=>a.lane));
       if(sim.isRush(s)&&(s.bossStep==='rush'||(s.bossStep==='warning'&&s.bossStepTicks>=10)))danger.push(...s.bossAttackLanes);
       if(danger.includes(lane))lane=[0,1,2].find(l=>!danger.includes(l))??lane;
-      s=tick(sim.gameReducer(s,{type:'MOVE_LANE',lane}));ticks++;
+      s=tick(sim.gameReducer(s,{type:'MOVE_LANE',lane:bossTactic(s)}));ticks++;
     }
     assert.equal(s.won,true,mechClass+' level '+(level+1));assert.ok(ticks>=600&&ticks<=1800,mechClass+' level '+(level+1)+' '+ticks/10+'s');times.push(mechClass+' L'+(level+1)+':'+ticks/10);
   }
@@ -652,7 +647,7 @@ test('permanent tuning does not increase boss HP and visibly reduces simulated d
       const g=progression.normalizeGarage({...garage,mechClass,levels:{weapon:tuned?5:0,armor:tuned?5:0,core:tuned?5:0},equipped:{weapon:tuned,armor:tuned,core:tuned}}),spec=levels.getLevel(level);
       let s=tick({...sim.createInitialState(g,level,0),bossRandomSeed:42,status:'running',progress:spec.encounters[0].progress-.1,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3}),ticks=0;
       if(hp===undefined)hp=s.battleMaxHp;else assert.equal(s.battleMaxHp,hp,'permanent upgrades must not strengthen this boss');
-      while(sim.isActiveStatus(s.status)&&ticks<3500){let lane=s.battleLane;const danger=s.threats.filter(t=>t.hp!==0&&t.ticks<=8).map(t=>t.lane);danger.push(...s.enemyAttacks.filter(a=>a.phase==='flight'||a.ticks<=4).map(a=>a.lane));if(sim.isRush(s)&&(s.bossStep==='rush'||(s.bossStep==='warning'&&s.bossStepTicks>=10)))danger.push(...s.bossAttackLanes);if(danger.includes(lane))lane=[0,1,2].find(l=>!danger.includes(l))??lane;s=tick(sim.gameReducer(s,{type:'MOVE_LANE',lane}));ticks++;}
+      while(sim.isActiveStatus(s.status)&&ticks<3500){let lane=s.battleLane;const danger=s.threats.filter(t=>t.hp!==0&&t.ticks<=8).map(t=>t.lane);danger.push(...s.enemyAttacks.filter(a=>a.phase==='flight'||a.ticks<=4).map(a=>a.lane));if(sim.isRush(s)&&(s.bossStep==='rush'||(s.bossStep==='warning'&&s.bossStepTicks>=10)))danger.push(...s.bossAttackLanes);if(danger.includes(lane))lane=[0,1,2].find(l=>!danger.includes(l))??lane;s=tick(sim.gameReducer(s,{type:'MOVE_LANE',lane:bossTactic(s)}));ticks++;}
       assert.equal(s.won,true);results.push(ticks/10);
     }
     assert.ok(results[1]<results[0]*.8,mechClass+' permanent tuning should be clearly faster');times.push(mechClass+' L'+(level+1)+' '+results.join(' -> '));
@@ -822,4 +817,110 @@ test('specialist spacing converges at contact and enemy shots start at the actua
     const contact={...state,progress:h.progress-.1};assert.ok(sim.roadEnemyY(contact,index)>57);
     if(kind!=='medic') {const queued=tick({...state,progress:h.progress-(kind==='swarm'?4.9:9.5)});assert.equal(queued.enemyAttacks[0].fromX,sim.roadEnemyX(queued,index));}
   }
+});
+
+test('each boss owns three different skills and no loadout uses shared cannon or body rush', () => {
+  const groups=load('bossSkills').BOSS_LOADOUTS;
+  assert.equal(groups.length,5);
+  for(let level=0;level<5;level++) {
+    assert.equal(new Set(groups[level]).size,3);assert.ok(groups[level].every(a=>!['cannon','rush','sweep','burst'].includes(a)));
+    for(let cycle=1;cycle<=3;cycle++)assert.equal(signature(level,1,cycle).bossAttack,groups[level][cycle-1]);
+  }
+});
+
+test('furnace vents erupt on the ground and warn again before moving to a new lane', () => {
+  let s=signature(0,1,1),locked=[...s.bossAttackLanes];s=launch(s);
+  assert.equal(s.threats[0].kind,'lava');assert.equal(s.threats[0].originY,59);assert.equal(s.threats[0].duration,1);
+  s={...s,lane:(locked[0]+1)%3,dodgeTicks:0};
+  for(let i=0;i<12;i++)s=tick(s);
+  assert.equal(s.bossStep,'warning');assert.notDeepEqual(s.bossAttackLanes,locked);assert.equal(s.bossStepTicks,0);assert.equal(s.playerHp,100);
+});
+
+test('destroying an egg prevents its hatch; a surviving egg produces a separate shootable minion', () => {
+  const base=launch(signature(1,1,1)),egg=base.threats[0];
+  let broken=tick({...base,pendingShots:[incoming(base,{target:'threat',targetIndex:egg.id,lane:egg.lane,damage:999})]});
+  for(let i=0;i<29;i++)broken=tick(broken);
+  assert.ok(!broken.threats.some(t=>t.kind==='minion'&&t.lane===egg.lane));
+  let hatched=base;for(let i=0;i<30;i++)hatched=tick(hatched);
+  assert.ok(hatched.threats.some(t=>t.kind==='minion'&&t.hp>0));assert.ok(hatched.threats.filter(t=>t.kind==='egg').every(t=>t.hp===0));
+});
+
+test('queen siphon heals only while its tether lives and is capped at maximum health', () => {
+  let base=launch(signature(1,1,2));base={...base,battleHp:200};const source=base.threats[0];
+  let healed=base;for(let i=0;i<10;i++)healed=tick(healed);assert.equal(healed.battleHp,203);
+  let stopped=tick({...base,pendingShots:[incoming(base,{target:'threat',targetIndex:source.id,lane:source.lane,damage:999})]});
+  for(let i=0;i<10;i++)stopped=tick(stopped);assert.equal(stopped.battleHp,200);
+  let capped={...base,battleHp:299};for(let i=0;i<10;i++)capped=tick(capped);assert.equal(capped.battleHp,300);
+});
+
+test('bastion shield nodes suppress boss damage and breaking both exposes the core', () => {
+  const base=launch(signature(2,1,1));assert.equal(base.threats.filter(t=>t.kind==='pylon').length,2);assert.ok(sim.bossGuarded(base));
+  const blocked=tick({...base,pendingShots:[incoming(base,{lane:base.battleLane,damage:20})]});assert.equal(base.battleHp-blocked.battleHp,2);
+  let clear=base;for(const node of base.threats)clear=tick({...clear,pendingShots:[incoming(clear,{target:'threat',targetIndex:node.id,lane:node.lane,damage:999})]});
+  assert.equal(sim.bossGuarded(clear),false);
+  const hit=tick({...clear,pendingShots:[incoming(clear,{lane:clear.battleLane,damage:20})]});assert.ok(clear.battleHp-hit.battleHp>=20);
+});
+
+test('oracle conductive core anchors both fields and destroying it shuts them down before damage', () => {
+  const base=launch(signature(3,1,1)),core=base.threats.find(t=>t.kind==='orb'),fields=base.threats.filter(t=>t.kind==='field');
+  assert.equal(fields.length,2);assert.ok(fields.every(t=>t.linkId===core.id&&t.lane!==core.lane));
+  const hit=tick({...base,lane:fields[0].lane,threats:base.threats.map(t=>({...t,ticks:9})),pendingShots:[incoming(base,{target:'threat',targetIndex:core.id,lane:core.lane,damage:999})]});
+  assert.equal(hit.playerHp,100);assert.ok(hit.threats.filter(t=>t.kind==='field').every(t=>t.hp===0));
+});
+
+test('emperor seals can be interrupted and judgement gives three separately telegraphed safe gaps', () => {
+  const base=launch(signature(4,1,1)),seal=base.threats[0];
+  const broken=tick({...base,pendingShots:[incoming(base,{target:'threat',targetIndex:seal.id,lane:seal.lane,damage:999})]});assert.equal(broken.threats.find(t=>t.id===seal.id).hp,0);
+  let s=signature(4,1,2),gaps=[];
+  for(let i=0;i<130;i++) {
+    if(s.bossStep==='warning'&&s.bossStepTicks===0)gaps.push([0,1,2].find(l=>!s.bossAttackLanes.includes(l)));
+    if(s.bossStep==='recovery')break;
+    s=tick(sim.gameReducer(s,{type:'MOVE_LANE',lane:bossTactic(s)}));
+  }
+  assert.equal(gaps.length,3);assert.equal(new Set(gaps).size,3);assert.equal(s.playerHp,100);
+});
+
+test('arena sidestep has moving hitbox, preserves shot origins and does not grant blanket invulnerability', () => {
+  const base={...battle(),lane:1,battleLane:1,bossStep:'warning',bossStepTicks:0,fireCooldown:0,pendingShots:[]};
+  const moved=sim.gameReducer(base,{type:'MOVE_LANE',lane:2});assert.equal(moved.dodgeTicks,4);assert.equal(sim.playerLaneFor(moved),1);
+  assert.equal(sim.playerFormation(moved)[0].x,50);
+  const shell={id:88,kind:'shell',lane:1,ticks:1,duration:8,hp:-1,maxHp:0,damage:12,fromLane:1};
+  const early=tick({...moved,threats:[shell]});assert.equal(early.playerHp,88,'early movement is still in the source lane');assert.equal(early.pendingShots.length,0);
+  const middle=tick({...moved,dodgeTicks:3,threats:[shell]});assert.equal(sim.playerLaneFor(middle),2);assert.equal(middle.playerHp,100);assert.equal(middle.evadeSequence,1);
+  assert.ok(sim.playerFormation(middle)[0].x>50&&sim.playerFormation(middle)[0].x<73);
+  const destination=tick({...moved,dodgeTicks:3,threats:[{...shell,lane:2}]});assert.equal(destination.playerHp,88,'cannot dodge into an active attack for free');
+  const spam=sim.gameReducer(moved,{type:'MOVE_LANE',lane:0});assert.equal(spam.dodgeTicks,moved.dodgeTicks);assert.equal(spam.dodgeSequence,moved.dodgeSequence);assert.equal(spam.queuedLane,0);
+  let landed=moved;for(let i=0;i<4;i++)landed=tick(landed);assert.equal(landed.dodgeTicks,0);assert.equal(sim.playerFormation(landed)[0].x,73);assert.ok(landed.pendingShots.every(p=>p.origins[0].x>=60));
+  const paused=sim.gameReducer(moved,{type:'PAUSE'});assert.deepEqual(tick(paused),paused);
+});
+
+test('eight-frame combat sheets retain alpha and exact frame boundaries for all three classes', () => {
+  const art=load('art');
+  for(const url of Object.values(art.BATTLE_ART)) {
+    const file=path.resolve(__dirname,'../../../public',url.slice(1)),data=fs.readFileSync(file);
+    assert.equal(data.readUInt32BE(16),1536);assert.equal(data.readUInt32BE(20),576);assert.equal(data[25],6);
+    assert.equal(data.readUInt32BE(16)/8,data.readUInt32BE(20)/3);
+    assert.ok(fs.existsSync(path.join(__dirname,'art-source',path.basename(file))));
+  }
+  for(const [url,cols,rows]of [[art.BOSS_CAST_ART,8,5],[art.BOSS_OBJECTIVE_ART,4,2]]) {
+    const data=fs.readFileSync(path.resolve(__dirname,'../../../public',url.slice(1)));
+    assert.equal(data.readUInt32BE(16)%cols,0);assert.equal(data.readUInt32BE(20)%rows,0);assert.equal(data[25],6);
+  }
+});
+
+test('dodge sound is separate from hurt feedback and evade confirmation needs a real missed attack', () => {
+  const audio=load('audio'),base=battle(),move=sim.gameReducer(base,{type:'MOVE_LANE',lane:2});
+  assert.ok(audio.gameSoundEvents(base,move).includes('dodge'));assert.ok(!audio.gameSoundEvents(base,move).includes('evade'));
+  const shell={id:90,kind:'shell',lane:1,ticks:1,duration:8,hp:-1,maxHp:0,damage:12,fromLane:1};
+  const success=tick({...move,dodgeTicks:3,threats:[shell]});
+  assert.ok(audio.gameSoundEvents(move,success).includes('evade'));assert.ok(!audio.gameSoundEvents(move,success).includes('damage'));
+});
+
+test('two-lane dodge requests are buffered into two continuous adjacent steps without resetting timers', () => {
+  let s=sim.gameReducer({...battle(),lane:0},{type:'MOVE_LANE',lane:2});
+  assert.equal(s.lane,1);assert.equal(s.queuedLane,2);assert.equal(s.dodgeSequence,1);
+  for(let i=0;i<4;i++)s=tick(s);
+  assert.equal(s.lane,2);assert.equal(s.dodgeFromLane,1);assert.equal(s.dodgeTicks,4);assert.equal(s.dodgeSequence,2);assert.equal(sim.playerFormation(s)[0].x,50);
+  for(let i=0;i<4;i++)s=tick(s);
+  assert.equal(s.dodgeTicks,0);assert.equal(s.queuedLane,null);assert.equal(sim.playerFormation(s)[0].x,73);
 });

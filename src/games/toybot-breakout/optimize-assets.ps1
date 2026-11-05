@@ -16,8 +16,11 @@ foreach($file in $inputs){
  $original=[Drawing.Image]::FromFile($file.FullName)
  try{
   $opaque=$file.BaseName -match '^(map-[1-5]-ai|ui-hangar|home-hangar|mech-road)'
-  $limit=if($file.BaseName -match '^upgrade-'){160}elseif($file.BaseName -match '^home-mech-'){480}else{768}
+  $limit=if($file.BaseName -match '^mech-.*-combat-v10$'){1536}elseif($file.BaseName -eq 'boss-cast-v10'){1584}elseif($file.BaseName -eq 'boss-objectives-v10'){1024}elseif($file.BaseName -match '^upgrade-'){160}elseif($file.BaseName -match '^home-mech-'){480}else{768}
   $width=[Math]::Min($original.Width,$limit);$height=[int][Math]::Round($original.Height*$width/$original.Width)
+  if($file.BaseName -match '^mech-.*-combat-v10$'){$height=576}
+  elseif($file.BaseName -eq 'boss-cast-v10'){$height=990}
+  elseif($file.BaseName -eq 'boss-objectives-v10'){$height=512}
   $bitmap=[Drawing.Bitmap]::new($width,$height,[Drawing.Imaging.PixelFormat]::Format32bppArgb)
   $graphics=[Drawing.Graphics]::FromImage($bitmap)
   try{

@@ -1,0 +1,38 @@
+/* Combat uses independent eight-frame rear-view idle/attack/dodge strips. */
+.toybot-shell .toybot-scene.is-arena .toybot-robot{animation:none}
+.toybot-shell .is-arena .toybot-equipment-tag{display:none}
+.toybot-shell .battle-mech{position:relative;aspect-ratio:1;overflow:visible}
+.toybot-shell .toybot-battle-body{display:block;position:absolute;inset:-20%;background-size:800% 300%;background-repeat:no-repeat;animation:toybot-combat-idle 1.6s steps(8,end) infinite;transform-origin:50% 75%}
+.toybot-shell .battle-mech.is-attacking .toybot-battle-body{animation:toybot-combat-shot .4s steps(8,end) -.1s infinite}
+.toybot-shell .battle-mech.is-dodging .toybot-battle-body{animation:toybot-combat-dodge .4s steps(8,end) both;scale:var(--dodge-mirror,1) 1}
+.toybot-shell .is-arena .toybot-robot.is-dodging:before{content:'';position:absolute;left:15%;right:15%;bottom:-3px;height:5px;border-radius:50%;background:#8cffff88;box-shadow:0 0 10px 3px #70efff55}
+.toybot-shell .toybot-dodge-echo{pointer-events:none;filter:brightness(1.8) saturate(.3);mix-blend-mode:screen}
+.toybot-shell .toybot-dodge-echo .toybot-battle-body{animation:none;background-position-x:0}
+.toybot-shell .toybot-evade-success{position:absolute;top:54%;z-index:1100;translate:-50% -100%;font-size:12px;color:#b9ffff;text-shadow:0 0 8px #26d5e8;pointer-events:none}
+.toybot-shell .toybot-battle-reactor{position:absolute;left:44%;top:26%;width:12%;height:12%;border-radius:50%;box-shadow:0 0 9px 2px var(--mech-accent,#89f5ff);opacity:.65;pointer-events:none}
+.toybot-shell .toybot-battle-muzzle{position:absolute;left:46%;top:-10%;width:25%;height:30%;background:url('/games/toybot-breakout/optimized/muzzle-flash.png') center/contain no-repeat;pointer-events:none}
+.toybot-shell .toybot-skill-object{position:absolute;width:58px;height:58px;translate:-50% -50%;pointer-events:none;transition:top .1s linear;filter:drop-shadow(0 4px 3px #05122199)}
+.toybot-shell .toybot-skill-object-art{position:absolute;inset:0;background-size:400% 200%;background-repeat:no-repeat}
+.toybot-shell .toybot-skill-object.kind-wall{width:70px;height:65px}
+.toybot-shell .toybot-skill-object small{position:absolute;bottom:-16px;left:50%;translate:-50% 0;font-size:8px;white-space:nowrap;color:#d4eeff;background:#10243be0;padding:1px 4px;border-radius:3px}
+.toybot-shell .toybot-skill-countdown{position:absolute;left:20%;right:20%;bottom:-6px;height:2px;background:#dbbafc;transform-origin:left}
+.toybot-shell .kind-tether:after{content:'';position:absolute;inset:10%;border:1px dashed #86ffdc;border-radius:50%;animation:toybot-link-spin 3s linear infinite}
+.toybot-shell .toybot-skill-field{position:absolute;z-index:580;top:43%;width:20%;height:21%;translate:-50% 0;border:1px solid #c194ff88;border-radius:8px;background:repeating-linear-gradient(135deg,#a868ff26 0 6px,transparent 6px 14px);pointer-events:none}
+.toybot-shell .toybot-skill-field span{position:absolute;inset:20% -8%;background-size:400% 200%;background-position:100% 100%;animation:toybot-field-pulse .7s ease-in-out infinite alternate}
+.toybot-shell .toybot-skill-field.sector-4{filter:hue-rotate(100deg);border-color:#ffe1a5}
+.toybot-shell .toybot-furnace-zone{position:absolute;z-index:570;top:55%;width:21%;height:10%;translate:-50% 0;perspective:300px;pointer-events:none;border-bottom:2px solid #ffb36b;border-radius:40%;background:radial-gradient(ellipse,#ff762644,transparent 72%)}
+.toybot-shell .toybot-furnace-zone span{display:block;width:100%;height:100%;background-size:400% 200%;background-position:0 0;transform:rotateX(25deg);animation:toybot-field-pulse .5s ease-in-out infinite alternate}
+.toybot-shell .boss-linked-shield{position:absolute;inset:0;border:2px solid #ffd6a888;border-radius:50%;box-shadow:0 0 14px #ffc68655;pointer-events:none}
+.toybot-shell .boss-linked-shield small{position:absolute;top:-14px;left:50%;translate:-50% 0;white-space:nowrap;font-size:8px;color:#ffe3ac;background:#15253bdb;padding:2px 4px}
+.toybot-shell .attack-vents,.toybot-shell .attack-smelt{background:repeating-linear-gradient(0deg,#ff8d5733 0 8px,transparent 8px 18px);border-color:#ffa960}
+.toybot-shell .attack-eggs,.toybot-shell .attack-hive-link{border-color:#96f4d1;background:#5edfaf16}
+.toybot-shell .attack-pylons,.toybot-shell .attack-lockdown{border-color:#d9ad7d;background:#c2975c18}
+.toybot-shell .attack-orbits,.toybot-shell .attack-polarity{border-color:#d1a4ff;background:#c47bff22}
+.toybot-shell .attack-seals,.toybot-shell .attack-judgement{border-color:#ffe2a4;background:#ffcd6c22}
+.toybot-shell .is-paused .toybot-battle-body,.toybot-shell .is-paused .toybot-skill-field span,.toybot-shell .is-paused .kind-tether:after,.toybot-shell .is-paused .toybot-furnace-zone span{animation-play-state:paused}
+@keyframes toybot-combat-idle{to{background-position-x:114.285714%}}
+@keyframes toybot-combat-shot{to{background-position-x:114.285714%}}
+@keyframes toybot-combat-dodge{to{background-position-x:114.285714%}}
+@keyframes toybot-link-spin{to{rotate:360deg}}
+@keyframes toybot-field-pulse{to{opacity:.65;filter:brightness(1.4)}}
+@media(prefers-reduced-motion:reduce){.toybot-shell .toybot-battle-body,.toybot-shell .kind-tether:after,.toybot-shell .toybot-skill-field span,.toybot-shell .toybot-furnace-zone span{animation:none}.toybot-shell .toybot-dodge-echo{display:none}}

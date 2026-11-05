@@ -1,0 +1,67 @@
+{
+  "tool": "built-in image_gen.imagegen",
+  "date": "2026-11-05",
+  "assets": [
+    {
+      "source": "art-source/mech-pulse-combat-v10.png",
+      "runtime": "public/games/toybot-breakout/optimized/mech-pulse-combat-v10.png",
+      "grid": {
+        "columns": 8,
+        "rows": 3,
+        "poses": [
+          "idle",
+          "attack",
+          "dodge"
+        ]
+      },
+      "prompt": "Production game animation spritesheet. Exactly EIGHT columns and THREE rows of equal square cells, 24 separate poses; wide landscape aspect 8:3. All characters are the SAME original toy mecha viewed from BEHIND in third-person, facing the top of the image, entire body including feet. Consistent size, center point, lighting and floor baseline across every cell, transparent background, plenty of transparent gutter inside each cell, nothing overlaps adjacent cells. ROW ONE: eight chronological subtle COMBAT IDLE poses, feet remain planted in a stable two-foot firing stance, small breathing and armor settling, frame 8 returns smoothly to frame1; NO running or walking. ROW TWO: eight chronological ATTACK poses: anticipation, raise weapon, aim, energy release, recoil, follow through, settle, ready; preserve the same planted feet. ROW THREE: eight chronological LEFT SIDESTEP DODGE poses: brace, lean left, push-off, leftward boost, lowest crouch, braking, stand-up, ready; keep character centered within each cell, lateral world translation is done by engine. Use actual successive anatomy changes and weight transfer, not repeating identical pictures. Crisp polished simplified 3D toy robot render, readable at small game sizes. Real alpha transparency. No floor, no cast ground shadow, no scene, no text, labels, grid lines, watermark, UI or frame numbers. Do not show front-facing characters. Subject identity: Slim cream-white and midnight-blue pulse mecha, two cyan ear fins, orange forehead accent, cyan backpack reactor, single compact right forearm cannon firing cyan energy toward the top, left arm balances. The attached image is identity/style reference only, transform to the required rear view and exact 8x3 animation layout.",
+      "correction": "Edit this game sprite atlas. Preserve exactly EIGHT columns by THREE rows of identical square cells, all full-body characters centered with consistent size and baseline. Keep the existing rear-facing character, exact poses and every frame unchanged. Remove the white background completely. True transparent alpha background in every cell, including between legs/arms, no floor shadow or scene. No text, grid, borders, labels, watermark. No additional objects. True transparent PNG cutout atlas, not white or checkerboard background."
+    },
+    {
+      "source": "art-source/mech-heavy-combat-v10.png",
+      "runtime": "public/games/toybot-breakout/optimized/mech-heavy-combat-v10.png",
+      "grid": {
+        "columns": 8,
+        "rows": 3,
+        "poses": [
+          "idle",
+          "attack",
+          "dodge"
+        ]
+      },
+      "prompt": "NEW GAME ASSET. Camera strictly BEHIND the robot looking at its BACK, every single pose is a REAR VIEW, facing AWAY from viewer toward top of image. NO FACE, NO FRONT CHEST, NO VISOR, NO FRONT VIEW anywhere. Subject: very bulky rectangular cream white charcoal toy artillery robot, orange trim, massive right-side cannon, broad boots, huge opaque BACK armor, rectangular CYAN REACTOR ON ITS BACK, back of helmet no faceplate. Create exactly 24 full-body animation sprites in an EIGHT column THREE row equal square-cell sheet, aspect ratio 8:3. Row1 eight subtle stable combat-ready poses with both feet planted, no walking. Row2 eight successive weapon attack and recovery poses, attacking toward TOP of image away from viewer. Row3 eight successive crouch/lean LEFT sidestep and return poses, engine handles actual translation so keep centered. Same character, scale, feet baseline, evenly aligned grid and generous transparent padding around each frame. True transparent alpha background in entire sheet, no white/gray background or floor or shadows. Smooth polished 3D toy mecha art. Eight columns in every row, no typography, grid lines, watermark. Anatomically coherent weight shifts between frames. Rear silhouette must be unmistakable; show ONLY dorsal surfaces."
+    },
+    {
+      "source": "art-source/mech-blade-combat-v10.png",
+      "runtime": "public/games/toybot-breakout/optimized/mech-blade-combat-v10.png",
+      "grid": {
+        "columns": 8,
+        "rows": 3,
+        "poses": [
+          "idle",
+          "attack",
+          "dodge"
+        ]
+      },
+      "prompt": "NEW GAME ASSET. Camera strictly BEHIND the robot looking at its BACK, every single pose is a REAR VIEW, facing AWAY from viewer toward top of image. NO FACE, NO FRONT CHEST, NO VISOR, NO FRONT VIEW anywhere. Subject: slim cream white navy toy sword robot with pointed helmet crest and a cyan sword in its RIGHT HAND, long navy spine BACKPACK with cyan reactor on BACK, rear shoulder armor, heels visible. Create exactly 24 full-body animation sprites in an EIGHT column THREE row equal square-cell sheet, aspect ratio 8:3. Row1 eight subtle stable combat-ready poses with both feet planted, no walking. Row2 eight successive weapon attack and recovery poses, attacking toward TOP of image away from viewer. Row3 eight successive crouch/lean LEFT sidestep and return poses, engine handles actual translation so keep centered. Same character, scale, feet baseline, evenly aligned grid and generous transparent padding around each frame. True transparent alpha background in entire sheet, no white/gray background or floor or shadows. Smooth polished 3D toy mecha art. Eight columns in every row, no typography, grid lines, watermark. Anatomically coherent weight shifts between frames. Rear silhouette must be unmistakable; show ONLY dorsal surfaces."
+    },
+    {
+      "source": "art-source/boss-cast-v10.png",
+      "runtime": "public/games/toybot-breakout/optimized/boss-cast-v10.png",
+      "grid": {
+        "columns": 8,
+        "rows": 5
+      },
+      "prompt": "Create a production game animation atlas on transparent background, exactly EIGHT equal columns and FIVE equal rows, 40 separate robot sprites, all cells same width and height, consistent scale and baseline, front three-quarter view from slightly above, each full robot safely inside its cell. The attached atlas is identity reference: preserve five different boss designs and their color families, one boss per row. ROW1 orange industrial furnace guardian with huge furnace gauntlets; ROW2 blue-silver airborne insect queen with hovering halo and wing appendages; ROW3 dark burgundy armored fortress with huge shield; ROW4 purple crystalline floating storm oracle with orbiting shards; ROW5 gold ivory regal celestial emperor with crown-like armor. For EACH row create eight chronological skill-casting poses: ready, anticipation, crouch/coil, arms spread / energy channel, maximum charge, release / arms extend, follow-through, recovery. Substantial smooth bodily pose differences between adjacent frames with coherent anatomy, not repeated identical images. Abilities are ground control, spawning and energy magic, so NO fired bullets, cannon shots, missiles or generic muzzle flashes. Limited small contained colored energy on hands/core only. Clean stylized polished toy-mecha 3D game illustration. True alpha background, no scenery, floor shadow, grid, typography, watermark, labels or borders. Landscape aspect ratio exactly 8:5; eight aligned columns on every row."
+    },
+    {
+      "source": "art-source/boss-objectives-v10.png",
+      "runtime": "public/games/toybot-breakout/optimized/boss-objectives-v10.png",
+      "grid": {
+        "columns": 4,
+        "rows": 2
+      },
+      "prompt": "Production-ready game objective icon/sprite atlas, FOUR columns TWO rows, eight centered separate full objects in identical square cells. Real alpha-transparent background, absolutely no white/gray colored backdrop, no floor, shadows on ground, grid lines, labels, text, borders or watermark. Clean polished 3D sci-fi toy style cream/charcoal surfaces, chunky highly readable shapes. First row left to right: (1) orange industrial floor furnace vent with fiery molten center and open metal petals, (2) pale blue mechanical honeycomb egg in a blue cradle with translucent shell and small sleeping drone inside, (3) blue silver siphon drone with bright greenish cyan central energy link core, (4) burgundy armored shield generator tower with huge orange energy shield plates. Second row left to right: (5) broad burgundy segmented mobile barricade wall with glowing orange edges, (6) floating purple crystalline conductive orb in a metal gimbal, (7) regal gold ivory floating runic mechanical seal with central luminous amber crystal, (8) violet electrical ground circle and three branching lightning arcs, contained completely within its cell. Each object's edges and glow separated from other cells by generous padding. Match all lighting and rendering. Exactly 8 objects, no robots or scenery elsewhere."
+    }
+  ]
+}

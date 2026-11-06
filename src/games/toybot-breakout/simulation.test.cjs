@@ -1855,3 +1855,45 @@ test('heavy stagger cannot extend a warning into a three-lane body trap on any s
   }
  }
 });
+test('V28 motion atlas runs eight frames and never runs in any boss phase',()=>{
+ const art=load('visualArt'),s={...initial(),status:'running',roadTicks:0};
+ const frames=new Set(Array.from({length:64},(_,i)=>art.artPose({...s,roadTicks:i/10}).frame));
+ assert.equal(frames.size,8);assert.equal(art.artPose(s).row,0);
+ for(const status of ['boss-intro','battle','boss-shift','boss-victory']){
+  const p=art.artPose({...s,status,fireCooldown:0});assert.equal(p.row,1);assert.equal(p.upperOpacity,0);
+ }
+ const advanced=art.artPose({...s,weaponLevel:2});assert.equal(advanced.row,4);
+});
+test('V28 anticipation precedes launch and recovery reaches final frame without mutating timing',()=>{
+ const art=load('visualArt'),s={...battle(),mechClass:'heavy',bots:1},before=JSON.stringify(s),interval=sim.attackIntervalFor(s);
+ assert.ok(art.artPose({...s,fireCooldown:1}).frame<3);
+ assert.equal(art.artPose({...s,fireCooldown:interval}).frame,3);
+ assert.equal(art.artPose({...s,fireCooldown:interval-3},.9).frame,7);
+ const dodge=art.artPose({...s,dodgeTicks:sim.DODGE_TICKS},0);assert.equal(dodge.row%4,3);assert.equal(dodge.frame,0);
+ assert.equal(JSON.stringify(s),before);
+});
+test('V28 reduced motion has no procedural lean or recoil and pause preserves sampled pose',()=>{
+ const art=load('visualArt'),s={...battle(),fireCooldown:sim.attackIntervalFor(battle()),dodgeTicks:2};
+ const p=art.artPose(s,.5,0,true);assert.equal(p.frame,0);assert.equal(p.lean,0);assert.equal(p.recoil,0);
+ assert.deepEqual(art.artPose(s,.5),art.artPose({...s,status:'paused',resumeStatus:'battle'},.5));
+});
+test('V28 each boss retains its unfolded phase through firing, rush and recovery',()=>{
+ const art=load('visualArt');for(let sector=0;sector<5;sector++)for(const step of ['warning','flight','rush','recovery','shield']){
+  const s={...battle(),levelIndex:sector,bossStep:step};const one=art.bossArtFrame({...s,bossStage:1}),two=art.bossArtFrame({...s,bossStage:2});assert.equal(two-one,4);assert.ok(two>=4&&two<=7);
+ }
+});
+test('V28 material animations separate armor shards and destruction and stay inside their atlas',()=>{
+ const art=load('visualArt');assert.equal(art.materialSample('hit',4).row,0);assert.equal(art.materialSample('armor',4).row,2);assert.equal(art.materialSample('boss',12).row,3);
+ for(const kind of ['hit','armor','heavy','elite','boss'])for(let t=0;t<13;t+=.2){const p=art.materialSample(kind,t,.5);assert.ok(p.frame>=0&&p.frame<=7);assert.ok(p.age>=0&&p.age<1);}
+});
+test('V28 salvage receipts converge on the squad and never award currency',()=>{
+ const art=load('visualArt'),s=initial(),before=JSON.stringify(s);let last=Infinity;
+ for(let t=7;t>=0;t-=.1){const p=art.salvageSample(32,45,t,60);const distance=Math.abs(60-p.x);assert.ok(distance<=last+1e-8);last=distance;assert.ok(p.opacity>=0&&p.opacity<=1);}
+ const end=art.salvageSample(32,45,0,60);assert.equal(end.x,60);assert.equal(end.y,59);assert.equal(JSON.stringify(s),before);
+});
+test('V28 production atlases are normalized RGBA PNGs with no missing frame cells',()=>{
+ const names=[['mech-pulse-motion',1024,1024],['mech-heavy-motion',1024,1024],['mech-blade-motion',1024,1024],['boss-evolution',1536,960],['material',1024,512],['props',1024,512],['mech-portraits',1536,576]];
+ for(const [name,w,h] of names){const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',name+'-v28.png'));assert.equal(png.toString('ascii',1,4),'PNG');assert.equal(png.readUInt32BE(16),w);assert.equal(png.readUInt32BE(20),h);assert.equal(png[25],6,'RGBA alpha required');}
+});
+
+test('V28 portrait combinations reflect all equipped modules independently',()=>{const art=load('visualArt');for(const kind of ['pulse','heavy','blade']){const seen=new Set();for(let mask=0;mask<8;mask++)seen.add(art.equipmentCell(kind,Boolean(mask&1),Boolean(mask&2),Boolean(mask&4)));assert.equal(seen.size,8);}assert.equal(art.motionTier(1,0,0),4);});

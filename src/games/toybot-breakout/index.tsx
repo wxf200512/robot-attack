@@ -1,3 +1,6 @@
+import { ArtDetails, BattleWear } from './ArtDetails';
+import { MOTION_ART, MATERIAL_ART, PROP_ART, PORTRAIT_ART, equipmentCell, BOSS_EVOLUTION_ART, motionTier, atlasCell, bossArtFrame } from './visualArt';
+import './artV28.css';
 import { ELITE_ATTACKS, roadEnemyName, frontlineStage, type ElitePattern } from './frontline';
 import { AWAKEN_ART, coreVisualShots } from './awakening';
 import { Cockpit, CoreBurstScreen, COCKPIT_ART, REACTOR_ART, CORE_EFFECT_ART } from './Cockpit';
@@ -22,7 +25,6 @@ import { advanceDrag, canStartPointerGesture } from './interaction';
 import { preloadImages } from './loading';
 import { clearTrainingCheckpoint } from './training';
 import Tutorial from './Tutorial';
-import { mechSpriteStyle } from './mechArt';
 import { MECH_CLASSES, coreSkill, mechSpec, type MechClass } from './mechs';
 import './interface.css';
 import './mechs.css';
@@ -41,10 +43,10 @@ import { hazardMaxHpFor, gateChoicesFor, guardSourceFor, commanderFor, eliteRole
 import { OBJECTIVE_NAMES, SPECIAL_LABELS } from './bossSkills';
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MAP_ART, BOSS_ART, BOSS_INTRO_ART, BOSS_STAGE2_ART, BOSS_DEFEAT_ART, BOSS_RUSH_ART, GATE_ART, PLAYER_ART, THREAT_ART, UI_HANGAR_ART, UI_RESULT_CRESTS, UI_MENU_ART, UI_MENU_ICONS, BLADE_SLASH_ART, ENEMY_ART, BATTLE_ART, BOSS_CAST_ART, BOSS_OBJECTIVE_ART } from './art';
+import { MAP_ART, BOSS_ART, BOSS_INTRO_ART, BOSS_STAGE2_ART, BOSS_DEFEAT_ART, GATE_ART, THREAT_ART, UI_HANGAR_ART, UI_RESULT_CRESTS, UI_MENU_ART, UI_MENU_ICONS, BLADE_SLASH_ART, ENEMY_ART, BOSS_OBJECTIVE_ART } from './art';
 import { hazardArmorFor } from './simulation';
 import { getLevel, LEVELS, hazardLaneAt } from './level';
-import { createInitialState, formationFor, effectiveWeapon, bossPhase, bossY, gateEffectDetail, LANE_CENTERS, STEP_MS, RUN_SPEED, laneXAt, targetY, bossFiring, gateGroundY, GATE_CONTACT_Y, isActiveStatus, canMove, canShoot, isBossArena, bossEnrage, BOSS_INTRO_TICKS, BOSS_SHIFT_TICKS, BOSS_VICTORY_TICKS, bossX, rushProgress, isRush, attackIntervalFor, bossAttackLabel, bossWarningTicks, enemyThreatY, playerFormation, bossGuarded, roadEnemyY, roadEnemyX, targetX as targetWorldX } from './simulation';
+import { createInitialState, formationFor, effectiveWeapon, bossPhase, bossY, gateEffectDetail, LANE_CENTERS, STEP_MS, RUN_SPEED, laneXAt, targetY, bossFiring, gateGroundY, GATE_CONTACT_Y, isActiveStatus, canMove, canShoot, isBossArena, bossEnrage, BOSS_INTRO_TICKS, BOSS_VICTORY_TICKS, bossX, rushProgress, isRush, attackIntervalFor, bossAttackLabel, enemyThreatY, playerFormation, bossGuarded, roadEnemyY, roadEnemyX, targetX as targetWorldX } from './simulation';
 import { purchaseUpgrade, readGarage, saveGarage, toggleUpgrade, upgradeCost, UPGRADES, moduleLevel, garageStats, previewUpgrade, equipAllUpgrades, MODULE_MAX_LEVEL, canEnterLevel, recordLevelCompletion, type Garage, type UpgradeId } from './progression';
 
 import './playability.css';
@@ -58,31 +60,16 @@ function ProjectileArt({ level, heavy = false }: { level: number; heavy?: boolea
 function Robot({ awakened=false, index, small = false, enemy = false, firing = false, weaponPhase = 0, bossArt = BOSS_ART, weaponLevel = 0, armorLevel = 0, coreLevel = 0, mechClass = 'pulse', motionFrame = 0, attacking = false, combat = false, dodging = false, dodgeDirection = -1, bossColumns = 4 }: { awakened?:boolean; combat?: boolean; dodging?: boolean; dodgeDirection?: number; bossColumns?: number; mechClass?: MechClass; motionFrame?: number; attacking?: boolean; index: number; small?: boolean; enemy?: boolean; firing?: boolean; weaponPhase?: number; bossArt?: string; weaponLevel?: number; armorLevel?: number; coreLevel?: number }) {
   if (enemy) return <div className="robot-boss-sprite" style={{ backgroundImage: `url(${bossArt})`, backgroundSize:(bossColumns*100)+'% 500%', backgroundPosition: (weaponPhase * 100 / (bossColumns-1)) + '% ' + (index * 25) + '%' }} aria-hidden="true" />;
   if(awakened)return <div className={'robot-player-art whole-mech-awaken class-'+mechClass} style={{'--awaken-mirror':dodging&&dodgeDirection<0?-1:1} as React.CSSProperties} aria-hidden="true"><span className="robot-awakened-sprite" style={{backgroundImage:`url(${AWAKEN_ART[mechClass]})`,backgroundPosition:(motionFrame*100/3)+'% '+((combat?(dodging?3:attacking?2:1):0)*100/3)+'%'}}/></div>;
-  if (combat) return <div className={`robot-player-art battle-mech class-${mechClass} ${dodging ? 'is-dodging' : attacking ? 'is-attacking' : 'is-ready'} mech-w${Math.min(4,weaponLevel)}`} style={{ '--dodge-mirror': dodgeDirection > 0 ? -1 : 1 } as React.CSSProperties} aria-hidden="true">
-    <span className="toybot-battle-body" style={{ backgroundImage:`url(${BATTLE_ART[mechClass]})`,backgroundPositionY:(dodging?100:attacking?50:0)+'%' }} />
-  </div>;
-  if (mechClass !== 'pulse') {
-    const tier = Math.min(3, weaponLevel + Math.min(1, armorLevel) + Math.min(1, coreLevel));
-    const row = 1 + motionFrame;
-    return <div className={'robot-player-art class-mech class-' + mechClass + (firing ? ' is-firing' : '') + (attacking ? ' is-attacking' : '') + (small ? ' robot-small' : '')} aria-hidden="true">
-      <span className="toybot-class-sprite" style={mechSpriteStyle(mechClass, row, tier)} />{attacking&&<span className="toybot-road-upper"><span className="toybot-class-sprite" style={mechSpriteStyle(mechClass,5+weaponPhase,tier)}/></span>}
-    </div>;
-  }
-  return <div className={`robot-player-art mech-w${Math.min(4, weaponLevel)} mech-a${Math.min(4, armorLevel)} mech-c${Math.min(4, coreLevel)}${small ? ' robot-small' : ''}${firing ? ' is-firing' : ''}`} aria-hidden="true">
-    <div className="robot-run-sprite" style={weaponLevel > 0 ? { backgroundImage: `url(${PLAYER_ART})`, backgroundSize: '400% 400%', backgroundPositionY: ((Math.min(4, weaponLevel) - 1) * 100 / 3) + '%' } : undefined} />
-    {firing && weaponLevel === 0 && <span className="robot-fire-spark" />}
+  const tier=motionTier(weaponLevel,armorLevel,coreLevel),row=tier+(combat?(dodging?3:attacking?2:1):0);
+  return <div className={`robot-player-art toybot-v28-mech class-${mechClass}${small?' robot-small':''}${firing?' is-firing':''}`} style={{'--art-mirror':combat&&dodging&&dodgeDirection<0?-1:1} as React.CSSProperties} aria-hidden="true">
+    <span className="toybot-v28-footdust"/>
+    <span className="toybot-v28-body" style={{backgroundImage:`url(${MOTION_ART[mechClass]})`,backgroundPosition:atlasCell(motionFrame,row)}}/>
+    {!combat&&<span className="toybot-v28-upper" style={{backgroundImage:`url(${MOTION_ART[mechClass]})`,backgroundPosition:atlasCell(weaponPhase,tier+2)}}/>}
   </div>;
 }
 
 function MechShowcase({ weapon, armor, core, className = '', mechClass }: { mechClass: MechClass; weapon: boolean; armor: boolean; core: boolean; className?: string }) {
-  const mechImage = armor
-    ? weapon ? '/games/toybot-breakout/optimized/home-mech-armor-weapon-v1.png' : '/games/toybot-breakout/optimized/home-mech-armor-v1.png'
-    : weapon ? '/games/toybot-breakout/optimized/home-mech-hero-v1.png' : '/games/toybot-breakout/optimized/home-mech-base-v1.png';
-  return <div className={`toybot-mech-showcase class-${mechClass}${weapon ? ' has-weapon' : ''}${armor ? ' has-armor' : ''}${core ? ' has-core' : ''} ${className}`} aria-hidden="true">
-    <span className="toybot-mech-core-wing left" /><span className="toybot-mech-core-wing right" />
-    {mechClass === 'pulse' ? <img src={mechImage} alt="" decoding="async" draggable={false} /> : <span className="toybot-class-portrait" style={mechSpriteStyle(mechClass, 0, Number(weapon) + Number(armor) + Number(core), true)} />}
-    <span className="toybot-mech-core-light" />
-  </div>;
+  return <div className={`toybot-mech-showcase class-${mechClass}${weapon?' has-weapon':''}${armor?' has-armor':''}${core?' has-core':''} ${className}`} aria-hidden="true"><span className="toybot-v28-portrait" style={{backgroundImage:`url(${PORTRAIT_ART})`,backgroundPosition:equipmentCell(mechClass,weapon,armor,core)}}/></div>;
 }
 
 function GarageWorkshop({ garage, onUnlock, onToggle, onBack, onSelectMech, onEquipAll,recommended }: { recommended?:UpgradeId; onEquipAll: () => void; onSelectMech: (id: MechClass) => void; garage: Garage; onUnlock: (id: UpgradeId) => void; onToggle: (id: UpgradeId) => void; onBack: () => void }) {
@@ -113,7 +100,7 @@ function GarageWorkshop({ garage, onUnlock, onToggle, onBack, onSelectMech, onEq
   </div>;
 }
 
-const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState & {narrative?:CampaignState['narrative']}}> = ({previewState}) => {
+const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./simulation').GameState & {narrative?:CampaignState['narrative']}}> = ({previewState,previewFrozen=false}) => {
   const navigate = useNavigate();
   const [settings, setSettings] = useState(()=>previewState?{...readSettings(),quality:'high' as const,muted:true}:readSettings());
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -138,7 +125,7 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState &
   const previousGame = useRef(game);
   const previousModules = useRef(UPGRADES.reduce((sum,u)=>sum+moduleLevel(garage,u.id),0));
   const sceneRef=useRef<HTMLDivElement>(null);
-  useSceneMotion(sceneRef,game,(canShoot(game.status)||game.status==='boss-intro'||game.status==='boss-shift')&&!game.narrative.scene,quality==='low',reducedMotion);
+  useSceneMotion(sceneRef,game,(canShoot(game.status)||game.status==='boss-intro'||game.status==='boss-shift')&&!game.narrative.scene&&!previewFrozen,quality==='low',reducedMotion);
   const dragStart = useRef<{
     pointerId: number;
     startX: number;
@@ -148,10 +135,10 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState &
   } | null>(null);
 
   useEffect(() => {
-    if (!isActiveStatus(game.status)) return undefined;
+    if (!isActiveStatus(game.status)||previewState&&previewFrozen) return undefined;
     const timer = window.setInterval(() => dispatch({ type: 'TICK' }), STEP_MS);
     return () => window.clearInterval(timer);
-  }, [game.status]);
+  }, [game.status,previewState,previewFrozen]);
 
   useEffect(() => {
     if (!game.toast) return undefined;
@@ -199,6 +186,7 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState &
     return()=>{document.removeEventListener('visibilitychange',visibility);window.removeEventListener('blur',suspend);window.removeEventListener('pagehide',suspend);};
   },[game.status]);
   const warmRoadAssets=game.status==='running';
+  useEffect(()=>{void preloadImages([MOTION_ART[game.mechClass],MATERIAL_ART,PROP_ART,PORTRAIT_ART],'high');},[game.mechClass]);
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages(Object.values(DEFENSE_ART));},[game.status]);
   useEffect(()=>{if(game.status==='home')void preloadImages([UI_MENU_ICONS,UI_MENU_ART.hangar,ART_V19,FUSION_ART_V19].filter(Boolean),'low');},[game.status]);
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages([CHAPTER_FILMS[game.levelIndex],RELAY_ART]);},[game.status,game.levelIndex]);
@@ -207,8 +195,8 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState &
   useEffect(()=>{void preloadImages([AWAKEN_ART[game.mechClass]]);},[game.mechClass]);
   const warmCombatAssets=game.status==='running'&&game.progress>=35;
   const warmNextMap=game.status==='running'&&game.progress>=80;
-  useEffect(() => { if(warmCombatAssets)void preloadImages([COCKPIT_ART,REACTOR_ART,CORE_EFFECT_ART,BOSS_CAST_ART,BOSS_OBJECTIVE_ART,BATTLE_ART[game.mechClass]]); },[warmCombatAssets,game.mechClass]);
-  useEffect(() => { if(warmBossAssets)void preloadImages([BOSS_ART,BOSS_INTRO_ART,BOSS_STAGE2_ART,BOSS_DEFEAT_ART,THREAT_ART]); },[warmBossAssets]);
+  useEffect(() => { if(warmCombatAssets)void preloadImages([COCKPIT_ART,REACTOR_ART,CORE_EFFECT_ART,BOSS_OBJECTIVE_ART]); },[warmCombatAssets,game.mechClass]);
+  useEffect(() => { if(warmBossAssets)void preloadImages([BOSS_ART,BOSS_INTRO_ART,BOSS_STAGE2_ART,BOSS_DEFEAT_ART,BOSS_EVOLUTION_ART,THREAT_ART]); },[warmBossAssets]);
   useEffect(() => { if(warmNextMap&&game.levelIndex<LEVELS.length-1)void preloadImages([MAP_ART[game.levelIndex+1]],'low'); },[warmNextMap,game.levelIndex]);
   const warmResult=game.status==='battle'&&game.battleHp<game.battleMaxHp*.3;
   useEffect(()=>{if(warmResult)void preloadImages([UI_MENU_ART.victory,UI_MENU_ART.medal],'low');},[warmResult]);
@@ -267,11 +255,10 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState &
   const motionFrame = Math.floor((game.progress / RUN_SPEED + game.battleTime) / 2) % 4;
   const phase = bossPhase(game);
   const enrage = bossEnrage(game);
-  const bossArt = displayStatus === 'boss-victory' ? BOSS_DEFEAT_ART : displayStatus === 'boss-intro' ? BOSS_INTRO_ART : rushVisual ? BOSS_RUSH_ART : displayStatus === 'battle' ? BOSS_CAST_ART : game.bossStage === 2 ? BOSS_STAGE2_ART : BOSS_ART;
-  const bossFrame = displayStatus === 'battle' && !rushVisual ? (game.bossStep==='warning'?Math.min(4,Math.floor(game.bossStepTicks*5/bossWarningTicks(game))):game.bossStep==='flight'?Math.min(7,5+Math.floor(game.bossStepTicks/2)):7) : rushVisual ? (game.bossStep === 'warning' ? 0 : game.bossStepTicks < 5 ? 1 : game.bossStepTicks <= 12 ? 2 : 3) : displayStatus === 'boss-victory' ? Math.min(3, Math.floor(game.bossPhaseTicks * 4 / BOSS_VICTORY_TICKS))
+  const bossArt = displayStatus === 'boss-victory' ? BOSS_DEFEAT_ART : displayStatus === 'boss-intro' ? BOSS_INTRO_ART : displayStatus === 'battle' || displayStatus === 'boss-shift' ? BOSS_EVOLUTION_ART : game.bossStage === 2 ? BOSS_STAGE2_ART : BOSS_ART;
+  const bossFrame = bossArt===BOSS_EVOLUTION_ART ? bossArtFrame(game)
+    : displayStatus === 'boss-victory' ? Math.min(3, Math.floor(game.bossPhaseTicks * 4 / BOSS_VICTORY_TICKS))
     : displayStatus === 'boss-intro' ? Math.min(3, Math.floor(game.bossPhaseTicks * 4 / BOSS_INTRO_TICKS))
-    : displayStatus === 'boss-shift' ? [0, 1, 2, 1][Math.min(3, Math.floor(game.bossPhaseTicks * 4 / BOSS_SHIFT_TICKS))]
-    : game.bossStage === 2 ? (bossFiring(game) ? 3 : phase === 'warning' ? 2 : 1)
     : bossFiring(game) ? 2 : phase === 'warning' ? 1 : game.bossStep === 'recovery' ? 3 : 0;
   const gateY = nextGateProgress === undefined ? 43 : gateGroundY(game.progress, nextGateProgress);
   const weaponPhase = !canShoot(displayStatus ?? 'home') ? 0
@@ -825,7 +812,7 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState &
       <section className={'toybot-shell toybot-menu-system'+(game.burstTicks>0?' has-core-active':'')+' core-style-'+game.mechClass + (game.narrative.radio&&canShoot(game.status)&&!game.narrative.scene?' has-story-radio':'') + (game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'?' has-cockpit':'') + (settings.shake!==false&&!reducedMotion&&quality!=='low'&&game.feedback.some(f=>f.ticks>=4&&f.kind!=='hit'&&f.kind!=='armor')?' has-impact-shake':'') + ((displayStatus==='running'||displayStatus==='battle')?' has-core-control':'') + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
         {game.status !== 'home' && <div
           ref={sceneRef}
-          className={`toybot-scene formation-${formationColumns} weapon-tier-${activeWeapon} ${displayStatus === 'running' ? 'is-moving' : displayStatus === 'battle' ? 'is-battle' : displayStatus === 'defeat' ? `is-defeat ${game.defeatReason}` : ''} ${game.status === 'paused' ? 'is-paused' : ''} ${game.invulnerableTicks > 0 ? `is-player-hit damage-${game.damageKind}` : ''} ${arena ? 'is-arena' : ''} ${displayStatus === 'boss-intro' ? 'is-boss-intro' : displayStatus === 'boss-shift' ? 'is-boss-shift' : displayStatus === 'boss-victory' ? 'is-boss-victory' : ''}`}
+          className={`toybot-scene art-v28 sector-${game.levelIndex} formation-${formationColumns} weapon-tier-${activeWeapon} ${displayStatus === 'running' ? 'is-moving' : displayStatus === 'battle' ? 'is-battle' : displayStatus === 'defeat' ? `is-defeat ${game.defeatReason}` : ''} ${game.status === 'paused'||previewFrozen ? 'is-paused' : ''} ${game.invulnerableTicks > 0 ? `is-player-hit damage-${game.damageKind}` : ''} ${arena ? 'is-arena' : ''} ${displayStatus === 'boss-intro' ? 'is-boss-intro' : displayStatus === 'boss-shift' ? 'is-boss-shift' : displayStatus === 'boss-victory' ? 'is-boss-victory' : ''}`}
           tabIndex={0}
           aria-keyshortcuts="ArrowLeft ArrowRight Space"
           aria-label="游戏场景。左右拖动或使用方向键切换三条队列，穿过随机奖励门或惩罚门，机器人会自动射击障碍和首领。"
@@ -848,6 +835,7 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState &
           <ExperienceLayer game={game} low={quality==='low'} reduced={reducedMotion} shake={settings.shake!==false&&quality!=='low'}/><div className="toybot-road-flow" aria-hidden="true" />
           <div className="toybot-track-guides" aria-hidden="true" />
           <div className="toybot-lane">
+            <ArtDetails game={game} low={quality==='low'} reduced={reducedMotion}/>
             <StoryRelay game={game}/><OperationsLayer game={game}/>
             <div className="toybot-selected-lane" style={{ left: `${LANE_CENTERS[game.lane]}%` }} />
             {showRewardGates && (
@@ -977,7 +965,7 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState &
             {showEncounter && (
               <>
                 <div data-motion="boss" className={`toybot-obstacle boss ${displayStatus === 'boss-victory' ? 'is-destroyed' : arena ? `fighting phase-${phase}` : 'phase-shield'} ${enrage > 0 ? 'is-enraged' : ''} ${game.bossStep === 'rush' ? 'is-rushing' : ''} ${game.bossMoveTicks > 0 ? 'is-relocating' : ''}`} style={{ left: bossX(game) + '%', top: `${bossTop}%`, width: `${(82 + game.levelIndex * 7) * (rushVisual && game.bossAttack === 'sweep' ? 1.35 : 1)}px`, '--boss-scale': bossScale, zIndex: Math.round((bossTop + 7) * 10) } as React.CSSProperties}>
-                  <Robot index={game.levelIndex} weaponPhase={bossFrame} bossArt={bossArt} bossColumns={displayStatus === 'battle' && !rushVisual ? 8 : 4} enemy />
+                  <Robot index={game.levelIndex} weaponPhase={bossFrame} bossArt={bossArt} bossColumns={bossArt===BOSS_EVOLUTION_ART ? 8 : 4} enemy />
                   {bossGuarded(game)&&<span className="boss-linked-shield"><small>击破连接节点</small></span>}
                   {game.status === 'battle' && phase === 'weak' && <span className="toybot-boss-weakpoint" aria-label="弱点暴露" />}
                 </div>
@@ -1001,7 +989,7 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState &
               </div>
             ))}
             {game.damageSequence > 0 && <div key={`damage-vignette-${game.damageSequence}`} className={`toybot-damage-vignette damage-${game.damageKind}`} aria-hidden="true" />}
-            {arena&&game.dodgeTicks>0&&formationFor(game.bots,game.dodgeFromLane).map(robot=><div key={'echo-'+robot.index} className="toybot-robot toybot-dodge-echo" style={{left:robot.x+'%',top:robot.y+'%',opacity:game.dodgeTicks/10,zIndex:Math.round((robot.y+4)*10)}} aria-hidden="true"><Robot awakened={game.burstTicks>0} combat mechClass={game.mechClass} index={robot.index} /></div>)}
+            {arena&&game.dodgeTicks>0&&formationFor(game.bots,game.dodgeFromLane).map(robot=><div key={'echo-'+robot.index} className="toybot-robot toybot-dodge-echo" style={{left:robot.x+'%',top:robot.y+'%',opacity:game.dodgeTicks/10,zIndex:Math.round((robot.y+4)*10)}} aria-hidden="true"><Robot awakened={game.burstTicks>0} combat dodging dodgeDirection={game.dodgeDirection} weaponLevel={activeWeapon} armorLevel={game.armorLevel} coreLevel={visualCore} mechClass={game.mechClass} index={robot.index} /></div>)}
             {arena&&game.evadeTicks>0&&<span key={game.evadeSequence} className="toybot-evade-success" style={{left:LANE_CENTERS[game.lane]+'%'}} role="status">{game.ops.perfectTicks>0?'完美闪避':'闪避'}</span>}
             {displayStatus === 'defeat' && (
               <div className={`toybot-defeat-scene ${game.defeatReason}`} style={{ '--defeat-lane': `${LANE_CENTERS[game.lane]}%` } as React.CSSProperties} role="status" aria-live="assertive">
@@ -1118,7 +1106,7 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState &
           <div className={'toybot-overlay toybot-result ' + (game.won ? 'is-victory menu-refresh' : 'is-failure')} role="dialog" aria-modal="true" aria-labelledby="result-title">
             <div className="toybot-debrief-panel">
               <div className="toybot-debrief-topline"><span>战后报告 / 0{game.levelIndex + 1}</span><span>{game.won ? '任务完成' : '机甲回收'}</span></div>
-              <div className={game.won ? 'menu-victory-art' : undefined} aria-hidden="true">{game.won ? <img className="menu-victory-medal" src={UI_MENU_ART.medal} alt="" decoding="async" draggable={false}/> : <div className="toybot-result-crest" style={{ backgroundImage: 'url(' + UI_RESULT_CRESTS + ')', backgroundPositionX: '100%' }} />}</div>
+              <div className={game.won ? 'menu-victory-art' : undefined} aria-hidden="true">{game.won ? <><img className="menu-victory-medal" src={UI_MENU_ART.medal} alt="" decoding="async" draggable={false}/><div className="toybot-v28-victory-mech"><MechShowcase mechClass={game.mechClass} weapon={activeWeapon>0} armor={game.armorLevel>0} core={visualCore>0}/><BattleWear amount={game.report.taken/Math.max(1,game.playerMaxHp)}/></div></> : <div className="toybot-result-crest" style={{ backgroundImage: 'url(' + UI_RESULT_CRESTS + ')', backgroundPositionX: '100%' }} />}</div>
               <div className="toybot-debrief-kicker">{game.won ? 'MISSION COMPLETE' : 'MISSION INCOMPLETE'}</div>
               <h2 id="result-title">{game.won ? (game.levelIndex === LEVELS.length - 1 ? '全境突破' : '突围成功') : '突围受阻'}</h2>
               <p className="toybot-result-summary">{game.won ? LEVEL.encounters[0].label + ' 已击败 · 区域安全' : game.defeatReason === 'boss-wipe' ? '核心生命耗尽，整备后再次出击' : '小队停止作战，返回机库重新整备'}</p>

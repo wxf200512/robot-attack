@@ -1,7 +1,7 @@
+import { artPose, atlasCell, bossArtFrame, BOSS_EVOLUTION_ART, materialSample, salvageSample } from './visualArt';
 import { awakeningPose } from './awakening';
-import { STEP_MS, RUN_SPEED, roadStepFor, effectiveWeapon, DODGE_TICKS, attackIntervalFor, playerFormation, roadEnemyX, roadEnemyY, targetX, targetY, bossX, bossY, bossWarningTicks, isBossArena, isRush, gateGroundY, laneXAt, LANE_CENTERS, enemyThreatY, type GameState, type PendingShot } from './simulation';
+import { STEP_MS, RUN_SPEED, roadStepFor, DODGE_TICKS, attackIntervalFor, playerFormation, roadEnemyX, roadEnemyY, targetX, targetY, bossX, bossY, isBossArena, gateGroundY, laneXAt, LANE_CENTERS, enemyThreatY, type GameState, type PendingShot } from './simulation';
 import { getLevel, hazardLaneAt } from './level';
-import { mechSpriteStyle } from './mechArt';
 import { fieldY, prepMark } from './operations';
 export const clamp01=(n:number)=>Math.max(0,Math.min(1,Number.isFinite(n)?n:0));
 export const motionAlpha=(elapsedMs:number)=>Math.min(.999,clamp01(elapsedMs/STEP_MS));
@@ -50,13 +50,17 @@ export function paintMotion(root:HTMLElement,s:GameState,alpha:number,entries:Mo
  for(const {node,kind,id}of entries){
   if(kind==='robot'){
    const p=formation[id];if(p&&s.dodgeTicks>0)place(node,p.x,p.y);
+   const art=artPose(s,t,id,reduced),body=node.querySelector<HTMLElement>('.toybot-v28-body'),upper=node.querySelector<HTMLElement>('.toybot-v28-upper');
+   if(body){body.style.backgroundPosition=atlasCell(art.frame,art.row);body.style.rotate=art.lean+'deg';body.style.translate='0 '+(isBossArena(s)?art.recoil:0)+'px';}
+   if(upper){upper.style.backgroundPosition=atlasCell(art.upperFrame,art.upperRow);upper.style.opacity=String(Math.max(0,art.upperOpacity));upper.style.rotate=art.lean+'deg';upper.style.translate='0 '+art.recoil+'px';}
+   const dust=node.querySelector<HTMLElement>('.toybot-v28-footdust');if(dust){dust.style.opacity=String(reduced||isBossArena(s)?0:Math.max(0,Math.sin((s.roadTicks+t+id*.8)*Math.PI/3.2))*.28);dust.style.translate=(art.frame<4?'-20%':'0')+' 0';}
    const whole=node.querySelector<HTMLElement>('.robot-awakened-sprite');if(whole){const pose=awakeningPose(s,t,id);whole.style.backgroundPosition=(pose.frame*100/3)+'% '+(pose.row*100/3)+'%';}
-   const stride=node.querySelector<HTMLElement>('.class-mech > .toybot-class-sprite');
-   if(stride&&s.mechClass!=='pulse'){
-    const frame=reduced?0:Math.floor((s.roadTicks+t+id*1.6)/1.6)%4,tier=Math.min(3,effectiveWeapon(s)+Math.min(1,s.armorLevel)+Math.min(1,Math.max(s.coreLevel,s.garageCoreLevel)));
-    Object.assign(stride.style,mechSpriteStyle(s.mechClass,1+frame,tier));
-   }
+
   }
+  else if(kind==='material'){const f=s.feedback.find(f=>f.id===id);if(f){const p=materialSample(f.kind,f.ticks,t);node.style.backgroundPosition=atlasCell(p.frame,p.row,8,4);}}
+  else if(kind==='defense-contact'){if(s.defenseFx)node.style.backgroundPosition=atlasCell(reduced?3:Math.min(7,Math.floor((1-(s.defenseFx.ticks-t)/8)*8)),s.defenseFx.kind==='shield'?1:2,8,4);}
+  else if(kind==='salvage'){const e=s.killEffects.find(e=>e.id===id);if(e){const p=salvageSample(e.x,e.y,e.ticks,LANE_CENTERS[s.lane],t);place(node,p.x,p.y);node.style.opacity=String(p.opacity);node.style.scale=String(p.scale);}}
+  else if(kind==='assembly'){place(node,LANE_CENTERS[s.lane],60);}
   else if(kind==='hazard'){const y=roadEnemyY(v,id);place(node,hazardVisualX(v,id),y);node.style.setProperty('--hazard-scale',String(.72+(y-39)/19*.34));}
   else if(kind==='core-beam'){
    const shot=shots.get(id);if(shot){const p=coreBeamSample(s,shot,t,size,v);node.style.left=p.x+'%';node.style.top=`calc(${p.y}% - ${p.lift}px)`;node.style.height=p.length+'px';node.style.transform=`translate(-50%,-100%) rotate(${p.angle}deg)`;node.style.opacity=String(.65+Math.sin((shot.duration-shot.ticks+t)*Math.PI)*.2);}
@@ -73,10 +77,8 @@ export function paintMotion(root:HTMLElement,s:GameState,alpha:number,entries:Mo
   }else if(kind==='boss'){
    place(node,bossX(v),bossY(v));
    const body=node.querySelector<HTMLElement>('.robot-boss-sprite');
-   if(body&&s.status==='battle'&&!isRush(s)){
-    const frame=s.bossStep==='warning'?Math.min(4,Math.floor((s.bossStepTicks+t)*5/bossWarningTicks(s))):s.bossStep==='flight'?Math.min(7,5+Math.floor((s.bossStepTicks+t)/2)):7;
-    body.style.backgroundPositionX=frame*100/7+'%';
-   }
+   if(body&&body.style.backgroundImage.includes(BOSS_EVOLUTION_ART)){body.style.backgroundPositionX=bossArtFrame(s)*100/7+'%';body.style.translate=reduced?'0 0':`0 ${Math.sin((s.battleTime+t)*.35)*.65}px`;}
+
    if(isBossArena(s))node.style.setProperty('--boss-scale',String(1.12*(1+Math.max(0,(bossY(v)-(s.mechClass==='blade'?51:40))/(59-(s.mechClass==='blade'?51:40)))*.25)));
   }else if(kind==='gate'){
    const mark=getLevel(s.levelIndex).gateMarks[s.gate],option=s.gateChoices[s.gate]?.[id];if(mark!==undefined&&option){const y=gateGroundY(v.progress,mark);place(node,laneXAt(option.lane,y-5),y);node.style.setProperty('--gate-scale',String(.5+clamp01((v.progress-mark+12)/14)*.62));}

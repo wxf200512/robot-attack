@@ -20,7 +20,7 @@
 .toybot-shell.toybot-menu-system .menu-currency small{display:block;color:#aac4d2;font-size:8px;line-height:1.2}
 .toybot-shell.toybot-menu-system .menu-currency b{display:block;overflow:hidden;color:#f9edbf;font-size:13px;line-height:1.3;font-variant-numeric:tabular-nums;text-overflow:ellipsis}
 .toybot-shell.toybot-menu-system .menu-cup{padding:0 3px;color:#ffd475;font-size:23px;text-shadow:0 2px #ab692e}
-.toybot-shell.toybot-menu-system .toybot-home-hero{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;flex:1 0 320px;min-height:320px;max-height:450px;width:100%;padding:69px 0 37px;overflow:hidden;border:0;border-radius:0;background:#397599 url('/games/toybot-breakout/optimized/ui-menu-hangar-v14.jpg') center 55%/cover;box-shadow:none}
+.toybot-shell.toybot-menu-system .toybot-home-hero{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;flex:1 0 320px;min-height:320px;max-height:450px;width:100%;padding:69px 0 37px;overflow:hidden;border:0;border-radius:0;background:#397599 url('/games/toybot-breakout/optimized/ui-menu-hangar-v19.jpg') center 55%/cover;box-shadow:none}
 .toybot-shell.toybot-menu-system .toybot-home-hero:before{content:'';position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,#0b2949bf,transparent 40%,transparent 63%,#102c4299);pointer-events:none}
 .toybot-shell.toybot-menu-system .toybot-home-heading{position:absolute;z-index:3;left:18px;top:15px;width:auto;padding:0;text-align:left}
 .toybot-shell.toybot-menu-system .toybot-home-kicker{display:block;color:#b8e6f1;font-size:8px;font-weight:800;letter-spacing:.19em}
@@ -68,7 +68,7 @@
 /* Shared modal body. */
 .toybot-shell.toybot-menu-system .toybot-paused,.toybot-shell.toybot-menu-system .toybot-result{padding:20px 18px;overflow:auto;background:#07182bd9;backdrop-filter:blur(8px)}
 .toybot-shell.toybot-menu-system .toybot-pause-panel,.toybot-shell.toybot-menu-system .toybot-debrief-panel{flex:none;width:100%;max-width:362px;margin:auto;padding:0 20px 15px;overflow:hidden;border:2px solid #819eae;border-top:3px solid #edf8f6;border-radius:20px;background:linear-gradient(135deg,#f4f7ef,#dce8e9);color:var(--menu-ink);box-shadow:0 6px 0 #0a2035,0 20px 50px #00132b99}
-.toybot-shell.toybot-menu-system .toybot-pause-art{height:171px;margin:0 -20px 17px;background:#30586f url('/games/toybot-breakout/optimized/ui-menu-hangar-v14.jpg') center 60%/cover;border-bottom:3px solid #8aa8b7}
+.toybot-shell.toybot-menu-system .toybot-pause-art{height:171px;margin:0 -20px 17px;background:#30586f url('/games/toybot-breakout/optimized/ui-menu-hangar-v19.jpg') center 60%/cover;border-bottom:3px solid #8aa8b7}
 .toybot-shell.toybot-menu-system .toybot-pause-art:after{background:linear-gradient(transparent 65%,#12385066)}
 .toybot-shell.toybot-menu-system .toybot-pause-art .toybot-mech-showcase{width:146px;bottom:5px;filter:drop-shadow(0 7px 5px #08284d77)}
 .toybot-shell.toybot-menu-system .menu-stage-code{position:absolute;left:13px;top:12px;z-index:3;color:#eef8fb;font-size:8px;letter-spacing:.12em;text-shadow:0 1px 4px #082844}
@@ -90,7 +90,7 @@
 .toybot-shell.toybot-menu-system .toybot-pause-home,.toybot-shell.toybot-menu-system .toybot-debrief-actions .toybot-home-exit{min-height:35px;margin:8px 0 0;padding:7px 8px;border:0;background:none;color:#5c7a8e;font-size:11px;font-weight:650;cursor:pointer;text-decoration:none}
 /* Debrief. */
 .toybot-shell.toybot-menu-system .toybot-result.is-victory{background:linear-gradient(#13395699,#091b30ee),url('/games/toybot-breakout/optimized/ui-menu-victory-v14.jpg') center/cover}
-.toybot-shell.toybot-menu-system .toybot-result.is-failure{background:linear-gradient(#40394999,#091b30ee),url('/games/toybot-breakout/optimized/ui-menu-hangar-v14.jpg') center/cover}
+.toybot-shell.toybot-menu-system .toybot-result.is-failure{background:linear-gradient(#40394999,#091b30ee),url('/games/toybot-breakout/optimized/ui-menu-hangar-v19.jpg') center/cover}
 .toybot-shell.toybot-menu-system .toybot-debrief-topline{position:relative;z-index:2;display:flex;justify-content:space-between;gap:8px;margin:0 -20px;padding:11px 14px;background:linear-gradient(#36536a,#203d55);color:#bcd2df;font-size:9px}
 .toybot-shell.toybot-menu-system .toybot-debrief-topline>span:last-child{color:#ffdf92}
 .toybot-shell.toybot-menu-system .menu-victory-art{position:relative;display:grid;place-items:center;height:153px;margin:0 -20px 14px;border-bottom:3px solid #c9b27b;background:#50798b url('/games/toybot-breakout/optimized/ui-menu-victory-v14.jpg') center 45%/cover}

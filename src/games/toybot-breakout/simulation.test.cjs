@@ -1277,3 +1277,138 @@ test('module doors resolve once at the ground contact line and only on their own
  const collected=tick(base);assert.equal(collected.modules.burn,1);assert.equal(tick(collected).modules.burn,1);assert.equal(base.modules.burn,0);
  assert.equal(tick({...base,lane:0}).modules.burn,0);
 });
+
+
+const operations=load('operations');
+function quietRoad(levelIndex=0){const s=initial(levelIndex);return {...s,status:'running',fireCooldown:1000,gate:levels.getLevel(levelIndex).gateMarks.length,hazardHps:s.hazardHps.map(()=>-1)};}
+test('perfect dodge requires a real late-window miss and has a cooldown rather than lane spam rewards',()=>{
+ let s={...battle(),lane:0,dodgeFromLane:1,dodgeTicks:2,evadeTicks:0,threats:[{id:99,kind:'shell',lane:1,ticks:1,duration:8,hp:-1,maxHp:0,damage:12,fromLane:1}]};
+ const next=tick(s);assert.equal(next.ops.perfects,1);assert.equal(next.ops.counterShots,3);assert.equal(s.ops.perfects,0);
+ const again=tick({...next,evadeTicks:0,dodgeTicks:2,threats:s.threats});assert.equal(again.ops.perfects,1);
+ const spam=sim.gameReducer({...battle(),lane:0},{type:'MOVE_LANE',lane:1});assert.equal(spam.ops.perfects,0);
+ const paused=sim.gameReducer(next,{type:'PAUSE'});assert.deepEqual(tick(paused),paused);
+});
+test('each chassis captures its own real counter volley without changing base attack frequency',()=>{
+ for(const mechClass of ['pulse','heavy','blade']){
+  const base={...initial(),status:'running',progress:18,mechClass,bots:3,fireCooldown:0};base.ops={...base.ops,counterShots:1};
+  const enhanced=tick(base),normal=tick({...base,ops:{...base.ops,counterShots:0}});
+  assert.ok(enhanced.pendingShots.length>=3);assert.ok(enhanced.pendingShots.every(p=>p.counter&&p.origins.length===1));assert.equal(enhanced.ops.counterShots,0);
+  assert.equal(enhanced.fireCooldown,normal.fireCooldown);assert.ok(enhanced.pendingShots[0].damage>normal.pendingShots[0].damage*1.6);
+ }
+});
+test('fusion gates use the same displayed choice at ground contact, once, on the right lane',()=>{
+ const l=levels.getLevel(0),base={...quietRoad(),gate:3,progress:l.gateMarks[3]-1.6,lane:1,modules:{arc:1,burn:1,recycle:0}};
+ base.gateChoices=sim.createGateChoices(0,0,()=>0);base.gateChoices[3]=[{...moduleGate('arc'),effect:'weaponUp'}];
+ assert.equal(sim.gateChoicesFor(base)[0].effect,'fuse');const next=tick(base);assert.equal(next.ops.fusion,'stormfire');assert.equal(next.weaponLevel,base.weaponLevel);assert.equal(sim.gateChoicesFor(next)[0].title,'雷焰反应');assert.equal(tick(next).ops.fusion,'stormfire');
+ assert.equal(tick({...base,lane:0}).ops.fusion,null);assert.equal(base.ops.fusion,null);
+ assert.equal(operations.eligibleFusion({arc:0,burn:1,recycle:1}),'furnace');assert.equal(operations.eligibleFusion({arc:1,burn:0,recycle:1}),'ion');
+});
+test('fusions produce captured equipment effects and furnace cycles only on real kills',()=>{
+ const base={...quietRoad(),progress:18,fireCooldown:0,ops:{...quietRoad().ops,fusion:'ion'},modules:{arc:1,burn:0,recycle:1}};
+ const next=tick(base);assert.ok(next.pendingShots.every(p=>p.fusion==='ion'&&p.pierce>=1));
+ const {ids,state}=eliteScene(),a=ids[2];const killed=tick({...state,kills:5,ops:{...state.ops,fusion:'furnace'},pendingShots:[incoming(state,{target:'hazard',targetIndex:a,lane:state.lane,damage:100})]});assert.equal(killed.chargedVolleys,1);
+ const empty=tick({...base,ops:{...base.ops,fusion:'furnace'},kills:5});assert.equal(empty.chargedVolleys,0);
+});
+test('every sector owns a real same-lane mission target, once-only rewards and persistent missed state',()=>{
+ for(let level=0;level<5;level++){
+  const base=quietRoad(level);base.progress=45;base.lane=base.ops.mission.lane;
+  const wrong=tick({...base,pendingShots:[incoming(base,{target:'objective',targetIndex:0,lane:(base.lane+1)%3,damage:100})]});assert.equal(wrong.ops.mission.status,'pending');
+  const done=tick({...base,pendingShots:[incoming(base,{target:'objective',targetIndex:0,lane:base.lane,damage:100})]});assert.equal(done.ops.mission.status,'done');assert.equal(done.ops.bonusParts,1);assert.equal(tick(done).ops.bonusParts,1);assert.equal(base.ops.mission.status,'pending');
+  assert.equal(tick({...base,progress:49}).ops.mission.status,'missed');
+ }
+});
+test('cargo risk is telegraphed, pinned to one lane, avoidable and yields no automatic reward on a miss',()=>{
+ const base=quietRoad();base.progress=60.9;base.lane=base.ops.event.lane;
+ let warning=tick(base);assert.equal(warning.ops.eventWarning,16);const pinned=warning.ops.eventLane;
+ warning={...warning,lane:(pinned+1)%3};const safeHp=warning.playerHp;for(let i=0;i<16;i++)warning=tick(warning);assert.equal(warning.playerHp,safeHp);assert.equal(warning.ops.bonusParts,0);
+ let hit=tick(base);for(let i=0;i<16;i++)hit=tick(hit);assert.equal(hit.playerHp,base.playerHp-12);
+ const done=tick({...base,pendingShots:[incoming(base,{target:'event',targetIndex:0,lane:base.lane,damage:100})]});assert.equal(done.ops.event.status,'done');assert.equal(done.ops.eventWarning,0);assert.equal(done.ops.bonusParts,2);assert.equal(done.modules.arc,1);
+ assert.equal(tick({...base,progress:66}).ops.event.status,'missed');
+});
+test('pre-boss preparation is three ground choices that resolve once and freeze during pause',()=>{
+ const seed=quietRoad(),contact=operations.prepMark(seed)-1.5;
+ for(let lane=0;lane<3;lane++){
+  const base={...seed,progress:contact-.1,lane,playerHp:30,modules:{arc:1,burn:0,recycle:0}};const next=tick(base);
+  assert.equal(next.ops.prep,['repair','retune','amplify'][lane]);assert.equal(base.ops.prep,'pending');
+  if(lane===0)assert.equal(next.playerHp,65);if(lane===1)assert.equal(next.modules.arc,2);if(lane===2)assert.equal(next.chargedVolleys,2);
+  assert.equal(tick(next).chargedVolleys,next.chargedVolleys);assert.equal(tick(next).modules.arc,next.modules.arc);
+  const paused=sim.gameReducer(base,{type:'PAUSE'});assert.deepEqual(tick(paused),paused);
+ }
+});
+test('boss parts are distinct lane targets, interrupt attacks and permanently disable their own function',()=>{
+ let base={...battle(),fireCooldown:1000};base.ops={...base.ops,parts:operations.makeBossParts(base)};
+ const wrong=tick({...base,pendingShots:[incoming(base,{target:'part',targetIndex:0,lane:1,damage:100})]});assert.equal(wrong.ops.parts[0].hp,base.ops.parts[0].hp);
+ const broken=tick({...base,bossStep:'warning',bossStepTicks:0,pendingShots:[incoming(base,{target:'part',targetIndex:0,lane:0,damage:1000})]});assert.equal(broken.ops.parts[0].hp,0);assert.equal(broken.ops.broken,1);assert.equal(broken.bossStep,'recovery');assert.equal(broken.bossSalvos,0);assert.equal(base.ops.parts[0].hp>0,true);
+ assert.equal(tick({...broken,pendingShots:[incoming(base,{target:'part',targetIndex:0,lane:0,damage:1000})]}).ops.broken,1);
+ const shield=tick({...base,threats:[{id:3,kind:'pylon',lane:1,ticks:20,duration:20,hp:5,maxHp:5,damage:1,fromLane:1}],pendingShots:[incoming(base,{target:'part',targetIndex:1,lane:1,damage:1000})]});assert.equal(sim.bossGuarded(shield),false);
+ const engine={...base,ops:{...base.ops,parts:base.ops.parts.map(p=>p.kind==='engine'?{...p,hp:0}:p)}};assert.ok(operations.partBroken(engine,'engine'));
+});
+test('mission outcomes alter the appropriate boss setup, and storm completion removes further jams',()=>{
+ for(const level of [0,2]){const base=battle(level);base.ops.mission.status='done';const parts=operations.makeBossParts(base);assert.equal(parts[level===0?0:1].hp,level===0?Math.round(parts[0].maxHp*.5):0);}
+ const base=quietRoad(3);base.progress=66.1;base.ops.mission.status='done';assert.equal(tick(base).jamTicks,0);
+});
+test('challenge protocols require a cleared selected level and survive restart with actual modifiers',()=>{
+ const cleared=progression.normalizeGarage({...garage,completedLevels:[true,false,false,false,false]});let home=sim.createInitialState(cleared,0,0);
+ home=sim.gameReducer(home,{type:'SET_PROTOCOL',protocol:'elite',garage:cleared});assert.equal(home.ops.protocol,'elite');
+ const run=sim.gameReducer(home,{type:'START',garage:cleared});assert.equal(run.ops.protocol,'elite');assert.equal(run.hazardHps[0],Math.ceil(levels.getLevel(0).hazards[0].hp*1.4));
+ assert.equal(sim.gameReducer(run,{type:'SET_PROTOCOL',protocol:'standard',garage:cleared}),run);
+ const fresh=progression.normalizeGarage(null),locked=sim.createInitialState(fresh);assert.equal(sim.gameReducer(locked,{type:'SET_PROTOCOL',protocol:'elite',garage:fresh}),locked);
+ assert.equal(sim.gameReducer(home,{type:'SET_PROTOCOL',protocol:'__proto__',garage:cleared}),home);
+ const repaired=sim.applyGateEffect({...run,playerHp:20,ops:{...run.ops,protocol:'scarcity'}},{...moduleGate('repair'),effect:'repair',amount:1});assert.equal(repaired.playerHp,35);
+});
+test('challenge medal persistence validates victory, deduplicates and preserves old garage saves',()=>{
+ const base=progression.normalizeGarage(garage),won={status:'result',won:true,bossDefeated:true,progress:100,levelIndex:0,protocol:'elite'};
+ const first=progression.recordLevelCompletion(base,won),second=progression.recordLevelCompletion(first,won);assert.deepEqual(second.challengeClears,['0:elite']);assert.equal(base.challengeClears.length,0);
+ assert.equal(progression.recordLevelCompletion(base,{...won,won:false}).challengeClears.length,0);
+ assert.equal(progression.normalizeGarage({...base,challengeClears:['0:elite','bad','4:overdrive']}).challengeClears.length,1);
+ assert.deepEqual(progression.normalizeGarage(null).challengeClears,[]);
+});
+test('new artwork is local RGBA atlases with preserved originals and regular cell geometry',()=>{
+ for(const [file,cols,rows]of [['operations-atlas-v19.png',3,3],['fusion-atlas-v19.png',3,2]]){
+  const data=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',file));assert.equal(data[25],6);assert.equal(data.readUInt32BE(16)%cols,0);assert.equal(data.readUInt32BE(20)%rows,0);assert.ok(fs.existsSync(path.join(__dirname,'art-source',file)));
+ }
+});
+
+test('road dodge uses the actual missed attack without delaying drag movement or refreshing a spammed window',()=>{
+ const base=quietRoad(),moved=sim.gameReducer({...base,lane:1},{type:'MOVE_LANE',lane:0});assert.equal(moved.lane,0);assert.equal(moved.ops.roadDodgeTicks,3);
+ const spam=sim.gameReducer(moved,{type:'MOVE_LANE',lane:2});assert.equal(spam.ops.roadDodgeTicks,3);assert.equal(spam.ops.roadFromLane,1);
+ const source=levels.getLevel(0).hazards.findIndex(h=>!h.horde),s={...moved,ops:{...moved.ops,roadDodgeTicks:2},progress:18,enemyAttacks:[{id:9,source:'hazard',sourceId:source,kind:'sniper-shot',lane:1,fromLane:1,fromY:40,phase:'flight',ticks:1,duration:8,damage:12,shotsRemaining:1}]};
+ const evaded=tick(s);assert.equal(evaded.playerHp,s.playerHp);assert.equal(evaded.ops.perfects,1);assert.equal(s.ops.perfects,0);
+});
+test('scarcity and overdrive affect actual health changes while elite health bars use scaled maxima',()=>{
+ const base=battle(),threat={id:4,kind:'shell',lane:base.lane,ticks:1,duration:8,hp:-1,maxHp:0,damage:10,fromLane:1};
+ const overloaded=tick({...base,ops:{...base.ops,protocol:'overdrive'},threats:[threat]});assert.equal(overloaded.playerHp,88);
+ const road=quietRoad();road.ops.protocol='elite';assert.equal(sim.hazardMaxHpFor(road,0),Math.ceil(levels.getLevel(0).hazards[0].hp*1.4));
+ const contact=operations.prepMark(road)-1.5;const repaired=tick({...road,ops:{...road.ops,protocol:'scarcity'},progress:contact-.1,playerHp:20,lane:0});assert.equal(repaired.playerHp,38);
+});
+
+test('fusion plus perfect counters and new parts preserve full five-sector boss counterplay',()=>{
+ const samples=[];
+ for(const mechClass of ['pulse','heavy','blade'])for(let level=0;level<5;level++){
+  const spec=levels.getLevel(level),seed=initial(level);seed.ops.fusion=['stormfire','furnace','ion'][level%3];seed.ops.mission.status='done';
+  let s=tick({...seed,modules:{arc:2,burn:2,recycle:2},mechClass,status:'running',progress:spec.encounters[0].progress-.1,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3});let ticks=0;
+  while(sim.isActiveStatus(s.status)&&ticks<2400){s=sim.gameReducer(s,{type:'MOVE_LANE',lane:bossTactic(s)});if(sim.canActivateBurst(s)&&s.bossStep==='recovery')s=sim.gameReducer(s,{type:'ACTIVATE_BURST'});s=tick(s);ticks++;}
+  assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(ticks>450&&ticks<=1800,mechClass+' L'+(level+1)+' '+ticks/10);assert.ok(s.ops.broken>=1);samples.push(ticks/10);
+ }
+ console.log('Operations boss sample seconds: '+samples.join(', '));
+});
+test('maxed preparation rewards a fallback score and new operation sounds are driven by outcomes',()=>{
+ const s=quietRoad();s.progress=operations.prepMark(s)-1.6;s.lane=1;s.modules={arc:3,burn:3,recycle:3};const next=tick(s);assert.equal(next.score,s.score+40);
+ const audio=load('audio'),base=battle();assert.ok(audio.gameSoundEvents(base,{...base,ops:{...base.ops,perfects:1}}).includes('perfect'));
+ assert.ok(audio.gameSoundEvents(base,{...base,ops:{...base.ops,fusion:'ion'}}).includes('upgrade'));
+});
+
+test('defeat clears operation flashes and queued counterattacks without losing earned statistics',()=>{
+ const base={...quietRoad(),bots:0};base.ops={...base.ops,perfectTicks:8,counterShots:3,eventWarning:8,perfects:4,broken:2};
+ const ended=tick(base);assert.equal(ended.status,'defeat');assert.equal(ended.ops.perfectTicks,0);assert.equal(ended.ops.counterShots,0);assert.equal(ended.ops.eventWarning,0);assert.equal(ended.ops.perfects,4);assert.equal(ended.ops.broken,2);
+});
+
+test('the last blade counter keeps its acquired extended range after consuming the charge',()=>{
+ const base=battle();base.mechClass='blade';base.battleLane=2;base.lane=1;base.bossStep='recovery';base.bossStepTicks=3;base.ops.counterShots=1;base.fireCooldown=0;base.threats=[{id:88,kind:'orb',lane:1,originY:48,ticks:20,duration:20,hp:30,maxHp:30,damage:0,fromLane:2}];
+ const shot=tick(base);assert.ok(shot.pendingShots.length);assert.ok(shot.pendingShots.every(p=>p.counter&&p.range===11));assert.equal(shot.ops.counterShots,0);
+ let s=shot;for(let i=0;i<3;i++)s=tick(s);assert.ok(s.threats.find(t=>t.id===88).hp<30);
+});
+
+test('fractional protocol damage keeps repeated health feedback readable to two decimal places',()=>{
+ const s=quietRoad();for(let i=0;i<3;i++){s.invulnerableTicks=0;sim.applySquadHit(s,15.6);assert.equal(s.playerHp,Number(s.playerHp.toFixed(2)));assert.equal(s.damageLoss,15.6);}assert.equal(s.playerHp,53.2);
+});

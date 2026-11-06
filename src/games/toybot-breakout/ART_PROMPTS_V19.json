@@ -1,0 +1,23 @@
+{
+  "mode": "built-in image_gen; no API key or CLI fallback",
+  "date": "2026-11-06",
+  "assets": [
+    {
+      "source": "art-source/ui-menu-hangar-v19.png",
+      "runtime": "public/games/toybot-breakout/optimized/ui-menu-hangar-v19.jpg",
+      "prompt": "Use case: stylized-concept. Create one production-ready landscape 3:2 background illustration for the mobile sci-fi toy-mecha game Toybot Breakout. No text, logos, UI, characters or robots. An exquisite hangar observatory at blue-hour dawn, a circular docking platform in the lower center left empty for a separately composited small robot, floating futuristic toy city beyond glass, precise navy titanium architecture with porcelain ivory structural edges, subtle champagne gold accents and luminous cyan energy traces, distant warm peach sunrise, premium painterly 3D game art, beautiful polished materials, crisp readable large shapes, controlled detail, cinematic volumetric lighting, refined composition, no noisy particles. Frame the sides and upper corners with hangar architecture. Main center platform should occupy x25-75%, y55-85%; center upper background has open sky and distant towers. Compatible with friendly super-deformed white/cyan sci-fi toy robots, sophisticated but welcoming. This is a real background asset not a UI mockup."
+    },
+    {
+      "source": "art-source/operations-atlas-v19.png",
+      "runtime": "public/games/toybot-breakout/optimized/operations-atlas-v19.png",
+      "transparent_background": true,
+      "prompt": "Use case: stylized-concept. One production GAME SPRITE ATLAS, 3 columns by 3 rows, nine equally sized square cells on a truly transparent background, no cell borders, no text. Each object fully contained with ample transparent margin in its cell, no overlap between cells. Exquisite polished miniature sci-fi toy-mecha equipment and effects, 3D painterly game render, ivory and navy metal, gold bevels, luminous cyan/violet/amber highlights, bold readable silhouettes for 48px mobile display. Row1 left: cyan-white broken circular energy afterimage with one diagonal dodge slash; middle: ornate double-core violet and orange reactor fusion crystal; right: golden mechanical victory challenge medal with a small central cyan hexagonal core. Row2 left: a floating compact teal electric generator turret on a small platform; middle: a futuristic rescue cargo drone with ivory protective shell and orange cargo crate; right: an ivory cyan medical repair station with golden mechanical arms. Row3 left: red-orange exposed boss artillery cannon module; middle: cyan glass armored shield generator module; right: violet propulsion engine module with three small thrust vents. All nine sprites isolated, no backdrop, no lettering, no faux transparency grid, lighting upper left. Carefully regular exact 3x3 grid suitable for CSS sprite background positioning. Rows and columns must be consistent. Refined detailed artwork, not flat vector icons."
+    },
+    {
+      "source": "art-source/fusion-atlas-v19.png",
+      "runtime": "public/games/toybot-breakout/optimized/fusion-atlas-v19.png",
+      "transparent_background": true,
+      "prompt": "Use case: stylized-concept. A production game asset atlas with exactly 3 columns and 2 rows of isolated sprites, equal rectangular cells, generous transparent margins, genuinely transparent background. No text, numbers, frames, gridlines, backgrounds or logos. Premium painterly 3D toy sci-fi equipment, ivory navy metal with intricate gold fittings and jewel-like luminous energy. Top row: left an electric violet-orange twin-crystal reactor weapon attachment (thunderflame fusion), middle a miniature amber molten furnace reactor attachment with glowing green recycling rings (furnace loop fusion), right a cyan-ion circular triple-coil reactor weapon attachment (ion cascade fusion). Bottom row: left a narrow upward-flying violet orange electric plasma spear projectile with flame tail pointing downward; middle an upward-flying golden molten shell with emerald orbit rings and downward flame trail; right an upward-flying icy cyan ion lance projectile with three small circling sparks and downward energy tail. Top three objects centered facing viewer, bottom three projectile tips point straight UP along image y axis, NOT diagonal or sideways. Coherent beautiful detailed high-end mobile game raster art, readable compact silhouettes. All six fully contained inside their own evenly aligned cells; no cross-cell glow. No characters."
+    }
+  ]
+}

@@ -31,7 +31,8 @@ const homeReview=process.argv.includes('--home'),pauseReview=process.argv.includ
 if(homeReview)preview=sim.createInitialState(garage,0,0);
 if(pauseReview)preview={...sim.createInitialState(garage,2,0),status:'paused',resumeStatus:'running',progress:62,gate:5,bots:3,playerHp:78};
 if(process.argv.includes('--final'))preview={...preview,levelIndex:4};
-const hordeReview=process.argv.includes('--horde');
+const operationReview=process.argv.find(a=>a.startsWith('--operations='))?.split('=')[1];
+const hordeReview=process.argv.includes('--horde')||!!operationReview;
 const burstReview=process.argv.includes('--burst')||hordeReview;
 if(burstReview){
  const mode=process.argv.find(a=>a.startsWith('--mode='))?.split('=')[1]||'ready';
@@ -43,6 +44,16 @@ if(burstReview){
  if(mode==='active')preview=sim.gameReducer(preview,{type:'ACTIVATE_BURST'});
  preview=sim.gameReducer(preview,{type:'TICK'});
  if(hordeReview&&mode==='active')for(let i=0;i<3;i++)preview=sim.gameReducer(preview,{type:'TICK'});
+}
+if(operationReview){
+ const ops=load('operations');preview.ops=ops.copyOperations(preview.ops);preview.ops.fusion=process.argv.includes('--fusion')?'stormfire':null;
+ if(operationReview==='mission'){preview.progress=43;preview.lane=preview.ops.mission.lane;}
+ if(operationReview==='cargo'){preview.progress=62;preview.lane=preview.ops.event.lane;preview.ops.eventWarning=12;preview.ops.eventLane=preview.ops.event.lane;}
+ if(operationReview==='prep'){preview.progress=ops.prepMark(preview)-2.5;preview.ops.prep='pending';}
+ if(operationReview==='parts'){preview={...preview,status:'battle',progress:97,battleHp:900,battleMaxHp:1200,battleLane:1,bossStep:'recovery',bossStepTicks:3};preview.ops.parts=ops.makeBossParts(preview);}
+ if(operationReview==='perfect'){preview.ops.perfectTicks=6;preview.ops.counterShots=3;preview.ops.perfects=1;}
+ const liveMarks=load('level').getLevel(preview.levelIndex).gateMarks;const liveGate=liveMarks.findIndex(mark=>mark-1.5>preview.progress);preview.gate=liveGate<0?liveMarks.length:liveGate;preview.enemyAttacks=[];preview.pendingShots=[];preview.burns=[];
+ if(process.argv.includes('--fusion')){preview.modules={arc:2,burn:2,recycle:1};preview.fireCooldown=0;preview=sim.gameReducer(preview,{type:'TICK'});}
 }
 const App=load('index.tsx').default;
 const css=fs.readdirSync(path.resolve(__dirname,'../../../dist/assets')).find(n=>/^main-.*\.css$/.test(n));

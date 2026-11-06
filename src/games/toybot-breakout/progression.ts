@@ -1,7 +1,7 @@
 import { mechSpec, normalizeMechClass, type MechClass } from './mechs';
 export type UpgradeId = 'weapon' | 'armor' | 'core';
 export type Garage = {
-  version: 2; completedLevels: boolean[]; tutorialCompleted: boolean; mechClass: MechClass; parts: number; runs: number; wins: number; bestScore: number;
+  challengeClears:string[];version: 2; completedLevels: boolean[]; tutorialCompleted: boolean; mechClass: MechClass; parts: number; runs: number; wins: number; bestScore: number;
   levels: Record<UpgradeId, number>;
   coreLevel: number; unlockedLevel: number;
   unlocked: Record<UpgradeId, boolean>; equipped: Record<UpgradeId, boolean>;
@@ -30,7 +30,7 @@ export const normalizeGarage = (value: unknown): Garage => {
   for (let i=0;i<5;i++) { contiguous = contiguous && (Array.isArray(p.completedLevels) ? p.completedLevels[i] === true : i < legacyClears); completedLevels.push(contiguous); }
   const unlockedLevel = Math.min(4,completedLevels.filter(Boolean).length);
   const unlocked = { weapon: levels.weapon > 0, armor: levels.armor > 0, core: levels.core > 0 };
-  return { version: 2, completedLevels, tutorialCompleted: typeof p.tutorialCompleted === 'boolean' ? p.tutorialCompleted : integer(p.wins) > 0, mechClass: normalizeMechClass(p.mechClass), parts: integer(p.parts), runs: integer(p.runs), wins: integer(p.wins), bestScore: integer(p.bestScore), levels, coreLevel: levels.core,
+  return { challengeClears:Array.isArray(p.challengeClears)?[...new Set(p.challengeClears.filter(x=>typeof x==='string'&&/^[0-4]:(elite|scarcity|overdrive)$/.test(x)&&completedLevels[Number(x[0])]))]:[],version: 2, completedLevels, tutorialCompleted: typeof p.tutorialCompleted === 'boolean' ? p.tutorialCompleted : integer(p.wins) > 0, mechClass: normalizeMechClass(p.mechClass), parts: integer(p.parts), runs: integer(p.runs), wins: integer(p.wins), bestScore: integer(p.bestScore), levels, coreLevel: levels.core,
     unlockedLevel, unlocked,
     equipped: { weapon: unlocked.weapon && p.equipped?.weapon !== false, armor: unlocked.armor && p.equipped?.armor !== false, core: unlocked.core && p.equipped?.core !== false } };
 };
@@ -70,9 +70,11 @@ export const toggleUpgrade = (garage: Garage, id: UpgradeId): Garage => {
 export const equipAllUpgrades = (garage: Garage): Garage => normalizeGarage({ ...garage, equipped: { weapon: moduleLevel(garage,'weapon') > 0, armor: moduleLevel(garage,'armor') > 0, core: moduleLevel(garage,'core') > 0 } });
 
 export const canEnterLevel = (garage: Partial<Garage>, index: number): boolean => Number.isInteger(index) && index >= 0 && index < 5 && index <= normalizeGarage(garage).unlockedLevel;
-export const recordLevelCompletion = (garage: Garage, result: { status: string; won: boolean; bossDefeated: boolean; progress: number; levelIndex: number }): Garage => {
+export const recordLevelCompletion = (garage: Garage, result: { status: string; won: boolean; bossDefeated: boolean; progress: number; levelIndex: number; protocol?:string }): Garage => {
   const base = normalizeGarage(garage);
   if (result.status !== 'result' || !result.won || !result.bossDefeated || result.progress !== 100 || !canEnterLevel(base,result.levelIndex)) return base;
   const completedLevels = [...base.completedLevels]; completedLevels[result.levelIndex] = true;
-  return normalizeGarage({ ...base, completedLevels });
+  const key=result.levelIndex+':'+result.protocol;
+  const challengeClears=['elite','scarcity','overdrive'].includes(result.protocol??'')?[...base.challengeClears,key]:base.challengeClears;
+  return normalizeGarage({ ...base, completedLevels,challengeClears });
 };

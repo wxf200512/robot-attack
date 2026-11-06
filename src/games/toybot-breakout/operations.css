@@ -1,0 +1,35 @@
+/* V19: illustrated tactical equipment over the existing road projection. */
+.ops-art,.ops-fusion-art{display:block;width:100%;height:100%;background-repeat:no-repeat;background-size:300% 300%;pointer-events:none}
+.ops-fusion-art{background-size:300% 200%}
+.ops-field-object,.ops-boss-part,.ops-prep-door{position:absolute;transform:translate(-50%,-50%);width:54px;height:65px;pointer-events:none;filter:drop-shadow(0 5px 3px #041320aa)}
+.ops-field-object b,.ops-boss-part b{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);white-space:nowrap;font-size:8px;color:#d8fbff;background:#092335ed;border:1px solid #96dce35c;padding:2px 4px;border-radius:4px}
+.ops-field-object i,.ops-boss-part i{position:absolute;left:8%;right:8%;bottom:-14px;height:3px;background:#173347;border-radius:4px;overflow:hidden}.ops-field-object i span,.ops-boss-part i span{display:block;height:100%;background:#ffd283}
+.ops-boss-part{width:44px;height:48px}.ops-boss-part b{font-size:7px;color:#ffe6a6}
+.ops-prep-door{width:64px;height:77px;background:linear-gradient(180deg,#71eaff12,#184154c9);border:1px solid #8ee5e8a8;border-radius:24px 24px 7px 7px;box-shadow:inset 0 0 14px #5cffff25,0 5px 0 #122d3a}
+.ops-prep-door.is-selected{border-color:#ffe2a2;box-shadow:inset 0 0 18px #9df7f62e,0 5px 0 #94713a}
+.ops-prep-door .ops-art{height:49px}.ops-prep-door b,.ops-prep-door small{display:block;text-align:center;line-height:12px;color:#e5fcff;font-size:10px}.ops-prep-door small{font-size:7px;color:#ffdfaa}
+.ops-risk-warning{position:absolute;top:43%;height:29%;width:20%;transform:translateX(-50%);background:linear-gradient(#ffcb5320,#ff7b3d35);border:1px dashed #ffd07f;z-index:430;pointer-events:none}.ops-risk-warning span{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:#ffe7ba}
+.ops-perfect-flare{position:absolute;width:110px;height:110px;transform:translate(-50%,-50%);z-index:860;pointer-events:none;mix-blend-mode:screen}
+.toybot-fusion-mounted{position:absolute;width:28px;height:28px;top:28%;left:50%;transform:translateX(-50%);z-index:4;filter:drop-shadow(0 0 4px #c8b1ff)}
+.ops-mission-hud{position:absolute;top:112px;left:14px;right:14px;z-index:1100;display:flex;align-items:center;gap:7px;padding:5px 8px;border:1px solid #86d9e036;border-radius:9px;background:linear-gradient(100deg,#0b2139e8,#132f43c9);pointer-events:none;box-shadow:0 4px 12px #020c1622}.ops-mission-hud>.ops-art{width:27px;height:27px;flex:none}.ops-mission-hud div{min-width:0}.ops-mission-hud b{display:block;font-size:10px;color:#e2f8fb}.ops-mission-hud small{display:block;font-size:8px;color:#a4cbd4;margin-top:2px}.ops-fusion-hint{margin-left:auto;white-space:nowrap;font-size:8px;color:#ffdfaa}
+.ops-challenge-locked{font-size:9px;color:#7899a9;text-align:center;padding:3px}
+.ops-challenge-picker{border:1px solid #9fc9d238;border-radius:9px;background:#102738b5}.ops-challenge-picker summary{display:flex;align-items:center;gap:7px;cursor:pointer;padding:5px 8px;list-style:none;color:#e1d4ad;font-size:10px}.ops-challenge-picker summary>.ops-art{width:24px;height:24px}.ops-challenge-picker summary b{margin-left:auto}.ops-challenge-picker>div{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:5px 8px 8px}.ops-challenge-picker button{min-height:54px;text-align:left;border:1px solid #73bccb44;border-radius:7px;background:#152f43;color:#cdeaf0;padding:6px;cursor:pointer}.ops-challenge-picker button[aria-pressed=true]{background:#284452;border-color:#e4c58a}.ops-challenge-picker strong{display:block;font-size:10px}.ops-challenge-picker small{display:block;font-size:8px;line-height:1.4;color:#a4c6d1;margin-top:3px}.ops-challenge-picker em{display:block;color:#ffdda2;font-size:8px;font-style:normal}
+.toybot-ops-debrief{padding:7px 5px;color:#bddce5;font-size:9px;text-align:center;border-top:1px solid #94c5d62b}.toybot-ops-debrief b{display:block;color:#ffdd92;margin-top:4px}
+.toybot-shell.toybot-menu-system .toybot-home-hero{border-color:#a8d8e66b;box-shadow:0 12px 28px #030d1e66,inset 0 0 0 1px #fff1}
+.toybot-shell.toybot-menu-system .toybot-primary{box-shadow:inset 0 1px 0 #fff9,0 3px 0 #215869,0 7px 15px #04152677;border-color:#b8f5f5;background:linear-gradient(115deg,#c5f3ee,#7ed7dd 62%,#5bc7d8)}
+.toybot-shell.toybot-menu-system .toybot-home-dashboard{background:linear-gradient(145deg,#172f45f5,#0a1c2cf7);border-color:#9bc1d451}
+@media(max-height:650px){.ops-mission-hud{top:104px;padding:3px 6px}.ops-mission-hud>.ops-art{width:23px;height:23px}}
+
+.toybot-shell.toybot-menu-system .toybot-mission-heading b{color:#e1f5fc}
+.toybot-shell.toybot-menu-system .toybot-mission-heading small{color:#a5c7d4}
+.toybot-shell.toybot-menu-system .toybot-home-story-objective{color:#b8d6e1}
+
+.toybot-page .in-boss-arena.has-core-control .toybot-boss-top-hud{left:140px;right:14px;top:62px}
+.toybot-page .in-boss-arena.has-core-control .toybot-boss-top-hud small{font-size:9px}
+.toybot-ops-debrief b .ops-art,.ops-challenge-picker em .ops-art{display:inline-block;vertical-align:middle;width:24px;height:24px;margin-right:4px}
+
+.ops-prep-door{width:76px;height:86px;transform:translate(-50%,-85%);background: url('/games/toybot-breakout/optimized/gate-3d-ai-v2.png') 33.333% 0/400% 200% no-repeat;border:0;border-radius:0;box-shadow:none}
+.ops-prep-door.is-selected{border:0;box-shadow:none;filter:drop-shadow(0 0 7px #76fff2)}
+.ops-prep-door .ops-art{position:absolute;left:25px;top:28px;width:26px;height:26px}
+.ops-prep-door b{position:absolute;top:9px;left:0;right:0;text-shadow:0 1px 3px #071a2d}
+.ops-prep-door small{position:absolute;bottom:-5px;left:0;right:0;background:#102c3be3;border-radius:4px;font-size:8px;line-height:14px}

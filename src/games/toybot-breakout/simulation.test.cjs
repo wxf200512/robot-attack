@@ -1192,8 +1192,8 @@ test('pulse core beam pierces exactly three captured same-lane targets and stops
 });
 test('heavy core explosion applies real bounded same-lane area damage once',()=>{
  let s={...battle(),mechClass:'heavy',lane:1,battleLane:0,bots:1,weaponLevel:0,fireCooldown:0,bossStep:'warning',burstEnergy:100,threats:[burstObjective(1,1,56),burstObjective(2,1,53),burstObjective(3,1,43,9),burstObjective(4,2,56,9)]};
- s=tick(sim.gameReducer(s,{type:'ACTIVATE_BURST'}));const damage=s.pendingShots[0].damage;assert.equal(damage,4.5);s.fireCooldown=1000;
- for(let i=0;i<3;i++)s=tick(s);
+ s=tick(sim.gameReducer(s,{type:'ACTIVATE_BURST'}));const damage=s.pendingShots[0].damage;assert.equal(damage,6);s.fireCooldown=1000;
+ const arrival=Math.max(...s.pendingShots.map(p=>p.duration));for(let i=0;i<arrival;i++)s=tick(s);
  assert.ok(!s.threats.some(t=>[1,2].includes(t.id)&&t.hp>0));assert.equal(s.threats.find(t=>t.id===3).hp,9);assert.equal(s.threats.find(t=>t.id===4).hp,9);
  assert.equal(s.coreDetonations.length,1);const frozen=sim.gameReducer(s,{type:'PAUSE'});assert.deepEqual(tick(frozen),frozen);
  const victory=tick({...s,battleHp:1,pendingShots:[incoming(s,{damage:999})]});assert.equal(victory.status,'boss-victory');assert.deepEqual(victory.coreDetonations,[]);
@@ -1204,10 +1204,10 @@ test('blade core extends melee range and cleaves three targets per mech with cap
  assert.equal(tick(base).pendingShots.length,0,'ordinary blade cannot reach these targets');
  const fired=tick(sim.gameReducer(base,{type:'ACTIVATE_BURST'}));assert.equal(fired.pendingShots.length,6);assert.ok(fired.pendingShots.every(p=>p.range===14&&p.lane===1));
  assert.equal(new Set(fired.pendingShots.map(p=>p.targetIndex)).size,3);
- let s={...fired,burstTicks:1,fireCooldown:1000};for(let i=0;i<3;i++)s=tick(s);
+ const arrival=Math.max(...fired.pendingShots.map(p=>p.duration));let s={...fired,burstTicks:1,fireCooldown:1000};for(let i=0;i<arrival;i++)s=tick(s);
  for(const id of [1,2,3])assert.ok(!s.threats.some(t=>t.id===id&&t.hp>0));assert.equal(s.threats.find(t=>t.id===4).hp,2);assert.equal(s.threats.find(t=>t.id===5).hp,2);
- let moved=sim.gameReducer(fired,{type:'MOVE_LANE',lane:2});moved.fireCooldown=1000;for(let i=0;i<3;i++)moved=tick(moved);
- assert.ok(moved.threats.filter(t=>t.hp>0).every(t=>t.hp===2),'changing lanes cannot remotely complete sword strikes');
+ let moved=sim.gameReducer(fired,{type:'MOVE_LANE',lane:2});moved.fireCooldown=1000;for(let i=0;i<arrival;i++)moved=tick(moved);
+ for(const id of [1,2,3])assert.ok(!moved.threats.some(t=>t.id===id&&t.hp>0),'released core sword waves keep their captured lane after sidestepping');assert.equal(moved.threats.find(t=>t.id===5).hp,2);
 });
 test('three chassis expose independent skill names mechanics and release sounds',()=>{
  const mechs=load('mechs'),audio=load('audio');
@@ -1522,4 +1522,28 @@ test('the DOM painter only changes presentation styles and keeps samples finite 
  for(const alpha of [0,.1,.5,.999])motion.paintMotion(root,base,alpha,[{node:shotNode,kind:'shot',id:71},{node:hazardNode,kind:'hazard',id:index}]);
  assert.equal(JSON.stringify(base),before);assert.ok(shotNode.style.transform.includes('rotate'));assert.ok(!JSON.stringify([shotNode.style,hazardNode.style,root.style]).match(/NaN|Infinity/));
  motion.paintMotion(root,base,.9,[],true);assert.equal(root.style['--motion-phase'],'0');assert.equal(root.style['--pose-recoil'],'0px');
+});
+
+test('core siege rounds have a bounded forward arc and arrive at their own captured target',()=>{
+ const s={...battle(),lane:1,battleLane:1},shot=incoming(s,{burst:true,attackStyle:'heavy',origins:[{index:2,x:61,y:66}],duration:6,ticks:6});
+ const samples=Array.from({length:7},(_,i)=>motion.projectileSample(s,{...shot,ticks:6-i},0));
+ assert.equal(samples[0].x,61);assert.equal(samples[0].y,66);assert.equal(samples.at(-1).y,sim.targetY(s,'boss',0));
+ assert.ok(samples.every((p,i)=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&(i===0||p.y<samples[i-1].y)));
+ const mid=motion.projectileSample(s,{...shot,ticks:3},0),straight=motion.projectileSample(s,{...shot,burst:false,ticks:3},0);assert.ok(mid.y<straight.y);
+});
+test('core beam painter preserves independent body-center emitters and never mutates damage state',()=>{
+ const s={...battle(),lane:1,battleLane:1};s.pendingShots=[incoming(s,{id:11,burst:true,attackStyle:'pulse',origins:[{index:1,x:39,y:65}]}),incoming(s,{id:12,burst:true,attackStyle:'pulse',origins:[{index:2,x:61,y:65}]})];
+ const makeNode=()=>({style:{setProperty(k,v){this[k]=v;}},querySelector(){return null;}}),root=makeNode(),a=makeNode(),b=makeNode(),before=JSON.stringify(s);
+ motion.paintMotion(root,s,.5,[{node:a,kind:'core-beam',id:11},{node:b,kind:'core-beam',id:12}]);
+ assert.equal(a.style.left,'39%');assert.equal(b.style.left,'61%');assert.match(a.style.height,/--beam-lift/);assert.ok(!JSON.stringify([a.style,b.style]).match(/NaN|Infinity/));assert.equal(JSON.stringify(s),before);
+});
+test('core clear-through bonuses increase road power while retaining boss multipliers and firing cadence',()=>{
+ const skill=load('mechs').CORE_SKILLS;assert.equal(skill.pulse.damage,1.6);assert.equal(skill.heavy.damage,2);assert.equal(skill.blade.damage,1.6);assert.equal(skill.pulse.bossDamage,1.25);assert.equal(skill.heavy.bossDamage,1.2);assert.equal(skill.blade.bossDamage,1.15);
+ for(const mechClass of ['pulse','heavy','blade']){const s={...battle(),mechClass,lane:1,battleLane:1,bossStep:'warning',bots:1,fireCooldown:0,burstEnergy:100};const n=tick(sim.gameReducer(s,{type:'ACTIVATE_BURST'}));assert.equal(n.fireCooldown,sim.attackIntervalFor(s));assert.ok(n.pendingShots.every(p=>p.burst&&p.origins.length===1));}
+});
+test('cockpit and skill atlases have deployment dimensions and preserve RGBA originals',()=>{
+ for(const [name,width,height]of [['cockpit-console-v22',1080,360],['reactor-core-v22',384,384],['core-effects-v22',1200,400]]){
+  const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',name+'.png'));
+  assert.equal(png.readUInt32BE(16),width);assert.equal(png.readUInt32BE(20),height);assert.equal(png[25],6);assert.ok(fs.existsSync(path.join(__dirname,'art-source',name+'.png')));
+ }
 });

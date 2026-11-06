@@ -1,0 +1,21 @@
+{
+  "mode": "built-in image_gen; no CLI fallback or API key",
+  "date": "2026-11-06",
+  "assets": [
+    {
+      "source": "art-source/cockpit-console-v22.png",
+      "runtime": "public/games/toybot-breakout/optimized/cockpit-console-v22.png",
+      "prompt": "Use case: stylized-concept. Generate a production-ready raster game UI asset, NOT a screenshot or mockup. Wide landscape lower cockpit console frame for a vertical mobile toy-mecha sci-fi runner. Original polished 3D game illustration, beveled dark navy gunmetal armor, ivory ceramic trim, subtle cyan light strips, restrained amber warning lights, clean readable premium mobile game art. Front view perfectly symmetrical, broad low trapezoidal armored dashboard with angled left and right consoles. Large circular EMPTY dark socket at center reserved for a separate interactive reactor button, two flat dark readable rectangular display wells on left and right reserved for real HTML labels. No screen text, no symbols resembling letters, no digits, no logos, no watermark, no hands, no characters, no background scenery. Silhouette isolated on genuinely transparent background, all frame edges fully visible, generous padding. Aspect ratio approximately 3:1, designed as decorative backing for real controls; keep ornamentation sparse, crisp silhouette readable at 390px wide. The center socket must be empty and non luminous so another reactor button can overlay it."
+    },
+    {
+      "source": "art-source/reactor-core-v22.png",
+      "runtime": "public/games/toybot-breakout/optimized/reactor-core-v22.png",
+      "prompt": "Use case: stylized-concept. A single isolated circular armored reactor core button for a premium original toy-mecha mobile game cockpit interface. Straight-on front view, perfect circular centered symmetric design. Dark navy metallic mechanical outer iris with eight ivory ceramic armor segments, cyan inner energy turbine and bright small hexagonal reactor at center, dimensional bevels, tactile polished toy metal, subtle cyan light spill fully inside circle. No lettering, no digits, no icons, no surrounding interface, no wires projecting beyond the round silhouette, no hand, no watermark. Genuinely transparent background, whole button visible with 8 percent transparent margin. Square image, crisp legible at 84 pixels. Designed to sit in a dark circular socket of a navy and ivory sci-fi cockpit dashboard. Keep center bright but enough dark space for an HTML percentage overlay at lower center."
+    },
+    {
+      "source": "art-source/core-effects-v22.png",
+      "runtime": "public/games/toybot-breakout/optimized/core-effects-v22.png",
+      "prompt": "Use case: stylized-concept. Production VFX sprite atlas for an original sci-fi toy mecha mobile action game. Exactly THREE equal SQUARE cells arranged in ONE horizontal row, clean 3:1 canvas, no gutters between cell boundaries but each effect has 12 percent internal transparent padding. All backgrounds genuinely transparent. No characters no environment no text no UI no watermark. Cell 1 at left: powerful cyan-white vertical ion beam, directed from bottom toward top, crystalline blue energy petals and electric ribbons, narrow brilliant beam core and tapered long tail, suitable overlay during mecha ultimate skill. Cell 2 middle: fiery amber-orange concentric shockwave impact, explosive mechanical radial energy ring and chunky glowing shrapnel, bright white-yellow center but open transparent dark gaps so enemies remain readable. Cell 3 right: elegant violet-white crossed energy saber arcs sweeping upward, THREE thin crescent blade streaks in layered diagonal fan, tiny sparks and kinetic purple ribbons. Consistent premium painterly 3D mobile game effects, crisp silhouettes at low resolution, high energy without fog obscuring every pixel. Strictly equal cells independently cropable, effects fully contained in own cells, nothing crossing cell edges."
+    }
+  ]
+}

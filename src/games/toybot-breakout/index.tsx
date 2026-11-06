@@ -1,7 +1,8 @@
+import { Cockpit, CoreBurstScreen, COCKPIT_ART, REACTOR_ART, CORE_EFFECT_ART } from './Cockpit';
 import { ExperienceLayer, RunAnalysis } from './ExperienceLayer';
 import { useSceneMotion } from './useSceneMotion';
 import OperationsLayer, { OperationsHud, ChallengePicker, FusionSprite, OperationSprite } from './OperationsLayer';
-import { FUSIONS, ART_V19, FUSION_ART_V19 } from './operations';
+import { ART_V19, FUSION_ART_V19 } from './operations';
 import PlayerSettingsPanel from './PlayerSettingsPanel';
 import StoryDialog from './StoryDialog';
 import CampaignStory, { StoryRadio, StoryRelay, StoryMission } from './CampaignStory';
@@ -28,13 +29,14 @@ import './combatFeel.css';
 import './operations.css';
 import './motion.css';
 import './experience.css';
-import { hazardMaxHpFor, gateChoicesFor, MODULES, guardSourceFor, commanderFor, eliteRoleName, type RunModule, canActivateBurst, COMBO_WINDOW_TICKS, BURST_TICKS } from './simulation';
+import './cockpit.css';
+import { hazardMaxHpFor, gateChoicesFor, MODULES, guardSourceFor, commanderFor, eliteRoleName, type RunModule, COMBO_WINDOW_TICKS } from './simulation';
 import { OBJECTIVE_NAMES, SPECIAL_LABELS } from './bossSkills';
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MAP_ART, BOSS_ART, BOSS_INTRO_ART, BOSS_STAGE2_ART, BOSS_DEFEAT_ART, BOSS_RUSH_ART, GATE_ART, PLAYER_ART, THREAT_ART, UI_HANGAR_ART, UI_RESULT_CRESTS, UI_MENU_ART, UI_MENU_ICONS, BLADE_SLASH_ART, ENEMY_ART, BATTLE_ART, BOSS_CAST_ART, BOSS_OBJECTIVE_ART } from './art';
 import { getLevel, LEVELS, hazardLaneAt, stageLabel, ENEMY_NAMES } from './level';
-import { createInitialState, formationFor, volleyCountFor, effectiveWeapon, bossPhase, bossY, gateEffectDetail, LANE_CENTERS, STEP_MS, laneXAt, targetY, bossFiring, gateGroundY, GATE_CONTACT_Y, isActiveStatus, canMove, canShoot, isBossArena, bossEnrage, BOSS_INTRO_TICKS, BOSS_SHIFT_TICKS, BOSS_VICTORY_TICKS, bossX, rushProgress, isRush, attackIntervalFor, bossAttackLabel, bossWarningTicks, enemyThreatY, playerFormation, bossGuarded, roadEnemyY, roadEnemyX, targetX as targetWorldX } from './simulation';
+import { createInitialState, formationFor, effectiveWeapon, bossPhase, bossY, gateEffectDetail, LANE_CENTERS, STEP_MS, laneXAt, targetY, bossFiring, gateGroundY, GATE_CONTACT_Y, isActiveStatus, canMove, canShoot, isBossArena, bossEnrage, BOSS_INTRO_TICKS, BOSS_SHIFT_TICKS, BOSS_VICTORY_TICKS, bossX, rushProgress, isRush, attackIntervalFor, bossAttackLabel, bossWarningTicks, enemyThreatY, playerFormation, bossGuarded, roadEnemyY, roadEnemyX, targetX as targetWorldX } from './simulation';
 import { purchaseUpgrade, readGarage, rewardParts, saveGarage, toggleUpgrade, upgradeCost, UPGRADES, moduleLevel, garageStats, previewUpgrade, equipAllUpgrades, MODULE_MAX_LEVEL, canEnterLevel, recordLevelCompletion, type Garage, type UpgradeId } from './progression';
 
 function ProjectileArt({ level, heavy = false }: { level: number; heavy?: boolean }) {
@@ -192,7 +194,7 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
   const warmBossAssets=game.status==='running'&&game.progress>=65;
   const warmCombatAssets=game.status==='running'&&game.progress>=35;
   const warmNextMap=game.status==='running'&&game.progress>=80;
-  useEffect(() => { if(warmCombatAssets)void preloadImages([BOSS_CAST_ART,BOSS_OBJECTIVE_ART,BATTLE_ART[game.mechClass]]); },[warmCombatAssets,game.mechClass]);
+  useEffect(() => { if(warmCombatAssets)void preloadImages([COCKPIT_ART,REACTOR_ART,CORE_EFFECT_ART,BOSS_CAST_ART,BOSS_OBJECTIVE_ART,BATTLE_ART[game.mechClass]]); },[warmCombatAssets,game.mechClass]);
   useEffect(() => { if(warmBossAssets)void preloadImages([BOSS_ART,BOSS_INTRO_ART,BOSS_STAGE2_ART,BOSS_DEFEAT_ART,THREAT_ART]); },[warmBossAssets]);
   useEffect(() => { if(warmNextMap&&game.levelIndex<LEVELS.length-1)void preloadImages([MAP_ART[game.levelIndex+1]]); },[warmNextMap,game.levelIndex]);
   const openSettings=()=>{ if(isActiveStatus(game.status))dispatch({type:'PAUSE'}); setSettingsOpen(true); };
@@ -239,10 +241,8 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
   const rushVisual = displayStatus === 'battle' && isRush(game) && (game.bossStep === 'warning' || game.bossStep === 'rush');
   const showEncounter = displayStatus === 'boss-victory' || (!game.bossDefeated && encounterProgress !== undefined && game.progress >= encounterProgress - 5);
   const encounterLabel = LEVEL.encounters[game.encounter]?.label ?? '轨道维修站';
-  const volleyCount = volleyCountFor(game.bots);
   const activeWeapon = effectiveWeapon(game);
   const comboFeedback=[game.comboHeal>0?`维修 +${game.comboHeal}`:'',game.burstTicks===0?'能量加成':''].filter(Boolean).join(' · ')||'连击达成';
-  const activeMech = mechSpec(game.mechClass); const burstSkill=coreSkill(game.mechClass);
   const attackInterval = attackIntervalFor(game);
   const visualCore = Math.max(game.coreLevel, Math.min(4, game.garageCoreLevel));
   const attackActive = canShoot(displayStatus ?? 'home') && game.fireCooldown > attackInterval - 4;
@@ -804,7 +804,7 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
         @media(prefers-reduced-motion:reduce){.is-player-hit .robot-player-art,.toybot-damage-vignette{animation:none}.toybot-damage-vignette{opacity:0}}
       `}</style>
 
-      <section className={'toybot-shell toybot-menu-system core-style-'+game.mechClass + (settings.shake!==false&&!reducedMotion&&game.feedback.some(f=>f.ticks>=4&&f.kind!=='hit'&&f.kind!=='armor')?' has-impact-shake':'') + ((displayStatus==='running'||displayStatus==='battle')?' has-core-control':'') + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
+      <section className={'toybot-shell toybot-menu-system core-style-'+game.mechClass + (game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'?' has-cockpit':'') + (settings.shake!==false&&!reducedMotion&&game.feedback.some(f=>f.ticks>=4&&f.kind!=='hit'&&f.kind!=='armor')?' has-impact-shake':'') + ((displayStatus==='running'||displayStatus==='battle')?' has-core-control':'') + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
         {game.status !== 'home' && <div
           ref={sceneRef}
           className={`toybot-scene formation-${formationColumns} weapon-tier-${activeWeapon} ${displayStatus === 'running' ? 'is-moving' : displayStatus === 'battle' ? 'is-battle' : displayStatus === 'defeat' ? `is-defeat ${game.defeatReason}` : ''} ${game.status === 'paused' ? 'is-paused' : ''} ${game.invulnerableTicks > 0 ? `is-player-hit damage-${game.damageKind}` : ''} ${arena ? 'is-arena' : ''} ${displayStatus === 'boss-intro' ? 'is-boss-intro' : displayStatus === 'boss-shift' ? 'is-boss-shift' : displayStatus === 'boss-victory' ? 'is-boss-victory' : ''}`}
@@ -878,7 +878,13 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
             {game.pendingShots.map((volley) => (
               <React.Fragment key={volley.id}>
                 {volley.origins.map((origin) => {
-                  if (volley.attackStyle === 'blade') {
+                  const size = volley.count <= 1 ? '52px' : volley.count <= 4 ? 'clamp(34px,10vw,44px)' : 'clamp(24px,7.4vw,32px)';
+
+                  if(volley.burst&&volley.attackStyle==='pulse'){
+                    const end=volley.target?targetY(game,volley.target,volley.targetIndex):volley.y;
+                    return <div key={origin.index} data-motion="core-beam" data-motion-id={volley.id} className="toybot-core-beam" style={{left:origin.x+'%',top:end+'%',height:`calc(${Math.max(1,origin.y-end)}% - ${volley.muzzle?size:'0px'} / 4)`,'--beam-lift':volley.muzzle?size:'0px',zIndex:Math.round((origin.y+5)*10)+5} as React.CSSProperties} aria-hidden="true"><span style={{backgroundImage:`url(${CORE_EFFECT_ART})`}}/></div>;
+                  }
+                  if (volley.attackStyle === 'blade'&&!volley.burst) {
                     if (!volley.target || game.lane !== volley.lane) return null;
                     const y = targetY(game, volley.target, volley.targetIndex);
                     const tier = Math.min(3, volley.weaponLevel + Math.min(1, game.armorLevel) + Math.min(1, visualCore));
@@ -886,19 +892,18 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
                   }
                   const tier = volley.charged || volley.weaponLevel >= 4 ? 'weapon-ultimate' : volley.weaponLevel >= 3 ? 'weapon-heavy weapon-overdrive' : volley.weaponLevel >= 2 ? 'weapon-heavy' : volley.weaponLevel > 0 ? 'weapon-powered' : '';
                   const flightProgress = (volley.duration - volley.ticks) / volley.duration;
-                  const size = volley.count <= 1 ? '52px' : volley.count <= 4 ? 'clamp(34px,10vw,44px)' : 'clamp(24px,7.4vw,32px)';
                   // Origins are captured when firing, so changing lanes or losing
                   // a squad member cannot teleport projectiles already in flight.
                   const destinationY = volley.target ? targetY(game, volley.target, volley.targetIndex) : volley.y;
                   const targetX = volley.target ? targetWorldX(game, volley.target, volley.targetIndex) : volley.targetIndex >= 0 ? laneXAt(volley.lane, destinationY) : 50;
                   const angle = Math.atan2((targetX - origin.x) * .56, Math.max(1, origin.y - destinationY)) * 180 / Math.PI;
                   const depth = Math.round((origin.y + (destinationY - origin.y) * flightProgress + 5) * 10) + 2;
-                  const lift = volley.muzzle ? size : '0px';
+                  const lift = volley.muzzle||volley.burst&&!volley.splashDone ? size : '0px';
                   const top = `calc(${origin.y + (destinationY - origin.y) * flightProgress}% - ${lift} * ${(1 - flightProgress) / 4})`;
                   return <React.Fragment key={`${volley.id}-${origin.index}`}>
                     {volley.muzzle && volley.ticks === volley.duration && <div className="toybot-muzzle-event" style={{ left: `${origin.x}%`, top: `calc(${origin.y}% - ${size} / 4)` }} aria-hidden="true"><span className="toybot-muzzle-flash center" /></div>}
-                    <div data-motion="shot" data-motion-id={volley.id} className={`toybot-shot in-flight ${volley.attackStyle === 'heavy' ? 'is-heavy-round' : ''} ${tier}${volley.count >= 5 ? ' is-swarm' : ''}${volley.focused ? ' is-focused' : ''}${volley.charged ? ' is-charged' : ''}${volley.burst ? ' is-core-burst-shot' : ''}${volley.arc?' has-arc-module':''}${volley.burn?' has-burn-module':''}`} style={{ left: `${origin.x + (targetX - origin.x) * flightProgress}%`, top, '--shot-lift':lift,'--flight-from-x': origin.x + '%', '--flight-to-x': targetX + '%', '--flight-from-y': `calc(${origin.y}% - ${lift} / 4)`, '--flight-to-y': destinationY + '%', '--flight-duration': volley.duration * STEP_MS + 'ms', '--flight-angle': angle + 'deg', '--flight-end-scale': volley.target ? '.65' : '.22', '--flight-end-opacity': volley.target ? '1' : '0', zIndex: depth } as React.CSSProperties} aria-hidden="true">
-                      {volley.fusion?<FusionSprite fusion={volley.fusion} projectile/>:<ProjectileArt heavy={volley.attackStyle === 'heavy'} level={volley.charged || volley.burst ? 4 : volley.focused?Math.max(1,volley.weaponLevel):volley.weaponLevel} />}
+                    <div data-motion="shot" data-motion-id={volley.id} className={`toybot-shot in-flight ${volley.attackStyle === 'heavy' ? 'is-heavy-round' : ''} ${tier}${volley.count >= 5 ? ' is-swarm' : ''}${volley.burst&&volley.attackStyle==='blade'?' is-core-blade-wave':''}${volley.burst&&volley.attackStyle==='heavy'?' is-core-siege-shell':''}${volley.focused ? ' is-focused' : ''}${volley.charged ? ' is-charged' : ''}${volley.burst ? ' is-core-burst-shot' : ''}${volley.arc?' has-arc-module':''}${volley.burn?' has-burn-module':''}`} style={{ left: `${origin.x + (targetX - origin.x) * flightProgress}%`, top, '--shot-lift':lift,'--flight-from-x': origin.x + '%', '--flight-to-x': targetX + '%', '--flight-from-y': `calc(${origin.y}% - ${lift} / 4)`, '--flight-to-y': destinationY + '%', '--flight-duration': volley.duration * STEP_MS + 'ms', '--flight-angle': angle + 'deg', '--flight-end-scale': volley.target ? '.65' : '.22', '--flight-end-opacity': volley.target ? '1' : '0', zIndex: depth } as React.CSSProperties} aria-hidden="true">
+                      {volley.burst?<span className="toybot-core-attack-art" style={{backgroundImage:`url(${CORE_EFFECT_ART})`,backgroundPosition:volley.attackStyle==='heavy'?'50% 50%':'100% 50%'}}/>:volley.fusion?<FusionSprite fusion={volley.fusion} projectile/>:<ProjectileArt heavy={volley.attackStyle === 'heavy'} level={volley.charged || volley.burst ? 4 : volley.focused?Math.max(1,volley.weaponLevel):volley.weaponLevel} />}
                     </div>
                   </React.Fragment>;
                 })}
@@ -1018,7 +1023,7 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
 
         {game.status !== 'home' && displayStatus !== 'running' && displayStatus !== 'battle' && <button type="button" className="toybot-back" onClick={goHome}>← 游戏首页</button>}
 
-          {(displayStatus==='running'||displayStatus==='battle')&&<button type="button" className={'toybot-burst-control'+(canActivateBurst(game)?' is-ready':'')+(game.burstTicks>0?' is-active':'')} onClick={()=>dispatch({type:'ACTIVATE_BURST'})} disabled={!canActivateBurst(game)||!!game.narrative.scene} aria-label={game.burstTicks>0?`${burstSkill.name}中，剩余${Math.ceil(game.burstTicks/10)}秒`:canActivateBurst(game)?'释放'+burstSkill.name+'：'+burstSkill.detail+'，持续5秒，清除干扰':`核心爆发充能${Math.floor(game.burstEnergy)}%，击破和成功闪避充能`}><span className="burst-symbol" aria-hidden="true">✦</span><span><b>{game.burstTicks>0?burstSkill.name:canActivateBurst(game)?burstSkill.name:'核心充能'} <small>{game.burstTicks>0?Math.ceil(game.burstTicks/10)+'s':Math.floor(game.burstEnergy)+'%'}</small></b><span className="burst-energy-track"><i style={{width:(game.burstTicks>0?game.burstTicks/BURST_TICKS*100:game.burstEnergy)+'%'}}/></span></span><em>{game.burstTicks>0?burstSkill.detail:canActivateBurst(game)?'点击 / 空格':'击破 · 闪避'}</em></button>}
+
 
         <div className="toybot-stats">
           <div className="toybot-pill"><small>{stageLabel(game.progress)}</small><b>{Math.floor(game.progress)}%</b></div>
@@ -1036,40 +1041,12 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
                     </div>
         )}
 
-        <OperationsHud game={game}/><div className="toybot-bottom">
-          <StoryMission game={game}/>
-          <StoryRadio game={game} dispatch={dispatch}/>
-          <div className={`toybot-player-health ${game.playerHp / game.playerMaxHp <= .25 ? 'critical' : ''}`} aria-label={`核心生命 ${game.playerHp}/${game.playerMaxHp}`}>
-            <div className="toybot-health-caption"><strong>◈ 核心生命</strong><b>{game.playerHp}<small> / {game.playerMaxHp}</small></b></div>
-            <div className="toybot-health-track" style={{ '--hp-now': game.playerHp / game.playerMaxHp * 100 + '%', '--hp-before': Math.min(game.playerMaxHp, game.playerHp + (game.damageKind === 'health' ? game.damageLoss : 0)) / game.playerMaxHp * 100 + '%' } as React.CSSProperties}>
-              <i className="toybot-health-trail" key={game.damageSequence} /><i className="toybot-health-fill" style={{ width: game.playerHp / game.playerMaxHp * 100 + '%' }} />
-            </div>
-          </div>
-          <div className="toybot-status-effects" aria-label="战斗状态">{(Object.keys(MODULES) as RunModule[]).filter(key=>game.modules[key]>0).map(key=><span key={key} className={"toybot-module-chip module-"+key} title={MODULES[key].detail}>{MODULES[key].icon} {MODULES[key].name} {game.modules[key]}</span>)}
-            {game.ops.fusion&&<span className="effect-burst">✧ {FUSIONS[game.ops.fusion].name}</span>}{game.ops.counterShots>0&&<span className="effect-burst">反击 ×{game.ops.counterShots}</span>}{game.burstTicks>0&&<span className="effect-burst">{burstSkill.name} · {burstSkill.detail}</span>}
-            {game.weaponLevel >= 4 && <span className="effect-charge">✹ <i style={{ width: game.charge / 4 * 100 + '%' }} />{game.charge}/4</span>}
-            {game.chargedVolleys > 0 && <span className="effect-charge">✹ ×{game.chargedVolleys}</span>}
-            {game.overloadTicks > 0 && <span>↟ {Math.ceil(game.overloadTicks / 10)}s</span>}
-            {game.jamTicks > 0 && <span className="effect-jam">⌁ {Math.ceil(game.jamTicks / 10)}s</span>}
-          </div>
-          <div className="toybot-squad-card">
-            <div><small>{activeMech.name} · W{game.weaponLevel} · 装甲 A{game.armorLevel} · 动力 R{game.garageCoreLevel}</small><strong><span key={game.bots} className="toybot-count-pop">{game.bots}</span> <small style={{ display: 'inline', letterSpacing: 0 }}>台</small></strong><small>{game.mechClass === 'blade' ? '斩击' : '齐射'} {volleyCount} {game.mechClass === 'blade' ? '刀' : '弹'} · 护盾 {game.shieldCharges} · 装甲余量 {game.armorPoints}</small></div>
-            <div className="toybot-lane-controls" role="group" aria-label="选择机器人队列">
-              {[0, 1, 2].map((lane) => (
-                <button
-                  key={lane}
-                  type="button"
-                  aria-label={`切换到第 ${lane + 1} 队列`}
-                  aria-pressed={game.lane === lane}
-                  onClick={() => dispatch({ type: 'MOVE_LANE', lane })}
-                >{lane + 1}</button>
-              ))}
-            </div>
-            <div className="toybot-squad-avatars" aria-hidden="true">
-              {Array.from({ length: Math.min(visibleBots, 4) }, (_, index) => <Robot key={index} mechClass={game.mechClass} index={index} small weaponLevel={game.weaponLevel} armorLevel={game.armorLevel} coreLevel={visualCore} />)}
-            </div>
-          </div>
-        </div>
+        <OperationsHud game={game}/>
+        {game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'&&<div className="toybot-bottom cockpit-bottom">
+          <StoryMission game={game}/><StoryRadio game={game} dispatch={dispatch}/>
+          <Cockpit game={game} blocked={!!game.narrative.scene} onMove={lane=>dispatch({type:'MOVE_LANE',lane})} onBurst={()=>dispatch({type:'ACTIVATE_BURST'})}/>
+        </div>}
+        {!game.narrative.scene&&<CoreBurstScreen game={game} reduced={reducedMotion||quality==='low'}/>}
 
         {game.status === 'home' && !trainingMode && !storyView && (
           <div className={`toybot-overlay toybot-home menu-refresh ${garageOpen ? 'is-workshop' : ''}`} role="dialog" aria-modal="true" aria-labelledby={garageOpen ? 'toybot-workshop-title' : 'toybot-home-title'}>

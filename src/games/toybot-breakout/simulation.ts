@@ -669,7 +669,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
   for (const shot of state.pendingShots) {
     if (shot.ticks > 1) { s.pendingShots.push({ ...shot, ticks: shot.ticks - 1 }); continue; }
     if (!shot.target) continue;
-    if (shot.attackStyle === 'blade' && (s.lane !== shot.lane || 59 - targetY(s, shot.target, shot.targetIndex) > (shot.range??mechSpec('blade').range))) continue;
+    if (shot.attackStyle === 'blade' && !shot.burst && (s.lane !== shot.lane || 59 - targetY(s, shot.target, shot.targetIndex) > (shot.range??mechSpec('blade').range))) continue;
     const hit = damageTarget(s, shot.target, shot.targetIndex, shot.damage, shot.weaponLevel, shot.lane, shot.burst === true);
     if (s.status === 'boss-victory') return s;
     if(hit>0&&shot.attackStyle==='heavy'&&!shot.splashDone){
@@ -768,7 +768,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
   for (const origin of origins) {
     const targets=s.burstTicks>0&&s.mechClass==='blade'?choices.slice(0,skill.cleave):s.mechClass==='blade'?choices.slice(0,2).filter((t,i)=>i===0||counter||t.target==='hazard'||t.target==='threat'):[target];
     for(const aim of targets){
-      const y=aim?.y??freeShotEnd(s.levelIndex),duration=s.mechClass==='blade'?3:flightTicks(origin.y,y);
+      const y=aim?.y??freeShotEnd(s.levelIndex),duration=s.mechClass==='blade'?(s.burstTicks>0?5:3):flightTicks(origin.y,y)+(s.burstTicks>0&&s.mechClass==='heavy'?2:0);
       s.pendingShots.push({id:++s.shotSequence,ticks:duration,duration,target:aim?.target??null,targetIndex:aim?.index??-1,
         focused,fusion:s.ops.fusion,counter,arc:s.modules.arc,burn:s.modules.burn,burst:s.burstTicks>0,range:counterRange,attackStyle:s.mechClass,damage:(counter?1.7:1)*(1+tier)*spec.power*s.garageDamageScale*(charged?3:1)*(s.overloadTicks>0?1.5:1)*(s.burstTicks>0?(aim?.target==='boss'?skill.bossDamage:skill.damage):1),count:origins.length,origins:[origin],weaponLevel:tier,lane:s.lane,y,charged,pierce:Math.max(focused?1:0,tier===2?1:0,s.burstTicks>0?skill.pierce:0,s.ops.fusion==='ion'?1:0),muzzle:s.mechClass!=='blade'});
     }

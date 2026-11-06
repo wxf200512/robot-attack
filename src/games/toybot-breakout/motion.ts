@@ -25,7 +25,7 @@ export function poseSample(s:GameState,alpha:number){
 export function projectileSample(s:GameState,shot:PendingShot,alpha:number,predicted?:GameState){
  const progress=clamp01(1-(shot.ticks-clamp01(alpha))/Math.max(1,shot.duration)),origin=shot.origins[0],v=predicted??visualState(s,alpha);
  const endY=shot.target?targetY(v,shot.target,shot.targetIndex):shot.y,capturedLane=shot.target==='hazard'?hazardLaneAt(s.layoutIndex,shot.targetIndex,v.progress,s.levelIndex):shot.target==='boss'?s.battleLane:shot.lane,endX=shot.target?(capturedLane!==shot.lane?laneXAt(shot.lane,endY):shot.target==='hazard'?hazardVisualX(v,shot.targetIndex):targetX(v,shot.target,shot.targetIndex)):shot.targetIndex>=0?laneXAt(shot.lane,endY):50;
- return {progress,x:origin.x+(endX-origin.x)*progress,y:origin.y+(endY-origin.y)*progress,angle:Math.atan2((endX-origin.x)*.56,Math.max(1,origin.y-endY))*180/Math.PI};
+ return {progress,x:origin.x+(endX-origin.x)*progress,y:origin.y+(endY-origin.y)*progress-(shot.burst&&shot.attackStyle==='heavy'?Math.sin(progress*Math.PI)*Math.min(5,Math.max(0,origin.y-endY)*.2):0),angle:Math.atan2((endX-origin.x)*.56,Math.max(1,origin.y-endY))*180/Math.PI};
 }
 export type MotionEntry={node:HTMLElement;kind:string;id:number};
 export const collectMotionEntries=(root:HTMLElement):MotionEntry[]=>Array.from(root.querySelectorAll<HTMLElement>('[data-motion]')).map(node=>({node,kind:node.dataset.motion??'',id:Number(node.dataset.motionId??0)}));
@@ -49,8 +49,11 @@ export function paintMotion(root:HTMLElement,s:GameState,alpha:number,entries:Mo
    }
   }
   else if(kind==='hazard'){const y=roadEnemyY(v,id);place(node,hazardVisualX(v,id),y);node.style.setProperty('--hazard-scale',String(.72+(y-39)/19*.34));}
+  else if(kind==='core-beam'){
+   const shot=shots.get(id);if(shot){const o=shot.origins[0],p=projectileSample(s,shot,t,v),y=shot.target?targetY(v,shot.target,shot.targetIndex):shot.y;place(node,o.x,y);node.style.height=`calc(${Math.max(1,o.y-y)}% - var(--beam-lift,0px) / 4)`;node.style.transform=`translateX(-50%) rotate(${p.angle}deg)`;node.style.opacity=String(.65+Math.sin((shot.duration-shot.ticks+t)*Math.PI)*.2);}
+  }
   else if(kind==='shot'){
-   const shot=shots.get(id);if(!shot||shot.attackStyle==='blade')continue;
+   const shot=shots.get(id);if(!shot||shot.attackStyle==='blade'&&!shot.burst)continue;
    const p=projectileSample(s,shot,t,v);node.style.left=p.x+'%';node.style.top=`calc(${p.y}% - var(--shot-lift,0px) * ${(1-p.progress)/4})`;
    node.style.transform=`translate(-50%,-50%) rotate(${p.angle}deg) scale(${1-p.progress*(shot.target ? .35 : .78)})`;
    node.style.opacity=String(shot.target?1:1-p.progress);

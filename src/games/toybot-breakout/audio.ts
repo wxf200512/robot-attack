@@ -18,7 +18,7 @@ export function gameSoundEvents(previous:GameState,current:GameState):AudioCue[]
  if(current.ops.fusion!==previous.ops.fusion||current.ops.mission.status==='done'&&previous.ops.mission.status!=='done'||current.ops.event.status==='done'&&previous.ops.event.status!=='done')cues.push('upgrade');
  if(current.ops.eventWarning>0&&previous.ops.eventWarning===0)cues.push('warning');
  if(previous.ops.prep==='pending'&&current.ops.prep!=='pending')cues.push('gate');
- if(current.shotSequence>previous.shotSequence&&current.fireCooldown===attackIntervalFor(current)&&current.burstSequence===previous.burstSequence)cues.push(current.burstTicks>0?`core-shot-${current.mechClass}`:effectiveWeapon(current)>=2?`${current.mechClass}-up`:current.mechClass);
+ if(current.shotSequence>previous.shotSequence&&current.fireCooldown===attackIntervalFor(current)&&current.burstSequence===previous.burstSequence)cues.push(current.mechClass==='blade'&&current.pendingShots.some(p=>p.finisher&&p.ticks===p.duration)?'blade-finisher':current.burstTicks>0?`core-shot-${current.mechClass}`:effectiveWeapon(current)>=2?`${current.mechClass}-up`:current.mechClass);
  if(current.impactSequence>previous.impactSequence){
   const destroyed=current.ops.broken>previous.ops.broken||current.hazardHps.some((hp,i)=>hp===0&&previous.hazardHps[i]>0)||current.threats.some(t=>t.hp===0&&previous.threats.some(p=>p.id===t.id&&p.hp>0));
   const elite=current.feedback.some(f=>f.id>previous.feedbackSequence&&f.kind==='elite');

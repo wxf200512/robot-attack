@@ -366,7 +366,7 @@ test('new skill telegraphs remain locked while the player sidesteps and never fa
     const released=tick(s);assert.equal(released.bossStep,'flight');
   }
 });
-test('five bosses take roughly three minutes with representative loadouts and telegraph-aware dodging', () => {
+test('fixed bosses retain a roughly three-minute baseline and reward stronger acquired loadouts', () => {
   const samples=[];
   for(let level=0;level<5;level++) for(const [bots,weaponLevel] of [[3,2],[5,3],[7,4]]) {
     const spec=levels.getLevel(level);
@@ -381,7 +381,7 @@ test('five bosses take roughly three minutes with representative loadouts and te
       assert.equal(s.battleMaxHp,maxHp,'boss HP must not grow during combat');
     }
     assert.equal(s.won,true); const seconds=ticks/10; samples.push(seconds);
-    assert.ok(seconds>=100&&seconds<=210, 'level '+(level+1)+' bots '+bots+' W'+weaponLevel+': '+seconds+'s');
+    assert.ok(seconds>=(bots===3&&weaponLevel===2?130:20)&&seconds<=(bots===3&&weaponLevel===2?230:150), 'level '+(level+1)+' bots '+bots+' W'+weaponLevel+': '+seconds+'s');
   }
   console.log('Boss balance sample seconds: '+samples.join(', '));
 });
@@ -550,7 +550,7 @@ test('old garage saves migrate to pulse and new class choice persists across sta
   for(const type of ['START','RESTART','HOME'])assert.equal(sim.gameReducer(initial(),{type,garage:selected}).mechClass,'heavy');
   assert.equal(sim.gameReducer({...initial(),won:true,status:'result',bossDefeated:true,progress:100},{type:'NEXT_LEVEL',garage:selected}).mechClass,'heavy');
 });
-test('all three mech classes can beat five bosses with telegraphed dodging in roughly three minutes', () => {
+test('all three mech classes can beat five fixed-health bosses with telegraphed dodging', () => {
   const times=[];
   for(const mechClass of ['pulse','heavy','blade']) for(let level=0;level<5;level++){
     const spec=levels.getLevel(level);let s=tick({...initial(level),mechClass,status:'running',progress:spec.encounters[0].progress - sim.RUN_SPEED/2,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3});let ticks=0;
@@ -561,7 +561,7 @@ test('all three mech classes can beat five bosses with telegraphed dodging in ro
       if(danger.includes(lane))lane=[0,1,2].find(l=>!danger.includes(l))??lane;
       s=tick(sim.gameReducer(s,{type:'MOVE_LANE',lane:bossTactic(s)}));ticks++;
     }
-    assert.equal(s.won,true,mechClass+' level '+(level+1));assert.ok(ticks>=1000&&ticks<=2100,mechClass+' level '+(level+1)+' '+ticks/10+'s');times.push(mechClass+' L'+(level+1)+':'+ticks/10);
+    assert.equal(s.won,true,mechClass+' level '+(level+1));assert.ok(ticks>=200&&ticks<=1600,mechClass+' level '+(level+1)+' '+ticks/10+'s');times.push(mechClass+' L'+(level+1)+':'+ticks/10);
   }
   console.log('Class boss balance '+times.join(', '));
 });
@@ -1261,7 +1261,7 @@ test('player-triggered burst preserves five bosses and all chassis with real cou
    if(sim.canActivateBurst(s)&&s.bossStep==='recovery')s=sim.gameReducer(s,{type:'ACTIVATE_BURST'});
    s=tick(s);ticks++;
   }
-  assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(s.burstSequence>0);assert.ok(ticks>=1000&&ticks<=2100,mechClass+' L'+(level+1)+' '+ticks/10+'s');samples.push(ticks/10);
+  assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(s.burstSequence>0);assert.ok(ticks>=200&&ticks<=1600,mechClass+' L'+(level+1)+' '+ticks/10+'s');samples.push(ticks/10);
  }
  console.log('Burst boss sample seconds: '+samples.join(', '));
 });
@@ -1339,7 +1339,7 @@ test('fully combined modules complete every boss with all chassis and clear rema
  for(const mechClass of ['pulse','heavy','blade'])for(let level=0;level<5;level++){
   const spec=levels.getLevel(level);let s=tick({...initial(level),modules:{arc:3,burn:3,recycle:3},mechClass,status:'running',progress:spec.encounters[0].progress - sim.RUN_SPEED/2,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3});let ticks=0;
   while(sim.isActiveStatus(s.status)&&ticks<2400){s=sim.gameReducer(s,{type:'MOVE_LANE',lane:bossTactic(s)});if(sim.canActivateBurst(s)&&s.bossStep==='recovery')s=sim.gameReducer(s,{type:'ACTIVATE_BURST'});s=tick(s);ticks++;}
-  assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(ticks>=1000&&ticks<=2100,mechClass+' L'+(level+1)+' '+ticks/10+'s');assert.equal(s.coreDetonations.length,0);samples.push(ticks/10);
+  assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(ticks>=200&&ticks<=1600,mechClass+' L'+(level+1)+' '+ticks/10+'s');assert.equal(s.coreDetonations.length,0);samples.push(ticks/10);
  }
  console.log('Module boss sample seconds: '+samples.join(', '));
 });
@@ -1461,7 +1461,7 @@ test('fusion plus perfect counters and new parts preserve full five-sector boss 
   const spec=levels.getLevel(level),seed=initial(level);seed.ops.fusion=['stormfire','furnace','ion'][level%3];seed.ops.mission.status='done';
   let s=tick({...seed,modules:{arc:2,burn:2,recycle:2},mechClass,status:'running',progress:spec.encounters[0].progress - sim.RUN_SPEED/2,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3});let ticks=0;
   while(sim.isActiveStatus(s.status)&&ticks<2400){s=sim.gameReducer(s,{type:'MOVE_LANE',lane:bossTactic(s)});if(sim.canActivateBurst(s)&&s.bossStep==='recovery')s=sim.gameReducer(s,{type:'ACTIVATE_BURST'});s=tick(s);ticks++;}
-  assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(ticks>1000&&ticks<=2100,mechClass+' L'+(level+1)+' '+ticks/10);assert.ok(s.ops.broken>=1);samples.push(ticks/10);
+  assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(ticks>200&&ticks<=1600,mechClass+' L'+(level+1)+' '+ticks/10);assert.ok(s.ops.broken>=1);samples.push(ticks/10);
  }
  console.log('Operations boss sample seconds: '+samples.join(', '));
 });
@@ -1783,4 +1783,75 @@ test('decoded music seam repair removes discontinuity without changing the entra
  const track=tracks.musicTrack('boss-0'),buffer=musicBuffer('boss-0'),data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=Math.sin(i*.17)*.7;
  const intro=data.slice(0,1000),length=buffer.length,duration=buffer.duration;music.prepareMusicBuffer(buffer,track);assert.deepEqual(data.slice(0,1000),intro);assert.equal(buffer.length,length);assert.equal(buffer.duration,duration);
  const timing=music.musicTiming(track,duration),start=timing.start*buffer.sampleRate,first=Math.floor(start),target=data[first]*(1-(start-first))+data[first+1]*(start-first),end=Math.floor(timing.end*buffer.sampleRate)-1;assert.ok(Math.abs(data[end]-target)<.00001);assert.ok(data.every(Number.isFinite));
+});
+
+const playability=load('playability');
+test('fixed guardian durability depends only on sector and selected protocol, never acquired or permanent power',()=>{
+ for(let level=0;level<5;level++)for(const mechClass of ['pulse','heavy','blade'])for(const bots of [1,3,11])for(const weaponLevel of [0,2,4]){
+  const state={...initial(level),mechClass,bots,weaponLevel,garageDamageScale:3,garageCoreLevel:5};assert.equal(sim.bossHealthFor(state),playability.BOSS_BASE_HEALTH[level]);assert.equal(sim.bossHealthFor({...state,ops:{...state.ops,protocol:'overdrive'}}),playability.BOSS_BASE_HEALTH[level]*1.2);
+ }
+});
+test('named elite destruction creates a short recovery beat with the same authoritative and visual world speed',()=>{
+ const {state,index}=sectorElite('heat-mine');const n=tick({...state,pendingShots:[incoming(state,{target:'hazard',targetIndex:index,lane:state.lane,damage:9999})]});
+ assert.equal(n.report.elites,1);assert.equal(n.breatherTicks,25);assert.ok(n.progress-state.progress<sim.RUN_SPEED/2);assert.ok(n.roadTicks>state.roadTicks);assert.equal(load('experience').encounterBeat(n.progress,n.breatherTicks).intensity,0);
+ const visual=load('motion').visualState(n,.5);assert.ok(Math.abs(visual.progress-n.progress-sim.roadStepFor(n)*.5)<.000001);
+ const paused=sim.gameReducer(n,{type:'PAUSE'});assert.equal(tick(paused),paused);let ended=n;for(let i=0;i<26;i++)ended=tick(ended);assert.equal(ended.breatherTicks,0);assert.equal(sim.roadStepFor(ended),sim.RUN_SPEED);
+});
+test('heavy primary hits break one armor layer and briefly hold a charge without resetting a live projectile',()=>{
+ const level=levels.getLevel(2),index=level.hazards.findIndex(h=>h.armor===2),mark=level.hazards[index].progress;
+ const state={...quietRoad(2),mechClass:'heavy',progress:mark-8,lane:levels.hazardLaneAt(0,index,mark,2)};state.hazardHps[index]=100;
+ const attack={id:15,source:'hazard',sourceId:index,kind:'sniper-shot',lane:state.lane,fromLane:state.lane,fromY:44,phase:'warning',ticks:10,duration:18,damage:13,shotsRemaining:1};
+ const n=tick({...state,enemyAttacks:[attack],enemyAttackSources:['hazard:'+index],pendingShots:[incoming(state,{target:'hazard',targetIndex:index,lane:state.lane,damage:10,attackStyle:'heavy'})]});
+ assert.equal(state.hazardHps[index],100);assert.equal(n.hazardHps[index],92);assert.equal(sim.hazardArmorFor(n,index),1);assert.equal(n.enemyAttacks[0].ticks,10);assert.equal(n.roadImpacts[index].stun,5);
+ const second=tick({...n,pendingShots:[incoming(n,{target:'hazard',targetIndex:index,lane:n.lane,damage:10,attackStyle:'heavy'})]});assert.equal(second.hazardHps[index],83);assert.ok(second.roadImpacts[index].stun<5,'repeated shells do not lock an enemy indefinitely');
+ const flight=tick({...n,enemyAttacks:[{...attack,phase:'flight'}]});assert.equal(flight.enemyAttacks[0].ticks,9);assert.equal(attack.ticks,10);
+});
+test('pulse focus is earned in one lane and captures two penetrations on the next real volley',()=>{
+ const {level,ids,state}=eliteScene(),index=ids[1],other=level.hazards.findIndex(h=>h.horde&&h.wave===0&&h.slot===1);
+ const base={...state,report:{...state.report,focus:5,focusLane:state.lane}};base.hazardHps=base.hazardHps.map((_,i)=>i===index||i===other?30:-1);
+ const ready=tick({...base,pendingShots:[incoming(base,{target:'hazard',targetIndex:index,lane:base.lane,damage:1})]});assert.equal(ready.report.focusReady,true);
+ const shot=tick({...ready,fireCooldown:0});assert.ok(shot.pendingShots.some(p=>p.focused&&p.pierce===2));assert.equal(shot.report.focusReady,false);
+ const lane=levels.hazardLaneAt(0,other,base.progress,base.levelIndex),changed=tick({...ready,pendingShots:[incoming(ready,{target:'hazard',targetIndex:other,lane,damage:1})]});assert.equal(changed.report.focusReady,false);assert.equal(changed.report.focus,1);assert.equal(changed.report.focusLane,lane);
+});
+test('blade counts one chain step per landed volley, then performs a captured longer three-target finisher',()=>{
+ const {ids,state}=eliteScene();let s={...state,mechClass:'blade',fireCooldown:1000};s.hazardHps=s.hazardHps.map((_,i)=>ids.slice(0,4).includes(i)?100:-1);
+ const hit=(s,volley)=>incoming(s,{target:'hazard',targetIndex:ids[0],lane:s.lane,damage:1,attackStyle:'blade',volleyId:volley,range:11});
+ s=tick({...s,pendingShots:[hit(s,1),hit(s,1),hit(s,1)]});assert.equal(s.report.bladeCombo,1);
+ s=tick({...s,pendingShots:[hit(s,2)]});s=tick({...s,pendingShots:[hit(s,3)]});assert.equal(s.report.bladeReady,true);assert.equal(sim.attackRangeFor(s),11);
+ const fired=tick({...s,fireCooldown:0});const finishers=fired.pendingShots.filter(p=>p.finisher);assert.equal(finishers.length,3);assert.ok(finishers.every(p=>p.range===11&&p.lane===s.lane&&p.duration===4));assert.equal(fired.report.bladeReady,false);assert.equal(fired.report.bladeCombo,0);
+ const missed=tick({...state,mechClass:'blade',pendingShots:[incoming(state,{target:'hazard',targetIndex:ids[0],lane:(state.lane+1)%3,attackStyle:'blade',damage:1})]});assert.equal(missed.report.bladeCombo,0);
+});
+test('visual budget preserves elite and boss confirmations without dropping any damage records',()=>{
+ const feedback=Array.from({length:12},(_,i)=>({id:i,ticks:4,x:50,y:40,kind:i===0?'boss':i===1?'elite':'hit'})),old=JSON.stringify(feedback);
+ const selected=playability.visibleFeedback(feedback,false);assert.equal(selected.length,4);assert.ok(selected.some(f=>f.kind==='boss')&&selected.some(f=>f.kind==='elite'));assert.equal(playability.visibleFeedback(feedback,true).length,2);assert.equal(JSON.stringify(feedback),old);
+});
+test('reward ledger matches actual settlement and next upgrade goals use paid levels without spending inventory',()=>{
+ const s={...initial(),status:'result',score:700,won:true,ops:{...initial().ops,bonusParts:6,protocol:'overdrive'}};
+ const ledger=playability.rewardLedger(s);assert.equal(ledger.total,progression.rewardParts(700,true)+6+3);assert.equal(playability.rewardLedger({...s,won:false}).total,progression.rewardParts(700,false));
+ const g=progression.normalizeGarage({parts:4}),before=JSON.stringify(g),target=playability.nextUpgrade(g,s);assert.equal(target.id,'armor');assert.equal(target.missing,0);assert.equal(JSON.stringify(g),before);
+ const upgraded=progression.purchaseUpgrade(g,'armor'),next=playability.nextUpgrade(upgraded,s);assert.equal(next.id,'weapon');assert.equal(next.missing,5);assert.equal(playability.nextUpgrade(progression.normalizeGarage({levels:{weapon:5,armor:5,core:5}}),s),null);
+});
+test('automatic mobile budget respects memory and reduced data while explicit quality remains a user choice',()=>{
+ const settings=load('settings');assert.equal(settings.resolveQuality({quality:'auto'},8,false,4),'low');assert.equal(settings.resolveQuality({quality:'auto'},8,false,8,true),'low');assert.equal(settings.resolveQuality({quality:'high'},2,true,2,true),'high');assert.equal(settings.resolveQuality({quality:'auto'},8,false,8,false),'high');
+ const interaction=load('interaction');assert.equal(interaction.canStartPointerGesture(null,{button:0,isPrimary:true}),true);assert.equal(interaction.canStartPointerGesture(7,{button:0,isPrimary:true}),false);assert.equal(interaction.canStartPointerGesture(null,{button:0,isPrimary:false}),false);
+});
+test('asset warm-up caps concurrency, deduplicates, prioritizes urgent art and retries failures',async()=>{
+ const oldImage=global.Image,items=[];global.Image=class{constructor(){items.push(this);}set src(value){this.url=value;}decode(){return Promise.resolve();}};
+ const loading=load('loading');try{
+  const first=loading.preloadImages(['budget-a','budget-b','budget-c','budget-d'],'low'),urgent=loading.preloadImages(['budget-urgent','budget-a'],'high');assert.equal(items.length,3);
+  items[0].onload();await flushMusic();assert.equal(items[3].url,'budget-urgent');items[1].onerror();await flushMusic();const retry=loading.preloadImages(['budget-b']);
+  for(let rounds=0;rounds<10;rounds++){for(const item of [...items])if(item.onload)item.onload();await flushMusic();}
+  assert.ok((await first).some(result=>result.status==='rejected'));assert.ok((await urgent).every(result=>result.status==='fulfilled'));assert.equal((await retry)[0].status,'fulfilled');assert.equal(items.filter(item=>item.url==='budget-a').length,1);
+ }finally{if(oldImage===undefined)delete global.Image;else global.Image=oldImage;}
+});
+
+test('heavy stagger cannot extend a warning into a three-lane body trap on any sector layout',()=>{
+ for(let sector=0;sector<5;sector++)for(let layout=0;layout<3;layout++){
+  const spec=levels.getLevel(sector);let s={...sim.createInitialState(garage,sector,layout),status:'running',gate:spec.gateMarks.length,fireCooldown:10000,playerHp:10000,playerMaxHp:10000};
+  for(let step=0;step<1250&&s.status==='running';step++){
+   const lanes=s.enemyAttacks.map(a=>a.lane);spec.hazards.forEach((h,i)=>{if(s.hazardHps[i]>0&&h.progress>s.progress&&h.progress-s.progress<1.5)lanes.push(levels.hazardLaneAt(layout,i,h.progress,sector));});assert.ok(new Set(lanes).size<=2,`stagger escape: sector ${sector}, layout ${layout}, progress ${s.progress}`);
+   const charging=s.enemyAttacks.find(a=>a.source==='hazard'&&a.phase==='warning'&&spec.hazards[a.sourceId]?.elite);
+   if(charging&&step%10===0)s={...s,pendingShots:[incoming(s,{target:'hazard',targetIndex:charging.sourceId,lane:levels.hazardLaneAt(layout,charging.sourceId,s.progress,sector),damage:1,attackStyle:'heavy'})]};s=tick(s);
+  }
+ }
 });

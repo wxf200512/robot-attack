@@ -1,0 +1,22 @@
+.toybot-shell .toybot-enemy-target,.toybot-shell .toybot-boss-strike-lane{border:2px dashed #ff745d;background-color:#d52f3924;background-image:repeating-linear-gradient(135deg,transparent 0 8px,#fa59471a 8px 11px);box-shadow:0 0 0 1px #28171dcc,0 0 8px #ff54473d}
+.toybot-shell .toybot-enemy-target:before{content:'!';position:absolute;left:50%;top:0;translate:-50% -50%;font-size:10px;line-height:15px;width:15px;text-align:center;font-weight:900;color:#fff2e9;background:#ad3529;border:1px solid #ffbd9d;border-radius:4px}
+.toybot-shell.has-core-active .toybot-enemy-target,.toybot-shell.has-core-active .toybot-boss-strike-lane{border-color:#ffbc9c;box-shadow:0 0 0 2px #5e211d,0 0 8px #ff665c99;z-index:810}
+.toybot-shell.has-core-active .core-screen-edge,.toybot-shell.has-core-active .core-screen-scan{opacity:.35}
+.toybot-shell .toybot-core-screen .core-ignition{pointer-events:none}
+.toybot-shell .toybot-gate-cross-line.reward{background:#a7ffe3;box-shadow:0 0 8px #54f4b9}
+.toybot-shell .toybot-hazard.is-fractured .toybot-hazard-hp{border-color:#ffbb68;opacity:1}
+.toybot-shell .toybot-hazard.is-staggered .toybot-drone-sprite{filter:brightness(1.5) drop-shadow(0 0 4px #ffd38a)}
+.toybot-shell .toybot-melee-slash.is-finisher{filter:brightness(1.3) drop-shadow(0 0 8px #baa0ff);scale:1.2}
+.toybot-shell .toybot-run-goals{margin:12px 0;text-align:left;font-size:11px;color:#426277}
+.run-reward-ledger{display:flex;flex-wrap:wrap;gap:5px 12px;border-top:1px solid #a7bbc5;padding-top:9px}.run-reward-ledger b{color:#345a66}.run-elite-record{margin:8px 0}
+.toybot-shell .run-upgrade-goal{width:100%;text-align:left;display:grid;grid-template-columns:1fr auto;gap:4px;padding:10px;border:1px solid #94bdc2;border-radius:9px;background:#e7f4ee;color:#275566;cursor:pointer}
+.run-upgrade-goal>small{grid-column:1/-1;font-size:9px;color:#608788}.run-upgrade-goal>strong{font-size:12px}.run-upgrade-goal>span{font-size:10px}.run-upgrade-goal>i{grid-column:1/-1;display:block;height:3px;margin-top:5px;border-radius:3px;background:#bfd6d3;overflow:hidden}.run-upgrade-goal em{display:block;height:100%;background:#409d94}
+.toybot-shell .toybot-workshop-item.is-recommended{border-color:#a9e4bf;box-shadow:inset 0 0 0 1px #a9e4bf55}.garage-goal-badge{display:inline-block;margin-left:7px;font-size:9px;color:#7de9cb}
+@media(max-height:740px){.toybot-page .toybot-shell{min-height:0;height:calc(100svh - 36px)}.toybot-shell .cockpit-console{margin-top:0}.toybot-shell .toybot-story-top{max-height:90px;overflow:hidden}}
+@supports(padding:env(safe-area-inset-bottom)){.toybot-shell .cockpit-bottom{padding-bottom:env(safe-area-inset-bottom)}}
+@media(prefers-reduced-motion:reduce){.toybot-shell .toybot-melee-slash.is-finisher{filter:none}}
+
+.toybot-shell.has-core-active .core-ignition>span{top:8%;height:30%;opacity:.55}
+.toybot-shell.has-core-active .core-ignition>b{top:16%;font-size:19px}
+.toybot-shell .toybot-workshop-item .garage-goal-badge{display:inline-block;font-size:9px;color:#7de9cb}
+.quality-low .toybot-shell .is-finisher{filter:none}

@@ -12,3 +12,5 @@ export const advanceDrag=(drag:DragState,x:number,width:number):DragState=>{
  }
  return {anchorX,lane,moved};
 };
+
+export const canStartPointerGesture=(heldPointer:number|null,event:{button:number;isPrimary?:boolean})=>heldPointer===null&&event.button===0&&event.isPrimary!==false;

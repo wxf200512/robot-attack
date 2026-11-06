@@ -5,7 +5,7 @@ export const PROTOCOLS: Record<Protocol,{name:string;detail:string}> = {
  standard:{name:'标准作战',detail:'原始难度，推进城市主线'},
  elite:{name:'精英强化',detail:'道路敌人耐久提高40%，胜利额外零件+3'},
  scarcity:{name:'补给紧缩',detail:'维修恢复减半，胜利额外零件+3'},
- overdrive:{name:'首领超载',detail:'首领伤害提高20%，恢复窗口缩短，胜利额外零件+3'},
+ overdrive:{name:'首领超载',detail:'首领耐久及伤害提高20%，恢复窗口缩短，胜利额外零件+3'},
 };
 export type Fusion = 'stormfire' | 'furnace' | 'ion';
 export const FUSIONS: Record<Fusion,{name:string;pair:RunModule[];detail:string;cell:number}> = {

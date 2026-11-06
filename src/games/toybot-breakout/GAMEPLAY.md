@@ -1,3 +1,5 @@
+> v27成长与体验规则以 [PLAYABILITY_V27.md](./PLAYABILITY_V27.md) 为准：首领按关卡固定耐久，强化允许更快通关。
+
 > v24时长与主题敌群以 [ENEMY_WAVES.md](./ENEMY_WAVES.md) 为准；下方较早迭代的战斗数据保留供参考。
 
 # 三路机甲玩法与验证

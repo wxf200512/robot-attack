@@ -1,5 +1,5 @@
 // Locally synthesized combat Foley; no remote audio, codec loading or autoplay.
-export type AudioCue='armor-hit'|'armor-block'|'elite-break'|'perfect'|'pulse'|'heavy'|'blade'|'hit'|'hit-heavy'|'hit-blade'|'destroy'|'shield'|'shield-break'|'damage'|'warning'|'boss-warning'|'gate'|'upgrade'|'victory'|'defeat'|'dodge'|'evade'|'burst-pulse'|'burst-heavy'|'burst-blade'|'burst-ready'|'pulse-up'|'heavy-up'|'blade-up'|'core-shot-pulse'|'core-shot-heavy'|'core-shot-blade';
+export type AudioCue='armor-hit'|'armor-block'|'elite-break'|'perfect'|'pulse'|'heavy'|'blade'|'hit'|'hit-heavy'|'hit-blade'|'destroy'|'shield'|'shield-break'|'damage'|'warning'|'boss-warning'|'gate'|'upgrade'|'victory'|'defeat'|'dodge'|'evade'|'burst-pulse'|'burst-heavy'|'burst-blade'|'burst-ready'|'pulse-up'|'heavy-up'|'blade-up'|'blade-finisher'|'core-shot-pulse'|'core-shot-heavy'|'core-shot-blade';
 export type SoundLayer={wave:OscillatorType|'noise';from:number;to:number;duration:number;gain:number;delay?:number;filter?:BiquadFilterType;q?:number;attack?:number};
 export type SoundSpec={layers:SoundLayer[];priority:number;gap:number;bus:'weapon'|'impact'|'signal';vary?:boolean};
 const tone=(from:number,to:number,duration:number,gain:number,wave:OscillatorType='sine',delay=0):SoundLayer=>({wave,from,to,duration,gain,delay});
@@ -14,6 +14,7 @@ export const SOUND_BANK:Record<AudioCue,SoundSpec>={
  pulse:shot(pulse),heavy:shot(heavy),blade:shot(blade),
  'pulse-up':shot([...pulse,tone(1500,500,.11,.1,'sine',.012)]),
  'heavy-up':shot([...heavy,tone(64,27,.36,.2,'sine',.02)]),
+ 'blade-finisher':shot([noise(1000,6200,.16,.34,'bandpass'),noise(5800,600,.19,.24,'bandpass',.055),tone(150,45,.2,.23),tone(2300,800,.21,.13,'sine',.035)]),
  'blade-up':shot([...blade,tone(2100,650,.17,.12,'sine',.03)]),
  hit:impact([noise(2600,600,.065,.27,'bandpass'),tone(260,90,.07,.2)]),
  'hit-heavy':impact([noise(1800,180,.13,.35),tone(125,42,.19,.33),noise(4200,1400,.05,.13,'highpass')]),

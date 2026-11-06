@@ -8,4 +8,4 @@ export const normalizeSettings=(value:unknown):PlayerSettings=>{
 };
 export const readSettings=():PlayerSettings=>{try{return normalizeSettings(JSON.parse(window.localStorage.getItem(KEY)||'null'));}catch{return normalizeSettings(null);}};
 export const saveSettings=(settings:PlayerSettings)=>{try{window.localStorage.setItem(KEY,JSON.stringify(settings));}catch{/* Session settings remain usable. */}};
-export const resolveQuality=(settings:PlayerSettings,cores:number,reducedMotion:boolean)=>settings.quality==='auto'?(reducedMotion||cores>0&&cores<=4?'low':'high'):settings.quality;
+export const resolveQuality=(settings:PlayerSettings,cores:number,reducedMotion:boolean,memoryGB=0,saveData=false)=>settings.quality==='auto'?(reducedMotion||saveData||cores>0&&cores<=4||memoryGB>0&&memoryGB<=4?'low':'high'):settings.quality;

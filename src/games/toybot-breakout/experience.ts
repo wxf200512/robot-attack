@@ -1,10 +1,11 @@
 import type { GameState } from './simulation';
 import { getLevel } from './level';
 import { FUSIONS } from './operations';
-export type CombatReport = { dealt:number; bossDamage:number; taken:number; blocked:number; collisions:number; hostile:number; focus:number; focusReady:boolean; shots:number };
+export type CombatReport = { dealt:number; bossDamage:number; taken:number; blocked:number; collisions:number; hostile:number; focus:number; focusReady:boolean; shots:number; focusLane:number; elites:number; bladeCombo:number; bladeReady:boolean; bladeVolley:number };
 export type CombatFeedback = { id:number;x:number;y:number;ticks:number;kind:'hit'|'armor'|'heavy'|'elite'|'boss'; };
-export const newReport=():CombatReport=>({dealt:0,bossDamage:0,taken:0,blocked:0,collisions:0,hostile:0,focus:0,focusReady:false,shots:0});
-export function encounterBeat(progress:number){
+export const newReport=():CombatReport=>({dealt:0,bossDamage:0,taken:0,blocked:0,collisions:0,hostile:0,focus:0,focusReady:false,shots:0,focusLane:-1,elites:0,bladeCombo:0,bladeReady:false,bladeVolley:-1});
+export function encounterBeat(progress:number,breather=0){
+ if(breather>0)return {name:'回收整备',detail:'清理残余威胁，准备下一段推进',intensity:0};
  if(progress<26)return {name:'试探',detail:'观察敌人，收集装备',intensity:1};
  for(const start of [38,54,72]){
   if(progress>=start-12&&progress<start-6)return {name:'集群接近',detail:'选择清场路线',intensity:2};
@@ -12,7 +13,7 @@ export function encounterBeat(progress:number){
  }
  return {name:progress>=82?'整备':'补给间隙',detail:progress>=82?'保存生命，准备迎战首领':'收集补给，调整站位',intensity:0};
 }
-export const CLASS_TACTICS={pulse:{name:'聚焦连射',detail:'累计命中6次，下一轮齐射穿透1个敌人'},heavy:{name:'震荡弹头',detail:'常态重炮溅射同轨附近2个目标'},blade:{name:'双重横斩',detail:'常态横斩同轨2个目标，完美闪避强化反击'}} as const;
+export const CLASS_TACTICS={pulse:{name:'聚焦连射',detail:'同轨累计命中6次，下一轮齐射穿透2个敌人'},heavy:{name:'破甲震荡',detail:'溅射同轨目标，破甲并短暂压制蓄力'},blade:{name:'疾刃连段',detail:'三次命中蓄满终结斩，延伸刀距并斩击同轨3目标'}} as const;
 export function runDebrief(s:GameState){
  const modules=Object.entries(s.modules).filter(([,v])=>v>0).map(([k])=>({arc:'电弧',burn:'燃烧',recycle:'回能'}[k]));
  const build=s.ops.fusion?FUSIONS[s.ops.fusion].name:modules.join(' · ')||CLASS_TACTICS[s.mechClass].name;

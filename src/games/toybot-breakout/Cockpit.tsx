@@ -11,7 +11,7 @@ export function Cockpit({game:s,blocked,onMove,onBurst}:{game:GameState;blocked:
  const energy=active?s.burstTicks/BURST_TICKS*100:s.burstEnergy,hp=s.playerHp/s.playerMaxHp*100;
  const disabled=!canMove(s.status)||blocked;
  const combat=(s.status==='paused'?s.resumeStatus:s.status)==='battle',warning=combat&&s.bossStep==='warning';
- const link=combat?warning?bossAttackLabel(s)+' · 蓄力'+(Math.max(0,bossWarningTicks(s)-s.bossStepTicks)/10).toFixed(1)+'s':s.bossStep==='recovery'&&s.bossMoveTicks===0&&s.bossStepTicks>1?'反击窗口 · '+(Math.max(0,bossRecoveryTicks(s)-s.bossStepTicks)/10).toFixed(1)+'s':s.bossStep==='flight'||s.bossStep==='rush'?bossAttackLabel(s)+' · 规避':'首领机动中':active?'核心解放 · '+(s.burstTicks/10).toFixed(1)+'s':ready?'核心就绪':frontlineStage(s.levelIndex,s.progress).name;
+ const link=combat?warning?bossAttackLabel(s)+' · 蓄力'+(Math.max(0,bossWarningTicks(s)-s.bossStepTicks)/10).toFixed(1)+'s':s.bossStep==='recovery'&&s.bossMoveTicks===0&&s.bossStepTicks>1?'反击窗口 · '+(Math.max(0,bossRecoveryTicks(s)-s.bossStepTicks)/10).toFixed(1)+'s':s.bossStep==='flight'||s.bossStep==='rush'?bossAttackLabel(s)+' · 规避':'首领机动中':active?'核心解放 · '+(s.burstTicks/10).toFixed(1)+'s':ready?'核心就绪':s.breatherTicks>0?'回收整备':frontlineStage(s.levelIndex,s.progress).name;
  return <section className={'toybot-cockpit cockpit-'+s.mechClass+(active?' core-engaged':'')} aria-label="机甲驾驶舱" onKeyDown={e=>{
    if(e.code==='Space'){e.preventDefault();if(!e.repeat&&ready)onBurst();}
    else if(!disabled&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){e.preventDefault();onMove(Math.max(0,Math.min(2,s.lane+(e.key==='ArrowLeft'?-1:1))));}

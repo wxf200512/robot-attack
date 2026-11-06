@@ -1,5 +1,5 @@
 import { awakeningPose } from './awakening';
-import { STEP_MS, RUN_SPEED, effectiveWeapon, DODGE_TICKS, attackIntervalFor, playerFormation, roadEnemyX, roadEnemyY, targetX, targetY, bossX, bossY, bossWarningTicks, isBossArena, isRush, gateGroundY, laneXAt, LANE_CENTERS, enemyThreatY, type GameState, type PendingShot } from './simulation';
+import { STEP_MS, RUN_SPEED, roadStepFor, effectiveWeapon, DODGE_TICKS, attackIntervalFor, playerFormation, roadEnemyX, roadEnemyY, targetX, targetY, bossX, bossY, bossWarningTicks, isBossArena, isRush, gateGroundY, laneXAt, LANE_CENTERS, enemyThreatY, type GameState, type PendingShot } from './simulation';
 import { getLevel, hazardLaneAt } from './level';
 import { mechSpriteStyle } from './mechArt';
 import { fieldY, prepMark } from './operations';
@@ -8,7 +8,7 @@ export const motionAlpha=(elapsedMs:number)=>Math.min(.999,clamp01(elapsedMs/STE
 // Forecast at most one authoritative tick. This state is presentation-only.
 export function visualState(s:GameState,alpha:number):GameState{
  const t=clamp01(alpha),status=s.status==='paused'?s.resumeStatus:s.status;
- return {...s,progress:s.progress+(status==='running'?RUN_SPEED*t:0),dodgeTicks:Math.max(0,s.dodgeTicks-t),bossMoveTicks:Math.max(0,s.bossMoveTicks-t),bossStepTicks:s.bossStepTicks+t,enemyAttacks:s.enemyAttacks.map(a=>a.phase==='flight'?{...a,ticks:Math.max(0,a.ticks-t)}:a)};
+ return {...s,progress:s.progress+(status==='running'?roadStepFor(s,true)*t:0),dodgeTicks:Math.max(0,s.dodgeTicks-t),bossMoveTicks:Math.max(0,s.bossMoveTicks-t),bossStepTicks:s.bossStepTicks+t,enemyAttacks:s.enemyAttacks.map(a=>a.phase==='flight'?{...a,ticks:Math.max(0,a.ticks-t)}:a)};
 }
 export function hazardVisualX(s:GameState,index:number){
  const h=getLevel(s.levelIndex).hazards[index],x=roadEnemyX(s,index);

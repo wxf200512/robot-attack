@@ -1,9 +1,13 @@
 import type { GameState } from './simulation';
-import { attackIntervalFor, canShoot } from './simulation';
+import { attackIntervalFor, canShoot, effectiveWeapon } from './simulation';
 import type { PlayerSettings } from './settings';
-export type AudioCue='armor-hit'|'elite-break'|'perfect'|'pulse'|'heavy'|'blade'|'hit'|'destroy'|'shield'|'shield-break'|'damage'|'warning'|'gate'|'upgrade'|'victory'|'defeat'|'dodge'|'evade'|'burst-pulse'|'burst-heavy'|'burst-blade'|'burst-ready';
+import { SOUND_BANK, MAX_SOUND_VOICES, makeCombatNoise, scheduleCombatSound, type AudioCue, type SoundVoice } from './soundDesign';
+export type { AudioCue } from './soundDesign';
+
 export function gameSoundEvents(previous:GameState,current:GameState):AudioCue[]{
  if(previous.runId!==current.runId||current.status==='paused'||previous.status==='paused')return [];
+ if(current.status==='boss-victory'&&previous.status!=='boss-victory')return ['victory'];
+ if(current.status==='defeat'&&previous.status!=='defeat')return ['defeat'];
  const cues:AudioCue[]=[];
  if(current.burstSequence>previous.burstSequence)cues.push(`burst-${current.mechClass}`);
  if(canShoot(current.status)&&previous.burstEnergy<100&&current.burstEnergy>=100)cues.push('burst-ready');
@@ -13,64 +17,59 @@ export function gameSoundEvents(previous:GameState,current:GameState):AudioCue[]
  if(current.ops.fusion!==previous.ops.fusion||current.ops.mission.status==='done'&&previous.ops.mission.status!=='done'||current.ops.event.status==='done'&&previous.ops.event.status!=='done')cues.push('upgrade');
  if(current.ops.eventWarning>0&&previous.ops.eventWarning===0)cues.push('warning');
  if(previous.ops.prep==='pending'&&current.ops.prep!=='pending')cues.push('gate');
- if(current.shotSequence>previous.shotSequence&&current.fireCooldown===attackIntervalFor(current))cues.push(current.mechClass);
+ if(current.shotSequence>previous.shotSequence&&current.fireCooldown===attackIntervalFor(current)&&current.burstSequence===previous.burstSequence)cues.push(current.burstTicks>0?`core-shot-${current.mechClass}`:effectiveWeapon(current)>=2?`${current.mechClass}-up`:current.mechClass);
  if(current.impactSequence>previous.impactSequence){
   const destroyed=current.ops.broken>previous.ops.broken||current.hazardHps.some((hp,i)=>hp===0&&previous.hazardHps[i]>0)||current.threats.some(t=>t.hp===0&&previous.threats.some(p=>p.id===t.id&&p.hp>0));
-  cues.push(destroyed?'destroy':current.feedback.some(f=>f.id>previous.feedbackSequence&&f.kind==='armor')?'armor-hit':'hit');
-  if(current.feedback.some(f=>f.id>previous.feedbackSequence&&f.kind==='elite'))cues.push('elite-break');
+  const elite=current.feedback.some(f=>f.id>previous.feedbackSequence&&f.kind==='elite');
+  cues.push(elite?'elite-break':destroyed?'destroy':current.feedback.some(f=>f.id>previous.feedbackSequence&&f.kind==='armor')?'armor-hit':current.mechClass==='heavy'?'hit-heavy':current.mechClass==='blade'?'hit-blade':'hit');
  }
- if(current.damageSequence>previous.damageSequence)cues.push(current.damageKind==='shield'&&current.defenseFx?.exhausted?'shield-break':current.damageKind==='shield'||current.damageKind==='armor'?'shield':'damage');
+ if(current.damageSequence>previous.damageSequence)cues.push(current.damageKind==='shield'&&current.defenseFx?.exhausted?'shield-break':current.damageKind==='shield'?'shield':current.damageKind==='armor'?'armor-block':'damage');
  if(current.gateCollected&&!previous.gateCollected)cues.push('gate');
  if(current.status==='running'&&current.enemyAttackSequence>previous.enemyAttackSequence)cues.push('warning');
- if(current.status==='battle'&&current.bossStep==='warning'&&(previous.status!=='battle'||previous.bossStep!=='warning'||previous.bossWave!==current.bossWave))cues.push('warning');
- if(current.status==='boss-victory'&&previous.status!=='boss-victory')cues.push('victory');
- if(current.status==='defeat'&&previous.status!=='defeat')cues.push('defeat');
- return cues;
+ if(current.status==='battle'&&current.bossStep==='warning'&&(previous.status!=='battle'||previous.bossStep!=='warning'||previous.bossWave!==current.bossWave))cues.push('boss-warning');
+ return [...new Set(cues)].sort((a,b)=>SOUND_BANK[b].priority-SOUND_BANK[a].priority);
 }
-// Generated locally with Web Audio: no downloads, microphone or background music.
+// Restrained stereo positioning complements visible lanes without making headphones mandatory.
+export function soundPan(cue:AudioCue,state:GameState):number{
+ if(SOUND_BANK[cue].bus==='signal'||cue==='damage'||cue==='shield'||cue==='shield-break'||cue==='armor-block')return 0;
+ return Math.max(-.5,Math.min(.5,(SOUND_BANK[cue].bus==='weapon'?(state.lane-1)*.35:(state.impactX-50)/60)));
+}
+export function createCombatMixer(ctx:BaseAudioContext,volume:number){
+ const weapon=ctx.createGain(),impact=ctx.createGain(),signal=ctx.createGain(),compressor=ctx.createDynamicsCompressor(),limiter=ctx.createDynamicsCompressor(),master=ctx.createGain();
+ weapon.gain.value=.8;impact.gain.value=1;signal.gain.value=.85;
+ compressor.threshold.value=-14;compressor.knee.value=14;compressor.ratio.value=4;compressor.attack.value=.003;compressor.release.value=.1;
+ limiter.threshold.value=-3;limiter.knee.value=0;limiter.ratio.value=20;limiter.attack.value=.001;limiter.release.value=.07;
+ weapon.connect(compressor);impact.connect(compressor);signal.connect(compressor);compressor.connect(limiter);limiter.connect(master);master.connect(ctx.destination);master.gain.value=volume*.9;
+ return {weapon,impact,signal,master,nodes:[weapon,impact,signal,compressor,limiter,master]};
+}
+// Built only after a pointer/key gesture. Buffers and mixer are shared by all cues.
 export function createGameAudio(){
- let context:AudioContext|null=null,master:GainNode|null=null,settings:PlayerSettings={muted:false,volume:.45,quality:'auto'},voices=0,disposed=false;
- const last=new Map<AudioCue,number>();
+ let context:AudioContext|null=null,mixer:ReturnType<typeof createCombatMixer>|null=null,buffer:AudioBuffer|null=null,settings:PlayerSettings={muted:false,volume:.45,quality:'auto'},disposed=false,active:SoundVoice[]=[];
+ const last=new Map<string,number>();
+ const silence=()=>{for(const voice of active){try{voice.source.stop();voice.source.disconnect();voice.nodes.forEach(node=>node.disconnect());}catch{/* Already ended. */}}active=[];last.clear();};
  const unlock=()=>{
   if(disposed||settings.muted||settings.volume===0)return;
   try{
-   if(!context){const Ctor=window.AudioContext||(window as Window&{webkitAudioContext?:typeof AudioContext}).webkitAudioContext;if(!Ctor)return;context=new Ctor();master=context.createGain();master.gain.value=settings.volume*.28;master.connect(context.destination);}
+   if(!context){const Ctor=window.AudioContext||(window as Window&{webkitAudioContext?:typeof AudioContext}).webkitAudioContext;if(!Ctor)return;context=new Ctor({latencyHint:'interactive'});mixer=createCombatMixer(context,settings.volume);buffer=makeCombatNoise(context);}
    if(context.state==='suspended')void context.resume().catch(()=>{});
-  }catch{/* Silent fallback for unsupported/blocked Web Audio. */}
+  }catch{silence();if(context)void context.close().catch(()=>{});context=null;mixer=null;buffer=null;}
  };
- const tone=(frequency:number,end:number,duration:number,type:OscillatorType,delay=0,strength=1)=>{
-  if(!context||!master||voices>=10)return;const at=context.currentTime+delay,osc=context.createOscillator(),gain=context.createGain();voices++;
-  osc.type=type;osc.frequency.setValueAtTime(frequency,at);osc.frequency.exponentialRampToValueAtTime(Math.max(20,end),at+duration);
-  gain.gain.setValueAtTime(.0001,at);gain.gain.exponentialRampToValueAtTime(Math.max(.001,strength*.18),at+.008);gain.gain.exponentialRampToValueAtTime(.0001,at+duration);
-  osc.connect(gain);gain.connect(master);osc.onended=()=>{voices--;osc.disconnect();gain.disconnect();};osc.start(at);osc.stop(at+duration+.02);
- };
- const play=(cue:AudioCue)=>{
-  if(disposed||settings.muted||settings.volume===0||!context||context.state!=='running'||document.hidden)return;
-  const now=performance.now(),gap=cue==='hit'?75:cue==='warning'?700:60;if(now-(last.get(cue)??-Infinity)<gap)return;last.set(cue,now);
-  switch(cue){
-   case 'burst-pulse':tone(900,1800,.25,'triangle',0,.5);tone(1600,2200,.2,'sine',.1,.35);break;
-   case 'burst-heavy':tone(85,34,.35,'sawtooth',0,.65);tone(220,90,.25,'triangle',.08,.45);break;
-   case 'burst-blade':tone(2200,550,.22,'triangle',0,.5);tone(1500,900,.2,'sine',.1,.35);break;
-   case 'burst-ready':tone(880,880,.1,'sine',0,.35);tone(1320,1320,.18,'sine',.12,.35);break;
-   case 'pulse':tone(1100,380,.065,'triangle',0,.65);break;
-   case 'heavy':tone(150,36,.22,'sawtooth',0,.8);tone(360,95,.1,'triangle',0,.5);break;
-   case 'blade':tone(1200,180,.15,'sawtooth',0,.45);tone(1900,600,.07,'sine',.035,.3);break;
-   case 'armor-hit':tone(1850,920,.09,'triangle',0,.3);tone(3200,1700,.12,'sine',.02,.18);break;
-   case 'elite-break':tone(95,30,.24,'sawtooth',0,.45);tone(680,1250,.16,'sine',.07,.3);break;
-   case 'hit':tone(640,230,.045,'triangle',0,.3);break;
-   case 'destroy':tone(210,40,.16,'sawtooth',0,.6);tone(720,190,.09,'triangle',0,.35);break;
-   case 'shield':tone(1450,750,.16,'sine',0,.7);break;
-   case 'shield-break':tone(1900,390,.24,'triangle',0,.45);tone(2600,800,.14,'sine',.045,.3);tone(700,130,.25,'sine',.08,.35);break;
-   case 'dodge':tone(680,140,.12,'triangle',0,.3);break;
-   case 'perfect':tone(880,1760,.16,'sine',0,.5);tone(1320,2200,.2,'triangle',.06,.4);break;
-   case 'evade':tone(1200,1800,.12,'sine',0,.4);break;
-   case 'damage':tone(120,38,.2,'square',0,.55);break;
-   case 'warning':tone(380,360,.12,'sine');tone(380,360,.12,'sine',.19);break;
-   case 'gate':tone(880,880,.12,'sine');tone(1175,1175,.16,'sine',.09);break;
-   case 'upgrade':tone(520,780,.13,'triangle');tone(1040,1560,.18,'sine',.1);break;
-   case 'victory':[523,659,784,1046].forEach((f,i)=>tone(f,f,.28,'triangle',i*.11));break;
-   case 'defeat':[280,210,140].forEach((f,i)=>tone(f,f*.7,.3,'triangle',i*.17));break;
+ const play=(cue:AudioCue,pan=0)=>{
+  if(disposed||settings.muted||settings.volume===0||!context||!mixer||!buffer||context.state!=='running'||document.hidden)return;
+  const now=context.currentTime,spec=SOUND_BANK[cue];
+  const group=cue==='warning'||cue==='boss-warning'?'telegraph':cue==='hit'||cue==='hit-heavy'||cue==='hit-blade'||cue==='armor-hit'?'contact':cue;
+  if(now-(last.get(cue)??-Infinity)<spec.gap/1000||now-(last.get(group)??-Infinity)<(group==='contact'?.055:group==='telegraph'&&cue==='warning'?.7:0))return;
+  active=active.filter(voice=>voice.end>now);
+  // Reserve headroom for warnings, shield breaks and damage even in a large squad.
+  if(spec.priority>=7){const retained:SoundVoice[]=[];for(const voice of active){if(voice.priority<4){try{voice.source.stop();}catch{/* Ended. */}}else retained.push(voice);}active=retained;}
+  while(active.length+spec.layers.length>MAX_SOUND_VOICES){
+   let steal=-1;active.forEach((voice,i)=>{if(voice.priority<spec.priority&&(steal<0||voice.priority<active[steal].priority))steal=i;});if(steal<0)return;
+   const [voice]=active.splice(steal,1);try{voice.source.stop();}catch{/* Ended. */}
   }
+  last.set(cue,now);last.set(group,now);
+  if(spec.priority>=3){const gain=mixer.weapon.gain;gain.cancelScheduledValues(now);gain.setTargetAtTime(spec.priority>=6?.2:.45,now,.006);gain.setTargetAtTime(.8,now+(spec.priority>=6?.22:.09),.055);}
+  const pitch=spec.vary===false?1:.97+Math.random()*.06;
+  try{active.push(...scheduleCombatSound(context,mixer[spec.bus],buffer,spec,now,pan,pitch));}catch{/* Audio loss must never interrupt combat. */}
  };
- return {unlock,play,setSettings(next:PlayerSettings){settings=next;if(master&&context)master.gain.setTargetAtTime(next.muted?0:next.volume*.28,context.currentTime,.025);},suspend(){if(context?.state==='running')void context.suspend().catch(()=>{});},dispose(){disposed=true;if(context)void context.close().catch(()=>{});context=null;master=null;}};
+ return {unlock,play,setSettings(next:PlayerSettings){settings={...next,volume:Number.isFinite(next.volume)?Math.max(0,Math.min(1,next.volume)):.45};if(settings.muted||settings.volume===0)silence();if(mixer&&context)mixer.master.gain.setTargetAtTime(settings.muted?0:settings.volume*.9,context.currentTime,.025);},suspend(){silence();if(context?.state==='running')void context.suspend().catch(()=>{});},dispose(){disposed=true;silence();mixer?.nodes.forEach(node=>node.disconnect());if(context)void context.close().catch(()=>{});context=null;mixer=null;buffer=null;}};
 }

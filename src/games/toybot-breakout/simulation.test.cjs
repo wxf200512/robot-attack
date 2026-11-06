@@ -725,13 +725,31 @@ test('audio events coalesce a squad volley and distinguish weapons, armor, damag
  assert.deepEqual(audio.gameSoundEvents(s,{...s,status:'paused',shotSequence:11}),[]);
  assert.deepEqual(audio.gameSoundEvents(s,{...s,runId:s.runId+1,shotSequence:11}),[]);
 });
-test('audio is gesture-unlocked, volume/mute aware, background-safe and disposable without browser audio', () => {
- const beforeWindow=global.window,beforeDocument=global.document;let created=0,started=0,closed=0;
- const parameter=()=>({value:0,setValueAtTime(){},exponentialRampToValueAtTime(){},setTargetAtTime(){}});
- class FakeAudio {constructor(){created++;this.state='suspended';this.currentTime=0;this.destination={};}createGain(){return {gain:parameter(),connect(){},disconnect(){}};}createOscillator(){return {frequency:parameter(),connect(){},disconnect(){},start(){started++;},stop(){this.onended?.();}};}resume(){this.state='running';return Promise.resolve();}suspend(){this.state='suspended';return Promise.resolve();}close(){closed++;this.state='closed';return Promise.resolve();}}
- try{global.window={AudioContext:FakeAudio};global.document={hidden:false};const engine=load('audio').createGameAudio();assert.equal(created,0);engine.play('pulse');assert.equal(started,0);engine.unlock();assert.equal(created,1);engine.play('heavy');assert.equal(started,2);engine.setSettings({muted:true,volume:.5,quality:'auto'});engine.play('blade');assert.equal(started,2);engine.setSettings({muted:false,volume:.5,quality:'auto'});global.document.hidden=true;engine.play('gate');assert.equal(started,2);global.document.hidden=false;engine.suspend();engine.play('victory');assert.equal(started,2);engine.dispose();assert.equal(closed,1);engine.unlock();assert.equal(created,1);}
- finally{if(beforeWindow===undefined)delete global.window;else global.window=beforeWindow;if(beforeDocument===undefined)delete global.document;else global.document=beforeDocument;}
+// Lightweight Web Audio contract double; real DSP is separately rendered in a browser.
+function audioHarness(){
+ const stats={created:0,started:0,closed:0,sources:[],contexts:[],gains:[],compressors:[],buffers:0};
+ const parameter=()=>({value:0,calls:[],setValueAtTime(...v){this.calls.push(['set',...v]);},exponentialRampToValueAtTime(...v){this.calls.push(['ramp',...v]);},setTargetAtTime(...v){this.calls.push(['target',...v]);},cancelScheduledValues(...v){this.calls.push(['cancel',...v]);}});
+ const node=()=>({connect(){},disconnect(){this.disconnected=true;}});
+ class FakeAudio{
+  constructor(options){stats.created++;stats.contexts.push(this);this.options=options;this.state='suspended';this.currentTime=0;this.sampleRate=8000;this.destination=node();}
+  createGain(){const n={...node(),gain:parameter()};stats.gains.push(n);return n;}
+  createDynamicsCompressor(){const n={...node(),threshold:parameter(),knee:parameter(),ratio:parameter(),attack:parameter(),release:parameter()};stats.compressors.push(n);return n;}
+  createBuffer(channels,length,sampleRate){stats.buffers++;const data=new Float32Array(length);return {length,sampleRate,getChannelData:()=>data};}
+  source(){const n={...node(),frequency:parameter(),start(at){stats.started++;this.at=at;},stop(at){if(at===undefined){this.cancelled=true;this.onended?.();}else this.end=at;}};stats.sources.push(n);return n;}
+  createOscillator(){return this.source();}
+  createBufferSource(){return this.source();}
+  createBiquadFilter(){return {...node(),frequency:parameter(),Q:parameter()};}
+  createStereoPanner(){return {...node(),pan:parameter()};}
+  resume(){this.state='running';return Promise.resolve();}suspend(){this.state='suspended';return Promise.resolve();}close(){stats.closed++;this.state='closed';return Promise.resolve();}
+ }
+ const oldWindow=global.window,oldDocument=global.document;global.window={AudioContext:FakeAudio};global.document={hidden:false};
+ return {stats,restore(){if(oldWindow===undefined)delete global.window;else global.window=oldWindow;if(oldDocument===undefined)delete global.document;else global.document=oldDocument;}};
+}
+test('audio is gesture-unlocked, volume/mute aware, background-safe and disposable without browser audio',()=>{
+ const h=audioHarness(),bank=load('soundDesign').SOUND_BANK;
+ try{const engine=load('audio').createGameAudio();assert.equal(h.stats.created,0);engine.play('pulse');assert.equal(h.stats.started,0);engine.unlock();assert.equal(h.stats.created,1);assert.equal(h.stats.contexts[0].options.latencyHint,'interactive');engine.play('heavy');const count=bank.heavy.layers.length;assert.equal(h.stats.started,count);engine.setSettings({muted:true,volume:.5,quality:'auto'});engine.play('blade');assert.equal(h.stats.started,count);assert.ok(h.stats.sources.every(s=>s.cancelled));engine.setSettings({muted:false,volume:.5,quality:'auto'});global.document.hidden=true;engine.play('gate');assert.equal(h.stats.started,count);global.document.hidden=false;engine.suspend();engine.play('victory');assert.equal(h.stats.started,count);engine.dispose();assert.equal(h.stats.closed,1);engine.unlock();assert.equal(h.stats.created,1);}finally{h.restore();}
 });
+
 test('sound and quality settings normalize and persist independently of player progression', () => {
  const settings=load('settings'),before=global.window;let saved='';
  try{global.window={localStorage:{getItem:()=>saved,setItem:(_,value)=>{saved=value;}}};assert.equal(settings.readSettings().volume,.45);const choice={muted:true,volume:.37,quality:'low'};settings.saveSettings(choice);assert.deepEqual(settings.readSettings(),choice);assert.equal(settings.normalizeSettings({volume:100}).volume,1);assert.equal(settings.normalizeSettings({volume:NaN}).volume,.45);assert.equal(settings.resolveQuality({quality:'auto'},2,false),'low');assert.equal(settings.resolveQuality({quality:'high'},2,true),'high');}
@@ -1664,4 +1682,42 @@ test('hunter fan fires three real arrivals per lane and leaves the third lane sa
  for(let i=0;i<profile.warning;i++)s=tick(s);assert.ok(s.enemyAttacks.every(a=>a.phase==='flight'&&a.shotsRemaining===3));
  s={...s,lane:s.enemyAttacks[0].lane};for(let i=0;i<profile.flight;i++)s=tick(s);assert.ok(s.enemyAttacks.every(a=>a.shotsRemaining===2));assert.ok(s.playerHp<100);
  s={...s,lane:safe};for(let i=0;i<12;i++)s=tick(s);assert.equal(s.enemyAttacks.length,0);
+});
+
+test('weapon upgrades and active core volleys use distinct timbres while one squad volley remains one cue',()=>{
+ const audio=load('audio');for(const mechClass of ['pulse','heavy','blade']){
+  const s={...battle(),mechClass},n={...s,weaponLevel:2,shotSequence:s.shotSequence+15,fireCooldown:sim.attackIntervalFor(s)};
+  assert.deepEqual(audio.gameSoundEvents(s,n),[mechClass+'-up']);assert.deepEqual(audio.gameSoundEvents(s,{...n,jamTicks:20}),[mechClass]);assert.deepEqual(audio.gameSoundEvents(s,{...n,burstTicks:25}),['core-shot-'+mechClass]);
+  const activated={...n,burstSequence:s.burstSequence+1,burstTicks:50};assert.deepEqual(audio.gameSoundEvents(s,activated),['burst-'+mechClass]);
+ }
+});
+test('kill confirmation supersedes impact; actual damage and boss warnings precede ordinary fire',()=>{
+ const audio=load('audio'),s=battle();
+ const n={...s,shotSequence:1,fireCooldown:sim.attackIntervalFor(s),impactSequence:1,feedbackSequence:1,feedback:[{id:1,kind:'elite',ticks:5}],damageSequence:1,damageKind:'health'};
+ const cues=audio.gameSoundEvents(s,n);assert.equal(cues[0],'damage');assert.ok(cues.includes('elite-break'));assert.ok(!cues.includes('destroy')&&!cues.includes('hit'));
+ assert.deepEqual(audio.gameSoundEvents(s,{...n,status:'defeat'}),['defeat']);assert.deepEqual(audio.gameSoundEvents(s,{...n,status:'boss-victory'}),['victory']);
+ assert.ok(audio.gameSoundEvents({...s,bossStep:'recovery'},{...s,bossStep:'warning'}).includes('boss-warning'));
+ assert.deepEqual(audio.gameSoundEvents(s,{...s,damageSequence:1,damageKind:'armor'}),['armor-block']);
+});
+test('audio voice limits preserve critical feedback and duck gunfire, without allocating noise per shot',()=>{
+ const h=audioHarness(),audio=load('audio'),design=load('soundDesign');try{
+  const engine=audio.createGameAudio();engine.unlock();const ctx=h.stats.contexts[0];
+  for(let i=0;i<80;i++){ctx.currentTime=i*.071;engine.play('core-shot-heavy');engine.play('heavy');}
+  assert.equal(h.stats.buffers,1);assert.ok(h.stats.sources.filter(s=>!s.cancelled&&s.end>ctx.currentTime).length<=design.MAX_SOUND_VOICES);
+  engine.play('damage');assert.ok(h.stats.gains.some(n=>n.gain.calls.some(c=>c[0]==='target'&&c[1]===.2)));
+  const count=h.stats.started;engine.play('burst-heavy');assert.ok(h.stats.started>count);assert.ok(h.stats.sources.some(s=>s.cancelled));assert.equal(h.stats.compressors.length,2);
+  engine.suspend();assert.ok(h.stats.sources.filter(s=>s.end>ctx.currentTime).every(s=>s.cancelled));engine.unlock();engine.play('heavy');assert.ok(h.stats.started>count);engine.dispose();
+ }finally{h.restore();}
+});
+test('contact and warning families coalesce while stereo stays restrained and signal cues remain centered',()=>{
+ const h=audioHarness(),audio=load('audio');try{
+  const engine=audio.createGameAudio();engine.unlock();engine.play('hit');const count=h.stats.started;engine.play('armor-hit');assert.equal(h.stats.started,count);
+  h.stats.contexts[0].currentTime=.06;engine.play('armor-hit');assert.ok(h.stats.started>count);
+  engine.play('warning');const warned=h.stats.started;engine.play('boss-warning');assert.ok(h.stats.started>warned,'boss alerts override a recent ordinary warning');
+  assert.equal(audio.soundPan('damage',{...battle(),lane:0,impactX:2}),0);assert.equal(audio.soundPan('boss-warning',battle()),0);assert.ok(audio.soundPan('pulse',{...battle(),lane:0})<0);assert.ok(audio.soundPan('hit',{...battle(),impactX:900})<=.5);engine.dispose();
+ }finally{h.restore();}
+});
+test('sound designs have short safe envelopes and unsupported Web Audio stays silent',()=>{
+ const {SOUND_BANK}=load('soundDesign');for(const spec of Object.values(SOUND_BANK))for(const layer of spec.layers){assert.ok(layer.duration>0&&layer.duration<=.8);assert.ok(layer.gain>0&&layer.gain<=.5);assert.ok(layer.from>0&&layer.to>0);}
+ const old=global.window;try{global.window={};const e=load('audio').createGameAudio();assert.doesNotThrow(()=>{e.unlock();e.play('heavy');e.dispose();});}finally{if(old===undefined)delete global.window;else global.window=old;}
 });

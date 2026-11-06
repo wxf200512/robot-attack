@@ -735,7 +735,7 @@ function audioHarness(){
   createGain(){const n={...node(),gain:parameter()};stats.gains.push(n);return n;}
   createDynamicsCompressor(){const n={...node(),threshold:parameter(),knee:parameter(),ratio:parameter(),attack:parameter(),release:parameter()};stats.compressors.push(n);return n;}
   createBuffer(channels,length,sampleRate){stats.buffers++;const data=new Float32Array(length);return {length,sampleRate,getChannelData:()=>data};}
-  source(){const n={...node(),frequency:parameter(),start(at){stats.started++;this.at=at;},stop(at){if(at===undefined){this.cancelled=true;this.onended?.();}else this.end=at;}};stats.sources.push(n);return n;}
+  source(){const n={...node(),frequency:parameter(),start(at,offset){stats.started++;this.at=at;this.offset=offset??0;},stop(at){if(at===undefined){this.cancelled=true;this.onended?.();}else this.end=at;}};stats.sources.push(n);return n;}
   createOscillator(){return this.source();}
   createBufferSource(){return this.source();}
   createBiquadFilter(){return {...node(),frequency:parameter(),Q:parameter()};}
@@ -1720,4 +1720,67 @@ test('contact and warning families coalesce while stereo stays restrained and si
 test('sound designs have short safe envelopes and unsupported Web Audio stays silent',()=>{
  const {SOUND_BANK}=load('soundDesign');for(const spec of Object.values(SOUND_BANK))for(const layer of spec.layers){assert.ok(layer.duration>0&&layer.duration<=.8);assert.ok(layer.gain>0&&layer.gain<=.5);assert.ok(layer.from>0&&layer.to>0);}
  const old=global.window;try{global.window={};const e=load('audio').createGameAudio();assert.doesNotThrow(()=>{e.unlock();e.play('heavy');e.dispose();});}finally{if(old===undefined)delete global.window;else global.window=old;}
+});
+
+const music=load('music'),tracks=load('musicTracks');
+const flushMusic=()=>new Promise(resolve=>setImmediate(resolve));
+function musicBuffer(id){const duration=tracks.musicLoopEnd(tracks.musicTrack(id))+.08,sampleRate=8000,length=Math.ceil(duration*sampleRate),data=new Float32Array(length);return {duration,sampleRate,length,numberOfChannels:1,getChannelData:()=>data};}
+function musicHarness(){
+ const h=audioHarness(),engine=load('audio').createGameAudio();engine.unlock();const ctx=h.stats.contexts[0],requests=[];
+ ctx.decodeAudioData=async data=>musicBuffer(data.id);
+ const fetcher=async(url,{signal})=>{const track=tracks.MUSIC_TRACKS.find(t=>t.url===url);requests.push({id:track.id,signal});return {ok:true,status:200,arrayBuffer:async()=>({id:track.id})};};
+ const player=music.createMusicPlayer(ctx,ctx.createGain(),fetcher);
+ return {...h,ctx,engine,player,requests,scene:(track='road',paused=false,levelIndex=0,runId=1)=>({track,paused,levelIndex,runId,volume:1})};
+}
+test('music follows road and five boss scenes, blocks under story, and keeps intro through the boss phase change',()=>{
+ for(let sector=0;sector<5;sector++){
+  const s=initial(sector);assert.equal(music.musicSceneFor({...s,status:'running'}).track,'road');
+  for(const status of ['boss-intro','battle','boss-shift'])assert.equal(music.musicSceneFor({...s,status}).track,'boss-'+sector);
+  const paused=music.musicSceneFor({...s,status:'paused',resumeStatus:'battle'});assert.equal(paused.track,'boss-'+sector);assert.equal(paused.paused,true);
+  assert.equal(music.musicSceneFor({...s,status:'boss-intro'},true).paused,true);
+  for(const status of ['result','defeat','boss-victory'])assert.equal(music.musicSceneFor({...s,status}).track,null);
+ }
+});
+test('every original music track exists as a compact MP3 with a valid intro and repeat region',()=>{
+ let bytes=0;assert.equal(tracks.MUSIC_TRACKS.length,6);assert.equal(new Set(tracks.MUSIC_TRACKS.map(t=>t.title)).size,6);
+ for(const t of tracks.MUSIC_TRACKS){const file=path.resolve(__dirname,'../../../public'+t.url),data=fs.readFileSync(file);bytes+=data.length;assert.equal(data[0],255);assert.equal(data[1]&224,224);assert.ok(data.length>100000);assert.ok(tracks.musicLoopEnd(t)>tracks.musicLoopStart(t)+20);if(t.id!=='road')assert.ok(tracks.musicLoopStart(t)>6);}
+ assert.ok(bytes<3000000,'music payload should remain lightweight');
+});
+test('loop timing preserves the one-time entrance and accounts for raw MP3 padding without shifting gapless decoders',()=>{
+ for(const track of tracks.MUSIC_TRACKS){const start=tracks.musicLoopStart(track),end=tracks.musicLoopEnd(track);assert.equal(music.musicPosition(track,end),start);assert.ok(music.musicPosition(track,end*20)>=start);assert.ok(music.musicPosition(track,end*20)<end);assert.equal(music.musicTiming(track,end).delay,0);assert.equal(music.musicTiming(track,end+.08).delay,tracks.MUSIC_ENCODER_DELAY);}
+});
+test('music preloads only the selected guardian, never restarts an active theme, and resumes inside its loop',async()=>{
+ const h=musicHarness();try{
+  h.player.setScene(h.scene());await flushMusic();assert.equal(h.player.status().track,'road');assert.equal(h.requests.length,2);assert.deepEqual(new Set(h.player.status().cached),new Set(['road','boss-0']));
+  h.player.setScene(h.scene('boss-0'));await flushMusic();const count=h.stats.started,source=h.stats.sources.at(-1);assert.equal(source.loop,true);assert.ok(source.loopStart>10);assert.equal(h.player.status().track,'boss-0');
+  h.player.setScene(h.scene('boss-0'));await flushMusic();assert.equal(h.stats.started,count,'battle must not replay its entrance');
+  h.ctx.currentTime=67;h.player.setScene(h.scene('boss-0',true));const position=h.player.status().offset;assert.ok(position>=10&&position<50);assert.equal(h.player.status().playing,false);
+  h.ctx.currentTime=150;h.player.setScene(h.scene('boss-0'));await flushMusic();assert.ok(Math.abs(h.stats.sources.at(-1).offset-position-tracks.MUSIC_ENCODER_DELAY)<.0001);
+  h.player.setScene(h.scene('boss-0',false,0,2));await flushMusic();assert.equal(h.stats.sources.at(-1).offset,tracks.MUSIC_ENCODER_DELAY,'a restarted run gets its entrance again');
+  h.player.setScene(h.scene(null));assert.equal(h.player.status().playing,false);
+ }finally{h.player.dispose();h.engine.dispose();h.restore();}
+});
+test('music decoding cannot start a paused or disposed scene and changing sectors bounds the cache',async()=>{
+ const h=musicHarness();try{
+  h.player.setScene(h.scene());h.player.setScene(h.scene('road',true));await flushMusic();assert.equal(h.player.status().playing,false);assert.equal(h.stats.started,0);
+  for(let level=0;level<5;level++){h.player.setScene(h.scene('road',false,level));await flushMusic();assert.ok(h.player.status().cached.length<=2);assert.ok(h.player.status().cached.includes('boss-'+level));}
+  h.player.dispose();const started=h.stats.started;h.player.setScene(h.scene('boss-4'));await flushMusic();assert.equal(h.stats.started,started);assert.equal(h.player.status().cached.length,0);
+ }finally{h.player.dispose();h.engine.dispose();h.restore();}
+});
+test('music fetch errors remain isolated and a pending decode is invalidated on disposal',async()=>{
+ const h=musicHarness();try{
+  const broken=music.createMusicPlayer(h.ctx,h.ctx.createGain(),async()=>({ok:false,status:404}));broken.setScene(h.scene());await flushMusic();assert.equal(broken.status().playing,false);assert.match(broken.status().error,/404/);broken.dispose();
+  let resolveDecode;h.ctx.decodeAudioData=()=>new Promise(resolve=>{resolveDecode=resolve;});h.player.setScene(h.scene('boss-0'));await flushMusic();h.player.dispose();resolveDecode(musicBuffer('boss-0'));await flushMusic();assert.equal(h.stats.started,0);assert.deepEqual(h.player.status().cached,[]);
+ }finally{h.player.dispose();h.engine.dispose();h.restore();}
+});
+test('music volume migrates independently of effects and critical feedback ducks the music bed',()=>{
+ const settings=load('settings'),old=settings.normalizeSettings({muted:false,volume:.23,quality:'auto'});assert.equal(old.volume,.23);assert.equal(old.musicVolume,undefined);
+ assert.equal(settings.normalizeSettings({...old,musicVolume:3}).musicVolume,1);assert.equal(settings.normalizeSettings({...old,musicVolume:NaN}).musicVolume,.55);
+ const h=audioHarness();try{const e=load('audio').createGameAudio();e.unlock();e.setSettings({...old,musicVolume:.1});assert.ok(h.stats.gains.some(g=>g.gain.calls.some(c=>c[0]==='target'&&Math.abs(c[1]-.065)<.00001)));e.play('burst-heavy');assert.ok(h.stats.gains.some(g=>g.gain.calls.some(c=>c[0]==='target'&&c[1]===.09)));e.dispose();}finally{h.restore();}
+});
+
+test('decoded music seam repair removes discontinuity without changing the entrance or loop duration',()=>{
+ const track=tracks.musicTrack('boss-0'),buffer=musicBuffer('boss-0'),data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=Math.sin(i*.17)*.7;
+ const intro=data.slice(0,1000),length=buffer.length,duration=buffer.duration;music.prepareMusicBuffer(buffer,track);assert.deepEqual(data.slice(0,1000),intro);assert.equal(buffer.length,length);assert.equal(buffer.duration,duration);
+ const timing=music.musicTiming(track,duration),start=timing.start*buffer.sampleRate,first=Math.floor(start),target=data[first]*(1-(start-first))+data[first+1]*(start-first),end=Math.floor(timing.end*buffer.sampleRate)-1;assert.ok(Math.abs(data[end]-target)<.00001);assert.ok(data.every(Number.isFinite));
 });

@@ -14,6 +14,7 @@ import { DEFENSE_ART } from './defenseArt';
 import { campaignReducer, createCampaign, CHAPTER_FILMS, RELAY_ART, type CampaignState } from './campaign';
 import { readStoryProgress, saveStoryProgress, finishStory, STORY_CHAPTERS } from './story';
 import { readSettings, saveSettings, resolveQuality } from './settings';
+import { musicSceneFor } from './music';
 import { createGameAudio, gameSoundEvents, soundPan } from './audio';
 import { advanceDrag } from './interaction';
 import { preloadImages } from './loading';
@@ -179,6 +180,8 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState &
     return () => { engine.dispose(); if (audio.current === engine) audio.current = null; };
   }, []);
   useEffect(() => { audioSettings.current=settings; audio.current?.setSettings(settings); if(!previewState)saveSettings(settings); }, [settings,previewState]);
+  const {track:musicId,paused:musicPaused,runId:musicRunId,levelIndex:musicLevel,volume:musicSceneVolume}=musicSceneFor(game,!!game.narrative.scene);
+  useEffect(() => { audio.current?.setMusic({track:musicId,paused:musicPaused,runId:musicRunId,levelIndex:musicLevel,volume:musicSceneVolume}); }, [musicId,musicPaused,musicRunId,musicLevel,musicSceneVolume]);
   useEffect(() => { for (const cue of gameSoundEvents(previousGame.current,game)) audio.current?.play(cue,soundPan(cue,game)); previousGame.current=game; }, [game]);
   useEffect(() => { const count=UPGRADES.reduce((sum,u)=>sum+moduleLevel(garage,u.id),0); if(count>previousModules.current)audio.current?.play('upgrade'); previousModules.current=count; },[garage]);
   useEffect(() => {

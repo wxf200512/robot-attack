@@ -1,6 +1,7 @@
 import type { GameState } from './simulation';
 import { attackIntervalFor, canShoot, effectiveWeapon } from './simulation';
 import type { PlayerSettings } from './settings';
+import { createMusicPlayer, type MusicScene } from './music';
 import { SOUND_BANK, MAX_SOUND_VOICES, makeCombatNoise, scheduleCombatSound, type AudioCue, type SoundVoice } from './soundDesign';
 export type { AudioCue } from './soundDesign';
 
@@ -35,24 +36,26 @@ export function soundPan(cue:AudioCue,state:GameState):number{
  return Math.max(-.5,Math.min(.5,(SOUND_BANK[cue].bus==='weapon'?(state.lane-1)*.35:(state.impactX-50)/60)));
 }
 export function createCombatMixer(ctx:BaseAudioContext,volume:number){
- const weapon=ctx.createGain(),impact=ctx.createGain(),signal=ctx.createGain(),compressor=ctx.createDynamicsCompressor(),limiter=ctx.createDynamicsCompressor(),master=ctx.createGain();
+ const weapon=ctx.createGain(),impact=ctx.createGain(),signal=ctx.createGain(),compressor=ctx.createDynamicsCompressor(),limiter=ctx.createDynamicsCompressor(),master=ctx.createGain(),music=ctx.createGain(),musicVolume=ctx.createGain();
  weapon.gain.value=.8;impact.gain.value=1;signal.gain.value=.85;
  compressor.threshold.value=-14;compressor.knee.value=14;compressor.ratio.value=4;compressor.attack.value=.003;compressor.release.value=.1;
  limiter.threshold.value=-3;limiter.knee.value=0;limiter.ratio.value=20;limiter.attack.value=.001;limiter.release.value=.07;
- weapon.connect(compressor);impact.connect(compressor);signal.connect(compressor);compressor.connect(limiter);limiter.connect(master);master.connect(ctx.destination);master.gain.value=volume*.9;
- return {weapon,impact,signal,master,nodes:[weapon,impact,signal,compressor,limiter,master]};
+ weapon.connect(compressor);impact.connect(compressor);signal.connect(compressor);compressor.connect(master);master.connect(limiter);limiter.connect(ctx.destination);master.gain.value=volume*.9;music.gain.value=.4;musicVolume.gain.value=.55*.65;music.connect(musicVolume);musicVolume.connect(limiter);
+ return {weapon,impact,signal,master,music,musicVolume,nodes:[weapon,impact,signal,compressor,limiter,master,music,musicVolume]};
 }
 // Built only after a pointer/key gesture. Buffers and mixer are shared by all cues.
 export function createGameAudio(){
  let context:AudioContext|null=null,mixer:ReturnType<typeof createCombatMixer>|null=null,buffer:AudioBuffer|null=null,settings:PlayerSettings={muted:false,volume:.45,quality:'auto'},disposed=false,active:SoundVoice[]=[];
+ let music:ReturnType<typeof createMusicPlayer>|null=null,musicScene:MusicScene|null=null;
+ const syncMusic=()=>{if(music&&musicScene)music.setScene({...musicScene,paused:musicScene.paused||settings.muted||(settings.musicVolume??.55)===0});};
  const last=new Map<string,number>();
  const silence=()=>{for(const voice of active){try{voice.source.stop();voice.source.disconnect();voice.nodes.forEach(node=>node.disconnect());}catch{/* Already ended. */}}active=[];last.clear();};
  const unlock=()=>{
-  if(disposed||settings.muted||settings.volume===0)return;
+  if(disposed||settings.muted||settings.volume===0&&(settings.musicVolume??.55)===0)return;
   try{
-   if(!context){const Ctor=window.AudioContext||(window as Window&{webkitAudioContext?:typeof AudioContext}).webkitAudioContext;if(!Ctor)return;context=new Ctor({latencyHint:'interactive'});mixer=createCombatMixer(context,settings.volume);buffer=makeCombatNoise(context);}
-   if(context.state==='suspended')void context.resume().catch(()=>{});
-  }catch{silence();if(context)void context.close().catch(()=>{});context=null;mixer=null;buffer=null;}
+   if(!context){const Ctor=window.AudioContext||(window as Window&{webkitAudioContext?:typeof AudioContext}).webkitAudioContext;if(!Ctor)return;context=new Ctor({latencyHint:'interactive'});mixer=createCombatMixer(context,settings.volume);buffer=makeCombatNoise(context);music=createMusicPlayer(context,mixer.music);mixer.musicVolume.gain.value=(settings.musicVolume??.55)*.65;}
+   if(context.state!=='running')void context.resume().then(syncMusic).catch(()=>{});else syncMusic();
+  }catch{silence();music?.dispose();music=null;if(context)void context.close().catch(()=>{});context=null;mixer=null;buffer=null;}
  };
  const play=(cue:AudioCue,pan=0)=>{
   if(disposed||settings.muted||settings.volume===0||!context||!mixer||!buffer||context.state!=='running'||document.hidden)return;
@@ -67,9 +70,9 @@ export function createGameAudio(){
    const [voice]=active.splice(steal,1);try{voice.source.stop();}catch{/* Ended. */}
   }
   last.set(cue,now);last.set(group,now);
-  if(spec.priority>=3){const gain=mixer.weapon.gain;gain.cancelScheduledValues(now);gain.setTargetAtTime(spec.priority>=6?.2:.45,now,.006);gain.setTargetAtTime(.8,now+(spec.priority>=6?.22:.09),.055);}
+  if(spec.priority>=3){const gain=mixer.weapon.gain;gain.cancelScheduledValues(now);gain.setTargetAtTime(spec.priority>=6?.2:.45,now,.006);gain.setTargetAtTime(.8,now+(spec.priority>=6?.22:.09),.055);const bed=mixer.music.gain;bed.cancelScheduledValues(now);bed.setTargetAtTime(spec.priority>=7?.09:.2,now,.015);bed.setTargetAtTime(.4,now+(spec.priority>=7?.65:.22),.12);}
   const pitch=spec.vary===false?1:.97+Math.random()*.06;
   try{active.push(...scheduleCombatSound(context,mixer[spec.bus],buffer,spec,now,pan,pitch));}catch{/* Audio loss must never interrupt combat. */}
  };
- return {unlock,play,setSettings(next:PlayerSettings){settings={...next,volume:Number.isFinite(next.volume)?Math.max(0,Math.min(1,next.volume)):.45};if(settings.muted||settings.volume===0)silence();if(mixer&&context)mixer.master.gain.setTargetAtTime(settings.muted?0:settings.volume*.9,context.currentTime,.025);},suspend(){silence();if(context?.state==='running')void context.suspend().catch(()=>{});},dispose(){disposed=true;silence();mixer?.nodes.forEach(node=>node.disconnect());if(context)void context.close().catch(()=>{});context=null;mixer=null;buffer=null;}};
+ return {unlock,play,setMusic(next:MusicScene){musicScene=next;syncMusic();},musicStatus(){return music?.status()??null;},setSettings(next:PlayerSettings){settings={...next,volume:Number.isFinite(next.volume)?Math.max(0,Math.min(1,next.volume)):.45,musicVolume:next.musicVolume===undefined?.55:Number.isFinite(next.musicVolume)?Math.max(0,Math.min(1,next.musicVolume)):.55};if(settings.muted||settings.volume===0)silence();if(mixer&&context){mixer.master.gain.setTargetAtTime(settings.muted?0:settings.volume*.9,context.currentTime,.025);mixer.musicVolume.gain.setTargetAtTime(settings.muted?0:(settings.musicVolume??.55)*.65,context.currentTime,.06);}syncMusic();},suspend(){silence();music?.pause();if(context?.state==='running')void context.suspend().catch(()=>{});},dispose(){disposed=true;silence();music?.dispose();music=null;mixer?.nodes.forEach(node=>node.disconnect());if(context)void context.close().catch(()=>{});context=null;mixer=null;buffer=null;}};
 }

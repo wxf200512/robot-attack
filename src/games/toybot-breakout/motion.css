@@ -1,0 +1,30 @@
+/* The simulation stays at 100ms; only the presentation samples between ticks. */
+.toybot-shell .has-motion-clock [data-motion]:not([data-motion="robot"]):not([data-motion="shot"]):not([data-motion="slash"]){transition:opacity .18s ease-out,filter .12s ease-out!important}
+.toybot-shell .has-motion-clock [data-motion="shot"],.toybot-shell .has-motion-clock [data-motion="slash"]{transition:none!important}
+.toybot-shell .has-motion-clock .toybot-robot.is-dodging{transition:none!important}
+.toybot-shell .has-motion-clock .toybot-shot.in-flight{animation:none!important;will-change:transform;backface-visibility:hidden}
+.toybot-shell .has-motion-clock .toybot-battle-body{animation:none!important;background-position-x:var(--idle-frame,0%);translate:0 var(--pose-recoil,0px)}
+.toybot-shell .has-motion-clock .is-attacking .toybot-battle-body{background-position-x:var(--attack-frame,0%)}
+.toybot-shell .has-motion-clock .is-dodging .toybot-battle-body{background-position-x:var(--dodge-frame,0%);translate:0 0}
+.toybot-shell .has-motion-clock .toybot-dodge-echo .toybot-battle-body{background-position-x:var(--dodge-frame,0%)}
+.toybot-shell .has-motion-clock .toybot-battle-muzzle{opacity:calc(1 - var(--motion-phase,0)*.85);scale:calc(1 - var(--motion-phase,0)*.2)}
+.toybot-road-upper{position:absolute;inset:0;pointer-events:none;opacity:var(--attack-blend,1);mask-image:linear-gradient(#000 0 46%,transparent 73%);-webkit-mask-image:linear-gradient(#000 0 46%,transparent 73%)}
+.toybot-road-upper .toybot-class-sprite{translate:0 var(--pose-recoil,0px)}
+.toybot-shell .is-wingman .defense-idle{opacity:.3}.toybot-shell .is-wingman .defense-armor{opacity:.38}
+.toybot-shell .toybot-enemy-break span{width:52px;height:52px}
+.toybot-shell .toybot-core-detonation{width:76px;height:76px}
+.toybot-shell .toybot-impact-event .toybot-hit-damage{font-size:11px;text-shadow:0 1px 3px #041522}
+.toybot-shell .is-paused *,.toybot-shell.has-campaign-scene .toybot-scene *{animation-play-state:paused!important}
+.toybot-page.quality-low .toybot-projectile-ai{animation:none;filter:none}
+.toybot-page.quality-low .toybot-robot,.toybot-page.quality-low .toybot-hazard{filter:none!important}
+@media(prefers-reduced-motion:reduce){.toybot-shell .toybot-road-upper{opacity:1}.toybot-shell .toybot-battle-body{translate:0 0}.toybot-shell .toybot-shot.in-flight{will-change:auto}}
+
+.toybot-shell .has-motion-clock .toybot-enemy-break span{scale:calc(.55 + (var(--break-progress) + var(--motion-phase,0)/7)*.8);opacity:calc(1 - var(--break-progress) - var(--motion-phase,0)/7)}
+.toybot-shell .has-motion-clock .toybot-core-detonation{opacity:calc(1 - var(--detonation-age,0) - var(--motion-phase,0)/6)!important;scale:calc(1 + var(--detonation-age,0) + var(--motion-phase,0)/6)}
+.toybot-shell .has-motion-clock .ops-perfect-flare{opacity:var(--perfect-alpha,0)!important}
+
+.toybot-shell .class-blade .toybot-road-upper{mask-image:none;-webkit-mask-image:none}
+
+.toybot-shell .has-motion-clock .toybot-muzzle-flash.center{left:-9px;top:-11px;width:18px;height:22px;animation:none;opacity:calc(1 - var(--motion-phase,0)*.9)}
+.toybot-shell .has-motion-clock .toybot-muzzle-flash:after,.toybot-shell .has-motion-clock .robot-fire-spark{display:none}
+.toybot-page.quality-low .toybot-muzzle-flash{filter:none}

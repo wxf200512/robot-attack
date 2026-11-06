@@ -1412,3 +1412,60 @@ test('the last blade counter keeps its acquired extended range after consuming t
 test('fractional protocol damage keeps repeated health feedback readable to two decimal places',()=>{
  const s=quietRoad();for(let i=0;i<3;i++){s.invulnerableTicks=0;sim.applySquadHit(s,15.6);assert.equal(s.playerHp,Number(s.playerHp.toFixed(2)));assert.equal(s.damageLoss,15.6);}assert.equal(s.playerHp,53.2);
 });
+
+
+const motion=load('motion');
+test('render alpha is bounded after stalls and presentation sampling never mutates combat state',()=>{
+ assert.equal(motion.motionAlpha(-20),0);assert.equal(motion.motionAlpha(50),.5);assert.equal(motion.motionAlpha(10000),.999);assert.equal(motion.motionAlpha(NaN),0);
+ const base={...quietRoad(),progress:32},before=JSON.stringify(base),v=motion.visualState(base,.5);assert.equal(v.progress,32+sim.RUN_SPEED*.5);assert.equal(JSON.stringify(base),before);assert.notEqual(v,base);
+});
+test('attack and dodge strips play once through eight frames without wrapping inside the action',()=>{
+ const base={...battle(),mechClass:'heavy'},frames=[],dodges=[];
+ for(let tickIndex=0;tickIndex<4;tickIndex++)for(const alpha of [0,.25,.5,.75,.99]){frames.push(motion.poseSample({...base,fireCooldown:sim.attackIntervalFor(base)-tickIndex},alpha).attackFrame);dodges.push(motion.poseSample({...base,dodgeTicks:4-tickIndex},alpha).dodgeFrame);}
+ assert.equal(frames[0],0);assert.equal(frames.at(-1),7);assert.equal(dodges[0],0);assert.equal(dodges.at(-1),7);
+ assert.ok(frames.every((v,i)=>i===0||v>=frames[i-1]));assert.ok(dodges.every((v,i)=>i===0||v>=dodges[i-1]));
+ assert.ok(motion.poseSample({...base,fireCooldown:sim.attackIntervalFor(base)-2},0).recoil>2);
+});
+test('visual formation follows a continuous bounded dodge and reaches the original next-tick position',()=>{
+ const base={...battle(),lane:2,dodgeFromLane:1,dodgeTicks:3},samples=[0,.25,.5,.75,1].map(a=>sim.playerFormation(motion.visualState(base,a))[0].x);
+ assert.ok(samples.every((x,i)=>x>=50&&x<=73&&(i===0||x>=samples[i-1])));
+ assert.equal(samples.at(-1),sim.playerFormation({...base,dodgeTicks:2})[0].x);assert.equal(base.dodgeTicks,3);
+});
+test('individual projectile samples keep their own origins, travel forward and approach impact on time',()=>{
+ const base=battle(),shot=incoming(base,{ticks:4,duration:4,origins:[{index:2,x:61,y:70}]});const samples=[0,.25,.5,.75,.99].map(a=>motion.projectileSample(base,shot,a));
+ assert.equal(samples[0].x,61);assert.equal(samples[0].y,70);assert.ok(samples.every((p,i)=>p.progress>=0&&p.progress<=1&&(i===0||p.y<samples[i-1].y)));
+ const contact=motion.projectileSample(base,{...shot,ticks:1},1);assert.equal(contact.progress,1);assert.equal(contact.y,sim.targetY(motion.visualState(base,1),'boss',0));
+ assert.equal(shot.ticks,4);assert.equal(shot.origins[0].x,61);
+});
+test('rendered projectiles do not bend into another lane after their target changes lanes',()=>{
+ const base=initial(1),spec=levels.getLevel(1),index=spec.hazards.findIndex(h=>h.moving),h=spec.hazards[index],lane=(h.lane+base.layoutIndex)%3;
+ const s={...base,status:'running',progress:h.progress-8+.1},shot=incoming(s,{target:'hazard',targetIndex:index,lane,ticks:1,duration:4});
+ const p=motion.projectileSample(s,shot,1);assert.equal(p.x,sim.laneXAt(lane,p.y));assert.notEqual(p.x,sim.targetX(motion.visualState(s,1),'hazard',index));
+});
+test('moving drones blend their lane transition rather than teleporting at the lane boundary',()=>{
+ const base=initial(1),spec=levels.getLevel(1),index=spec.hazards.findIndex(h=>h.moving),h=spec.hazards[index],at={...base,status:'running',progress:h.progress-8};
+ const old=sim.laneXAt((h.lane+base.layoutIndex)%3,sim.roadEnemyY(at,index));assert.ok(Math.abs(motion.hazardVisualX(at,index)-old)<.00001);
+ const midway={...at,progress:at.progress+sim.RUN_SPEED},end={...at,progress:at.progress+sim.RUN_SPEED*2};
+ const m=motion.hazardVisualX(midway,index),finish=motion.hazardVisualX(end,index);assert.ok(m>Math.min(old,finish)&&m<Math.max(old,finish));assert.equal(finish,sim.roadEnemyX(end,index));
+});
+test('rush and pounce presentation advances between ticks while authoritative attack timers stay intact',()=>{
+ const base=quietRoad(),index=levels.getLevel(0).hazards.findIndex(h=>h.horde);base.enemyAttacks=[{id:2,source:'hazard',sourceId:index,kind:'charge',lane:1,fromLane:1,fromY:42,phase:'flight',ticks:4,duration:6,damage:8,shotsRemaining:1}];
+ const v=motion.visualState(base,.5);assert.equal(v.enemyAttacks[0].ticks,3.5);assert.equal(base.enemyAttacks[0].ticks,4);assert.ok(sim.roadEnemyY(v,index)>sim.roadEnemyY(base,index));
+});
+test('the frame loop respects low-quality cadence and cancels pending work on stop',()=>{
+ for(const low of [false,true]){
+  const queued=new Map();let sequence=0,paints=0;
+  const request=cb=>{queued.set(++sequence,cb);return sequence;},cancel=id=>queued.delete(id);
+  const stop=motion.startMotionLoop(request,cancel,()=>paints++,low);
+  for(let i=0;i<=60;i++){const [id,cb]=queued.entries().next().value;queued.delete(id);cb(i*1000/60);}
+  assert.ok(low?paints>=30&&paints<=31:paints>=60&&paints<=61);const before=paints,stale=queued.values().next().value;stop();assert.equal(queued.size,0);stale(2000);assert.equal(paints,before);assert.equal(queued.size,0);
+ }
+});
+
+test('the DOM painter only changes presentation styles and keeps samples finite for a dense scene',()=>{
+ const base={...quietRoad(1),progress:32,bots:3},index=levels.getLevel(1).hazards.findIndex(h=>h.moving),shot=incoming(base,{id:71,target:'hazard',targetIndex:index,lane:levels.hazardLaneAt(0,index,32,1),ticks:3,duration:4});base.pendingShots=[shot];
+ const makeNode=()=>({style:{setProperty(k,v){this[k]=v;}},querySelector(){return null;}}),root=makeNode(),shotNode=makeNode(),hazardNode=makeNode(),before=JSON.stringify(base);
+ for(const alpha of [0,.1,.5,.999])motion.paintMotion(root,base,alpha,[{node:shotNode,kind:'shot',id:71},{node:hazardNode,kind:'hazard',id:index}]);
+ assert.equal(JSON.stringify(base),before);assert.ok(shotNode.style.transform.includes('rotate'));assert.ok(!JSON.stringify([shotNode.style,hazardNode.style,root.style]).match(/NaN|Infinity/));
+ motion.paintMotion(root,base,.9,[],true);assert.equal(root.style['--motion-phase'],'0');assert.equal(root.style['--pose-recoil'],'0px');
+});

@@ -1,7 +1,7 @@
 import type { GameState } from './simulation';
 import { attackIntervalFor, canShoot } from './simulation';
 import type { PlayerSettings } from './settings';
-export type AudioCue='perfect'|'pulse'|'heavy'|'blade'|'hit'|'destroy'|'shield'|'shield-break'|'damage'|'warning'|'gate'|'upgrade'|'victory'|'defeat'|'dodge'|'evade'|'burst-pulse'|'burst-heavy'|'burst-blade'|'burst-ready';
+export type AudioCue='armor-hit'|'elite-break'|'perfect'|'pulse'|'heavy'|'blade'|'hit'|'destroy'|'shield'|'shield-break'|'damage'|'warning'|'gate'|'upgrade'|'victory'|'defeat'|'dodge'|'evade'|'burst-pulse'|'burst-heavy'|'burst-blade'|'burst-ready';
 export function gameSoundEvents(previous:GameState,current:GameState):AudioCue[]{
  if(previous.runId!==current.runId||current.status==='paused'||previous.status==='paused')return [];
  const cues:AudioCue[]=[];
@@ -16,7 +16,8 @@ export function gameSoundEvents(previous:GameState,current:GameState):AudioCue[]
  if(current.shotSequence>previous.shotSequence&&current.fireCooldown===attackIntervalFor(current))cues.push(current.mechClass);
  if(current.impactSequence>previous.impactSequence){
   const destroyed=current.ops.broken>previous.ops.broken||current.hazardHps.some((hp,i)=>hp===0&&previous.hazardHps[i]>0)||current.threats.some(t=>t.hp===0&&previous.threats.some(p=>p.id===t.id&&p.hp>0));
-  cues.push(destroyed?'destroy':'hit');
+  cues.push(destroyed?'destroy':current.feedback.some(f=>f.id>previous.feedbackSequence&&f.kind==='armor')?'armor-hit':'hit');
+  if(current.feedback.some(f=>f.id>previous.feedbackSequence&&f.kind==='elite'))cues.push('elite-break');
  }
  if(current.damageSequence>previous.damageSequence)cues.push(current.damageKind==='shield'&&current.defenseFx?.exhausted?'shield-break':current.damageKind==='shield'||current.damageKind==='armor'?'shield':'damage');
  if(current.gateCollected&&!previous.gateCollected)cues.push('gate');
@@ -54,6 +55,8 @@ export function createGameAudio(){
    case 'pulse':tone(1100,380,.065,'triangle',0,.65);break;
    case 'heavy':tone(150,36,.22,'sawtooth',0,.8);tone(360,95,.1,'triangle',0,.5);break;
    case 'blade':tone(1200,180,.15,'sawtooth',0,.45);tone(1900,600,.07,'sine',.035,.3);break;
+   case 'armor-hit':tone(1850,920,.09,'triangle',0,.3);tone(3200,1700,.12,'sine',.02,.18);break;
+   case 'elite-break':tone(95,30,.24,'sawtooth',0,.45);tone(680,1250,.16,'sine',.07,.3);break;
    case 'hit':tone(640,230,.045,'triangle',0,.3);break;
    case 'destroy':tone(210,40,.16,'sawtooth',0,.6);tone(720,190,.09,'triangle',0,.35);break;
    case 'shield':tone(1450,750,.16,'sine',0,.7);break;

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import Game from './index';
-import { createInitialState, type GameState } from './simulation';
+import { applyGateEffect, createInitialState, type GameState } from './simulation';
 import { normalizeGarage } from './progression';
 import { makeBossParts } from './operations';
 import type { MechClass } from './mechs';
@@ -19,7 +19,8 @@ export default function MotionReview(){
  const [mech,setMech]=useState<MechClass>('pulse'),[battle,setBattle]=useState(false),[revision,setRevision]=useState(0);
  const [state,setState]=useState(()=>seed('pulse',false));
  const reset=(kind:MechClass,arena:boolean)=>{setMech(kind);setBattle(arena);setRevision(n=>n+1);setState(seed(kind,arena));};
- return <MemoryRouter><div style={{maxWidth:430,margin:'0 auto',background:'#0e263c',color:'#d9f7ff',font:'11px sans-serif',padding:'6px 8px',display:'flex',gap:5,flexWrap:'wrap'}}><b>动作验收 · 不写存档</b><output ref={monitor} style={{width:'100%',height:14,minHeight:14}}/>{(['pulse','heavy','blade'] as const).map((kind,i)=><button key={kind} type="button" onClick={()=>reset(kind,battle)}>{['脉冲','力量','近战'][i]}</button>)}<button type="button" onClick={()=>reset(mech,!battle)}>{battle?'切到跑图':'切到首领战'}</button><button type="button" onClick={()=>reset(mech,battle)}>重置预览</button></div><Game key={revision} previewState={state}/></MemoryRouter>;
+ const inspect=(result:boolean)=>{const sample=seed(mech,true);if(result)Object.assign(sample,{status:'result',battleHp:540,playerHp:0,bots:0,defeatReason:'boss-wipe',score:650,report:{...sample.report,dealt:1360,bossDamage:1260,taken:100,hostile:72,collisions:28}});setRevision(n=>n+1);setState(result?sample:applyGateEffect(sample,{id:'preview',title:'火力+1',detail:'升级演出预览',icon:'⚡',polarity:'reward',effect:'weaponUp',amount:1,lane:1}));};
+ return <MemoryRouter><div style={{maxWidth:430,margin:'0 auto',background:'#0e263c',color:'#d9f7ff',font:'11px sans-serif',padding:'6px 8px',display:'flex',gap:5,flexWrap:'wrap'}}><b>动作验收 · 不写存档</b><output ref={monitor} style={{width:'100%',height:14,minHeight:14}}/>{(['pulse','heavy','blade'] as const).map((kind,i)=><button key={kind} type="button" onClick={()=>reset(kind,battle)}>{['脉冲','力量','近战'][i]}</button>)}<button type="button" onClick={()=>reset(mech,!battle)}>{battle?'切到跑图':'切到首领战'}</button><button type="button" onClick={()=>reset(mech,battle)}>重置预览</button><button type="button" onClick={()=>inspect(false)}>强化预览</button><button type="button" onClick={()=>inspect(true)}>失败复盘</button></div><Game key={revision} previewState={state}/></MemoryRouter>;
 }
 const reviewRoot=createRoot(document.getElementById('motion-review-root')!);reviewRoot.render(<MotionReview/>);
 if(import.meta.hot)import.meta.hot.dispose(()=>reviewRoot.unmount());

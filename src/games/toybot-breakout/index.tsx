@@ -1,3 +1,4 @@
+import { ExperienceLayer, RunAnalysis } from './ExperienceLayer';
 import { useSceneMotion } from './useSceneMotion';
 import OperationsLayer, { OperationsHud, ChallengePicker, FusionSprite, OperationSprite } from './OperationsLayer';
 import { FUSIONS, ART_V19, FUSION_ART_V19 } from './operations';
@@ -26,6 +27,7 @@ import './menus.css';
 import './combatFeel.css';
 import './operations.css';
 import './motion.css';
+import './experience.css';
 import { hazardMaxHpFor, gateChoicesFor, MODULES, guardSourceFor, commanderFor, eliteRoleName, type RunModule, canActivateBurst, COMBO_WINDOW_TICKS, BURST_TICKS } from './simulation';
 import { OBJECTIVE_NAMES, SPECIAL_LABELS } from './bossSkills';
 import React, { useEffect, useReducer, useRef, useState } from 'react';
@@ -802,7 +804,7 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
         @media(prefers-reduced-motion:reduce){.is-player-hit .robot-player-art,.toybot-damage-vignette{animation:none}.toybot-damage-vignette{opacity:0}}
       `}</style>
 
-      <section className={'toybot-shell toybot-menu-system core-style-'+game.mechClass + ((displayStatus==='running'||displayStatus==='battle')?' has-core-control':'') + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
+      <section className={'toybot-shell toybot-menu-system core-style-'+game.mechClass + (settings.shake!==false&&!reducedMotion&&game.feedback.some(f=>f.ticks>=4&&f.kind!=='hit'&&f.kind!=='armor')?' has-impact-shake':'') + ((displayStatus==='running'||displayStatus==='battle')?' has-core-control':'') + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
         {game.status !== 'home' && <div
           ref={sceneRef}
           className={`toybot-scene formation-${formationColumns} weapon-tier-${activeWeapon} ${displayStatus === 'running' ? 'is-moving' : displayStatus === 'battle' ? 'is-battle' : displayStatus === 'defeat' ? `is-defeat ${game.defeatReason}` : ''} ${game.status === 'paused' ? 'is-paused' : ''} ${game.invulnerableTicks > 0 ? `is-player-hit damage-${game.damageKind}` : ''} ${arena ? 'is-arena' : ''} ${displayStatus === 'boss-intro' ? 'is-boss-intro' : displayStatus === 'boss-shift' ? 'is-boss-shift' : displayStatus === 'boss-victory' ? 'is-boss-victory' : ''}`}
@@ -825,7 +827,7 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
           <div className="toybot-factory left" />
           <div className="toybot-factory right" />
           <div className="toybot-road" />
-          <div className="toybot-road-flow" aria-hidden="true" />
+          <ExperienceLayer game={game} low={quality==='low'} reduced={reducedMotion} shake={settings.shake!==false}/><div className="toybot-road-flow" aria-hidden="true" />
           <div className="toybot-track-guides" aria-hidden="true" />
           <div className="toybot-lane">
             <StoryRelay game={game}/><OperationsLayer game={game}/>
@@ -895,8 +897,8 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
                   const top = `calc(${origin.y + (destinationY - origin.y) * flightProgress}% - ${lift} * ${(1 - flightProgress) / 4})`;
                   return <React.Fragment key={`${volley.id}-${origin.index}`}>
                     {volley.muzzle && volley.ticks === volley.duration && <div className="toybot-muzzle-event" style={{ left: `${origin.x}%`, top: `calc(${origin.y}% - ${size} / 4)` }} aria-hidden="true"><span className="toybot-muzzle-flash center" /></div>}
-                    <div data-motion="shot" data-motion-id={volley.id} className={`toybot-shot in-flight ${volley.attackStyle === 'heavy' ? 'is-heavy-round' : ''} ${tier}${volley.count >= 5 ? ' is-swarm' : ''}${volley.charged ? ' is-charged' : ''}${volley.burst ? ' is-core-burst-shot' : ''}${volley.arc?' has-arc-module':''}${volley.burn?' has-burn-module':''}`} style={{ left: `${origin.x + (targetX - origin.x) * flightProgress}%`, top, '--shot-lift':lift,'--flight-from-x': origin.x + '%', '--flight-to-x': targetX + '%', '--flight-from-y': `calc(${origin.y}% - ${lift} / 4)`, '--flight-to-y': destinationY + '%', '--flight-duration': volley.duration * STEP_MS + 'ms', '--flight-angle': angle + 'deg', '--flight-end-scale': volley.target ? '.65' : '.22', '--flight-end-opacity': volley.target ? '1' : '0', zIndex: depth } as React.CSSProperties} aria-hidden="true">
-                      {volley.fusion?<FusionSprite fusion={volley.fusion} projectile/>:<ProjectileArt heavy={volley.attackStyle === 'heavy'} level={volley.charged || volley.burst ? 4 : volley.weaponLevel} />}
+                    <div data-motion="shot" data-motion-id={volley.id} className={`toybot-shot in-flight ${volley.attackStyle === 'heavy' ? 'is-heavy-round' : ''} ${tier}${volley.count >= 5 ? ' is-swarm' : ''}${volley.focused ? ' is-focused' : ''}${volley.charged ? ' is-charged' : ''}${volley.burst ? ' is-core-burst-shot' : ''}${volley.arc?' has-arc-module':''}${volley.burn?' has-burn-module':''}`} style={{ left: `${origin.x + (targetX - origin.x) * flightProgress}%`, top, '--shot-lift':lift,'--flight-from-x': origin.x + '%', '--flight-to-x': targetX + '%', '--flight-from-y': `calc(${origin.y}% - ${lift} / 4)`, '--flight-to-y': destinationY + '%', '--flight-duration': volley.duration * STEP_MS + 'ms', '--flight-angle': angle + 'deg', '--flight-end-scale': volley.target ? '.65' : '.22', '--flight-end-opacity': volley.target ? '1' : '0', zIndex: depth } as React.CSSProperties} aria-hidden="true">
+                      {volley.fusion?<FusionSprite fusion={volley.fusion} projectile/>:<ProjectileArt heavy={volley.attackStyle === 'heavy'} level={volley.charged || volley.burst ? 4 : volley.focused?Math.max(1,volley.weaponLevel):volley.weaponLevel} />}
                     </div>
                   </React.Fragment>;
                 })}
@@ -964,12 +966,13 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
             {robotPositions.map((robot) => (
               <div
                 key={robot.index} data-motion="robot" data-motion-id={robot.index}
-                className={`toybot-robot ${game.burstTicks>0?'is-core-burst':''} ${game.dodgeTicks>0?'is-dodging':''} ${robot.index === 0 ? 'lead' : ''}`}
+                className={`toybot-robot ${game.upgradeFx?.positive?'is-equipment-deploying':''} ${game.burstTicks>0?'is-core-burst':''} ${game.dodgeTicks>0?'is-dodging':''} ${robot.index === 0 ? 'lead' : ''}`}
                 style={{ left: `${robot.x}%`, top: `${robot.y}%`, zIndex: Math.round((robot.y + 5) * 10) }}
               >
                 <Robot mechClass={game.mechClass} combat={arena} dodging={game.dodgeTicks > 0} dodgeDirection={game.dodgeDirection} motionFrame={(motionFrame + robot.index) % 4} attacking={attackActive && game.dodgeTicks === 0} index={robot.index} weaponPhase={weaponPhase} firing={canShoot(displayStatus ?? 'home') && game.fireCooldown === attackInterval} weaponLevel={activeWeapon} armorLevel={game.armorLevel} coreLevel={visualCore} />
                 {(Object.keys(MODULES) as RunModule[]).filter(key=>game.modules[key]>0).map(key=><span key={key} className={'toybot-mounted-module mounted-'+key} style={{'--module-size':(10+game.modules[key]*2)+'px'} as React.CSSProperties} aria-hidden="true"/>)}
                 {game.ops.fusion&&<span className="toybot-fusion-mounted" aria-hidden="true"><FusionSprite fusion={game.ops.fusion}/></span>}
+                {game.mechClass==='heavy'&&canShoot(game.status)&&game.fireCooldown>0&&game.fireCooldown<=3&&game.dodgeTicks===0&&<span className="toybot-charge-orbit" aria-hidden="true"/>}
                 <DefenseVfx game={game} index={robot.index} reduced={quality==='low'||reducedMotion}/>
                 {robot.index === 0 && (game.weaponLevel > 0 || game.armorLevel > 0 || visualCore > 0) && (
                   <div className="toybot-equipment-tag" aria-hidden="true">
@@ -1133,10 +1136,12 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
               <div className="toybot-debrief-score"><span>本次作战得分</span><strong>{game.score.toLocaleString()}</strong><small>历史最佳 {garage.bestScore.toLocaleString()}</small></div>
               <div className="toybot-ops-debrief">任务 {game.ops.mission.status==='done'?'完成':'未完成'} · 救援 {game.ops.event.status==='done'?'成功':'未完成'} · 破阵 {game.ops.broken}/3 · 完美闪避 {game.ops.perfects}{game.won&&game.ops.protocol!=='standard'&&<b><OperationSprite cell={2}/>协议徽章已解锁</b>}</div><div className="toybot-debrief-rewards"><div><small>回收零件</small><b>◈ +{earnedParts}</b></div><div><small>当前库存</small><b>{garage.parts}</b></div><div><small>{game.won ? '归队机甲' : '关卡进度'}</small><b>{game.won ? game.bots + ' 台' : Math.floor(game.progress) + '%'}</b></div></div>
               <p className="toybot-run-highlights">路段击破 <b>{game.kills}</b> · 最佳连击 <b>{game.bestCombo}</b> · 核心爆发 <b>{game.burstSequence}</b></p>
-              {!game.won && <p className="toybot-debrief-tip"><span>战术建议</span>{game.defeatReason === 'boss-wipe' ? ['熔岩消退后再回到原轨道。','先击落蜂群，再追击蜂后。','打穿重盾，抓住恢复窗口。','每段风暴都会重新预警，注意连续换道。','交叉炮会改变安全缺口，跟随新预警移动。'][game.levelIndex] : '提前击毁蓄力中的敌人，保留生命迎战首领。'}</p>}
+              {!game.won&&<button type="button" className="toybot-primary toybot-quick-retry" onClick={restart}>立即重试本关 <span aria-hidden="true">↗</span></button>}
+              <RunAnalysis game={game}/>
+
               <div className={'toybot-debrief-actions' + (!game.won || game.levelIndex === LEVELS.length - 1 ? ' is-single-route' : '')}>
                 {game.won && game.levelIndex < LEVELS.length - 1 && <button type="button" className="toybot-primary" onClick={() => { setEarnedParts(0); dispatch({ type: 'NEXT_LEVEL', garage }); }}>前往第 {game.levelIndex + 2} 关 <span aria-hidden="true">›</span></button>}
-                <button type="button" className={game.won && game.levelIndex < LEVELS.length - 1 ? 'toybot-secondary' : 'toybot-primary'} onClick={restart}>{game.won ? '再次挑战本关' : '重新出击'}<span aria-hidden="true">↗</span></button>
+                {game.won&&<button type="button" className={game.won && game.levelIndex < LEVELS.length - 1 ? 'toybot-secondary' : 'toybot-primary'} onClick={restart}>{game.won ? '再次挑战本关' : '重新出击'}<span aria-hidden="true">↗</span></button>}
                 <button type="button" className="toybot-result-garage" onClick={openGarage}>机库整备 <span aria-hidden="true">›</span></button>
                 <button type="button" className="toybot-home-exit" onClick={goHome}>返回游戏首页</button>
               </div>

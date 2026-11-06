@@ -40,7 +40,7 @@ LEVELS.forEach((level, sector) => {
     // Three columns in each of two lanes, alternating ranks. The third lane
     // remains an escape route; the final supply follows a clear breathing gap.
     const hordeCount=18+sector*3;
-    for(let i=0;i<hordeCount;i++)level.hazards.push({progress:mark+2+Math.floor(i/6)*1.5,hp:i===8&&sector>=1?6:i===14&&sector>=2?5:1+Math.floor(sector/2),lane:(lane+i%2)%3,kind:'swarm',wave,slot:i,horde:true,eliteRole:i===0?'energy':i===8&&sector>=1?'guard':i===14&&sector>=2?'commander':undefined});
+    for(let i=0;i<hordeCount;i++)level.hazards.push({progress:mark+2+Math.floor(i/6)*1.5,hp:i===8&&sector>=1?6:i===14&&sector>=2?5:Math.min(3,(i<6?1:i>=hordeCount-6?2:1)+Math.floor(sector/2)),lane:(lane+i%2)%3,kind:'swarm',wave,slot:i,horde:true,eliteRole:i===0?'energy':i===8&&sector>=1?'guard':i===14&&sector>=2?'commander':undefined});
   });
 });
 export const getLevel = (index: number): LevelSpec => LEVELS[Math.max(0, Math.min(LEVELS.length - 1, index))];

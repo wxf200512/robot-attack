@@ -18,6 +18,60 @@ const sim = load('simulation'), levels = load('level'), progression = load('prog
 const garage = { completedLevels: [true,true,true,true,false], tutorialCompleted: true, parts: 0, runs: 4, wins: 4, bestScore: 0, coreLevel: 0, unlockedLevel: 4, unlocked: { weapon: false, armor: false, core: false }, equipped: { weapon: false, armor: false, core: false } };
 const initial = (level = 0) => ({ ...sim.createInitialState(garage, level, 0), bossRandomSeed: 42 });
 const tick = s => sim.gameReducer(s, { type: 'TICK' });
+
+test('combat reports count landed damage, preserve previous state and reject cross-lane hits',()=>{
+ const s=battle();s.pendingShots=[incoming(s,{damage:10})];
+ const old=JSON.stringify(s),n=tick(s);assert.ok(n.report.dealt>0);assert.equal(n.report.bossDamage,n.report.dealt);assert.equal(JSON.stringify(s),old);
+ const miss=tick({...battle(),pendingShots:[incoming(s,{lane:(s.battleLane+1)%3})]});assert.equal(miss.report.dealt,0);assert.equal(miss.feedback.length,0);
+});
+test('reports distinguish collisions, skills and absorption without double counting invulnerability',()=>{
+ const s=initial();s.status='running';s.shieldCharges=1;sim.applySquadHit(s,20,'collision');assert.equal(s.report.blocked,20);assert.equal(s.report.taken,0);
+ s.invulnerableTicks=0;sim.applySquadHit(s,8,'collision');assert.equal(s.report.collisions,8);sim.applySquadHit(s,20);assert.equal(s.report.taken,8);
+ s.invulnerableTicks=0;sim.applySquadHit(s,12);assert.equal(s.report.hostile,12);assert.equal(s.report.taken,20);
+});
+test('pulse focus grants lane-bound penetration without multiplying boss damage or shortening cadence',()=>{
+ let s={...battle(),bossStepTicks:5,battleHp:10000,battleMaxHp:10000,report:{...initial().report,focus:5}};
+ s=tick({...s,pendingShots:[incoming(s,{damage:2})]});assert.equal(s.report.focusReady,true);assert.equal(s.chargedVolleys,0);
+ s=tick({...s,lane:s.battleLane,fireCooldown:0});assert.ok(s.pendingShots.length>0&&s.pendingShots.every(p=>p.pierce>=1&&!p.charged&&p.focused));assert.equal(s.fireCooldown,sim.attackIntervalFor(s));assert.equal(s.report.focusReady,false);
+});
+test('heavy basic splash affects at most two nearby same-lane enemies',()=>{
+ const {level,ids,state}=eliteScene();const own=ids.slice(0,4),other=level.hazards.findIndex(h=>h.horde&&h.wave===0&&h.slot===1);
+ const s={...state,mechClass:'heavy',progress:39,hazardHps:state.hazardHps.map((_,i)=>own.includes(i)||i===other?100:-1)};
+ const n=tick({...s,pendingShots:[incoming(s,{target:'hazard',targetIndex:own[0],lane:s.lane,attackStyle:'heavy',damage:10})]});
+ assert.equal(n.hazardHps[other],100);assert.equal(own.slice(1).filter(i=>n.hazardHps[i]<100).length,2);assert.equal(s.hazardHps[own[0]],100);
+});
+test('blade normal cleave captures two targets but never stretches beyond knife range',()=>{
+ const {ids,state}=eliteScene();const selected=ids.slice(0,2);
+ const s={...state,mechClass:'blade',progress:39,bots:1,fireCooldown:0,hazardHps:state.hazardHps.map((_,i)=>selected.includes(i)?20:-1)};
+ const n=tick(s);assert.equal(n.pendingShots.length,2);assert.ok(n.pendingShots.every(p=>p.lane===s.lane&&59-p.y<=sim.attackRangeFor(s)));
+ const far=tick({...s,progress:22});assert.equal(far.pendingShots.length,0);
+});
+test('gate equipment reveal is nonblocking and freezes with pause',()=>{
+ const s=initial(),option={id:'w',polarity:'reward',title:'火力+1',effect:'weaponUp',amount:1,lane:1};
+ const n=sim.applyGateEffect({...s,status:'running'},option);assert.equal(n.weaponLevel,s.weaponLevel+1);assert.equal(n.status,'running');assert.equal(n.upgradeFx.title,'火力+1');
+ const paused=sim.gameReducer(n,{type:'PAUSE'});assert.equal(tick(paused),paused);assert.equal(paused.upgradeFx.ticks,12);assert.equal(s.upgradeFx,null);
+});
+test('wave recipes keep weak lead ranks, stronger rear ranks and a final supply gap',()=>{
+ for(const l of levels.LEVELS){for(let wave=0;wave<3;wave++){const pack=l.hazards.filter(h=>h.horde&&h.wave===wave&&!h.eliteRole);assert.ok(pack.find(h=>h.slot<6).hp<=pack.at(-1).hp);}assert.ok(Math.max(...l.hazards.filter(h=>h.horde).map(h=>h.progress))<l.encounters[0].progress-10);}
+});
+test('later boss recovery offers a readable stationary counter window and honors overdrive',()=>{
+ const s={...battle(4),bossCycle:3};assert.equal(sim.bossRecoveryTicks(s),32);assert.ok(sim.bossRecoveryTicks({...s,ops:{...s.ops,protocol:'overdrive'}})<32);
+ let n=tick(s);for(let i=0;i<6;i++)n=tick(n);assert.equal(n.bossMoveTicks,0);const lane=n.battleLane;n=tick(n);assert.equal(n.battleLane,lane);assert.equal(n.bossStep,'recovery');
+});
+test('debrief uses actual remaining boss durability and dominant damage cause',()=>{
+ const x=load('experience'),s={...battle(),battleHp:75,battleMaxHp:300,report:{...initial().report,taken:30,collisions:25,hostile:5}};
+ const r=x.runDebrief(s);assert.equal(r.remaining,25);assert.match(r.cause,/碰撞/);assert.match(r.tip,/装甲/);
+ const fresh=sim.gameReducer({...s,status:'result'},{type:'RESTART',garage});assert.equal(fresh.report.dealt,0);assert.equal(fresh.report.taken,0);assert.equal(fresh.feedback.length,0);
+});
+test('mass impacts have a bounded feedback budget and boss break fades before result',()=>{
+ const s={...battle(),battleHp:10000,battleMaxHp:10000};let n=tick({...s,pendingShots:Array.from({length:30},(_,i)=>incoming(s,{id:i,damage:1}))});assert.equal(n.feedback.length,12);assert.equal(n.feedbackSequence,30);
+ n=tick({...battle(),battleHp:1,pendingShots:[incoming(s,{damage:100})]});assert.equal(n.feedback.at(-1).kind,'boss');while(n.status==='boss-victory')n=tick(n);assert.equal(n.feedback.length,0);
+});
+test('new impact sounds require new outcomes and shake settings preserve old saves',()=>{
+ const audio=load('audio'),settings=load('settings'),s=battle(),n={...s,impactSequence:1,feedbackSequence:1,feedback:[{id:1,kind:'armor',ticks:4,x:50,y:40}]};
+ assert.ok(audio.gameSoundEvents(s,n).includes('armor-hit'));assert.ok(!audio.gameSoundEvents(n,n).includes('armor-hit'));
+ assert.equal(settings.normalizeSettings({shake:false}).shake,false);assert.equal(settings.normalizeSettings({muted:true,volume:.5,quality:'high'}).shake,undefined);
+});
 function roadSpecialist(kind, levelIndex = 4, approach = 9.5) {
   const base = initial(levelIndex), spec = levels.getLevel(levelIndex);
   const index = spec.hazards.findIndex(h => h.kind === kind), h = spec.hazards[index];

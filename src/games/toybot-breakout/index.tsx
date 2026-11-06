@@ -1,3 +1,4 @@
+import { AWAKEN_ART, coreVisualShots } from './awakening';
 import { Cockpit, CoreBurstScreen, COCKPIT_ART, REACTOR_ART, CORE_EFFECT_ART } from './Cockpit';
 import { ExperienceLayer, RunAnalysis } from './ExperienceLayer';
 import { useSceneMotion } from './useSceneMotion';
@@ -30,7 +31,8 @@ import './operations.css';
 import './motion.css';
 import './experience.css';
 import './cockpit.css';
-import { hazardMaxHpFor, gateChoicesFor, MODULES, guardSourceFor, commanderFor, eliteRoleName, type RunModule, COMBO_WINDOW_TICKS } from './simulation';
+import './awakening.css';
+import { hazardMaxHpFor, gateChoicesFor, guardSourceFor, commanderFor, eliteRoleName, COMBO_WINDOW_TICKS } from './simulation';
 import { OBJECTIVE_NAMES, SPECIAL_LABELS } from './bossSkills';
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -45,11 +47,11 @@ function ProjectileArt({ level, heavy = false }: { level: number; heavy?: boolea
   return <span className="toybot-projectile-ai" style={{ backgroundPositionY: ((Math.min(4, level) - 1) * 100 / 3) + '%' }} aria-hidden="true" />;
 }
 
-function Robot({ index, small = false, enemy = false, firing = false, weaponPhase = 0, bossArt = BOSS_ART, weaponLevel = 0, armorLevel = 0, coreLevel = 0, mechClass = 'pulse', motionFrame = 0, attacking = false, combat = false, dodging = false, dodgeDirection = -1, bossColumns = 4 }: { combat?: boolean; dodging?: boolean; dodgeDirection?: number; bossColumns?: number; mechClass?: MechClass; motionFrame?: number; attacking?: boolean; index: number; small?: boolean; enemy?: boolean; firing?: boolean; weaponPhase?: number; bossArt?: string; weaponLevel?: number; armorLevel?: number; coreLevel?: number }) {
+function Robot({ awakened=false, index, small = false, enemy = false, firing = false, weaponPhase = 0, bossArt = BOSS_ART, weaponLevel = 0, armorLevel = 0, coreLevel = 0, mechClass = 'pulse', motionFrame = 0, attacking = false, combat = false, dodging = false, dodgeDirection = -1, bossColumns = 4 }: { awakened?:boolean; combat?: boolean; dodging?: boolean; dodgeDirection?: number; bossColumns?: number; mechClass?: MechClass; motionFrame?: number; attacking?: boolean; index: number; small?: boolean; enemy?: boolean; firing?: boolean; weaponPhase?: number; bossArt?: string; weaponLevel?: number; armorLevel?: number; coreLevel?: number }) {
   if (enemy) return <div className="robot-boss-sprite" style={{ backgroundImage: `url(${bossArt})`, backgroundSize:(bossColumns*100)+'% 500%', backgroundPosition: (weaponPhase * 100 / (bossColumns-1)) + '% ' + (index * 25) + '%' }} aria-hidden="true" />;
+  if(awakened)return <div className={'robot-player-art whole-mech-awaken class-'+mechClass} style={{'--awaken-mirror':dodging&&dodgeDirection<0?-1:1} as React.CSSProperties} aria-hidden="true"><span className="robot-awakened-sprite" style={{backgroundImage:`url(${AWAKEN_ART[mechClass]})`,backgroundPosition:(motionFrame*100/3)+'% '+((combat?(dodging?3:attacking?2:1):0)*100/3)+'%'}}/></div>;
   if (combat) return <div className={`robot-player-art battle-mech class-${mechClass} ${dodging ? 'is-dodging' : attacking ? 'is-attacking' : 'is-ready'} mech-w${Math.min(4,weaponLevel)}`} style={{ '--dodge-mirror': dodgeDirection > 0 ? -1 : 1 } as React.CSSProperties} aria-hidden="true">
     <span className="toybot-battle-body" style={{ backgroundImage:`url(${BATTLE_ART[mechClass]})`,backgroundPositionY:(dodging?100:attacking?50:0)+'%' }} />
-    {weaponLevel>0&&<span className="toybot-battle-reactor" />}
   </div>;
   if (mechClass !== 'pulse') {
     const tier = Math.min(3, weaponLevel + Math.min(1, armorLevel) + Math.min(1, coreLevel));
@@ -60,9 +62,6 @@ function Robot({ index, small = false, enemy = false, firing = false, weaponPhas
   }
   return <div className={`robot-player-art mech-w${Math.min(4, weaponLevel)} mech-a${Math.min(4, armorLevel)} mech-c${Math.min(4, coreLevel)}${small ? ' robot-small' : ''}${firing ? ' is-firing' : ''}`} aria-hidden="true">
     <div className="robot-run-sprite" style={weaponLevel > 0 ? { backgroundImage: `url(${PLAYER_ART})`, backgroundSize: '400% 400%', backgroundPositionY: ((Math.min(4, weaponLevel) - 1) * 100 / 3) + '%' } : undefined} />
-    {weaponLevel > 0 && <span className="robot-weapon-ai" style={{ backgroundPosition: (weaponPhase * 100 / 3) + '% ' + ((Math.min(4, weaponLevel) - 1) * 100 / 3) + '%' }} />}
-    {coreLevel > 0 && weaponLevel === 0 && <span className="robot-core-aura" />}
-    {coreLevel > 0 && weaponLevel === 0 && <span className="robot-core-wings" />}
     {firing && weaponLevel === 0 && <span className="robot-fire-spark" />}
   </div>;
 }
@@ -106,7 +105,7 @@ function GarageWorkshop({ garage, onUnlock, onToggle, onBack, onSelectMech, onEq
   </div>;
 }
 
-const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}> = ({previewState}) => {
+const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState & {narrative?:CampaignState['narrative']}}> = ({previewState}) => {
   const navigate = useNavigate();
   const [settings, setSettings] = useState(()=>previewState?{...readSettings(),quality:'high' as const,muted:true}:readSettings());
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -123,7 +122,7 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
   const [earnedParts, setEarnedParts] = useState(0);
   const awardedRunId = useRef<number | null>(null);
   const initialState = useRef<CampaignState | null>(null);
-  if (initialState.current === null) {initialState.current = createCampaign(previewState??createInitialState(garage));if(previewState)initialState.current.narrative.seen=['briefing','confrontation','aftermath','lore'];}
+  if (initialState.current === null) {initialState.current = createCampaign(previewState??createInitialState(garage));if(previewState)initialState.current.narrative=previewState.narrative??{...initialState.current.narrative,seen:['briefing','confrontation','aftermath','lore']};}
   const [game, dispatch] = useReducer(campaignReducer, initialState.current);
   const LEVEL = getLevel(game.levelIndex);
   const previousGame = useRef(game);
@@ -192,6 +191,7 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages([CHAPTER_FILMS[game.levelIndex],RELAY_ART]);},[game.status,game.levelIndex]);
   useEffect(() => { if(warmRoadAssets)void preloadImages([ENEMY_ART]); },[warmRoadAssets]);
   const warmBossAssets=game.status==='running'&&game.progress>=65;
+  useEffect(()=>{void preloadImages([AWAKEN_ART[game.mechClass]]);},[game.mechClass]);
   const warmCombatAssets=game.status==='running'&&game.progress>=35;
   const warmNextMap=game.status==='running'&&game.progress>=80;
   useEffect(() => { if(warmCombatAssets)void preloadImages([COCKPIT_ART,REACTOR_ART,CORE_EFFECT_ART,BOSS_CAST_ART,BOSS_OBJECTIVE_ART,BATTLE_ART[game.mechClass]]); },[warmCombatAssets,game.mechClass]);
@@ -804,7 +804,7 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
         @media(prefers-reduced-motion:reduce){.is-player-hit .robot-player-art,.toybot-damage-vignette{animation:none}.toybot-damage-vignette{opacity:0}}
       `}</style>
 
-      <section className={'toybot-shell toybot-menu-system core-style-'+game.mechClass + (game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'?' has-cockpit':'') + (settings.shake!==false&&!reducedMotion&&game.feedback.some(f=>f.ticks>=4&&f.kind!=='hit'&&f.kind!=='armor')?' has-impact-shake':'') + ((displayStatus==='running'||displayStatus==='battle')?' has-core-control':'') + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
+      <section className={'toybot-shell toybot-menu-system core-style-'+game.mechClass + (game.narrative.radio&&canShoot(game.status)&&!game.narrative.scene?' has-story-radio':'') + (game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'?' has-cockpit':'') + (settings.shake!==false&&!reducedMotion&&game.feedback.some(f=>f.ticks>=4&&f.kind!=='hit'&&f.kind!=='armor')?' has-impact-shake':'') + ((displayStatus==='running'||displayStatus==='battle')?' has-core-control':'') + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
         {game.status !== 'home' && <div
           ref={sceneRef}
           className={`toybot-scene formation-${formationColumns} weapon-tier-${activeWeapon} ${displayStatus === 'running' ? 'is-moving' : displayStatus === 'battle' ? 'is-battle' : displayStatus === 'defeat' ? `is-defeat ${game.defeatReason}` : ''} ${game.status === 'paused' ? 'is-paused' : ''} ${game.invulnerableTicks > 0 ? `is-player-hit damage-${game.damageKind}` : ''} ${arena ? 'is-arena' : ''} ${displayStatus === 'boss-intro' ? 'is-boss-intro' : displayStatus === 'boss-shift' ? 'is-boss-shift' : displayStatus === 'boss-victory' ? 'is-boss-victory' : ''}`}
@@ -875,14 +875,14 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
                 {attack.phase === 'flight' && attack.kind === 'shockwave' && <div className="toybot-enemy-shockwave" style={{ left: laneXAt(attack.lane, y) + '%', top: y + '%', zIndex: Math.round((y + 5) * 10) + 4 }} aria-hidden="true" />}
               </React.Fragment>;
             })}
-            {game.pendingShots.map((volley) => (
+            {coreVisualShots(game.pendingShots).map((volley) => (
               <React.Fragment key={volley.id}>
                 {volley.origins.map((origin) => {
                   const size = volley.count <= 1 ? '52px' : volley.count <= 4 ? 'clamp(34px,10vw,44px)' : 'clamp(24px,7.4vw,32px)';
 
                   if(volley.burst&&volley.attackStyle==='pulse'){
                     const end=volley.target?targetY(game,volley.target,volley.targetIndex):volley.y;
-                    return <div key={origin.index} data-motion="core-beam" data-motion-id={volley.id} className="toybot-core-beam" style={{left:origin.x+'%',top:end+'%',height:`calc(${Math.max(1,origin.y-end)}% - ${volley.muzzle?size:'0px'} / 4)`,'--beam-lift':volley.muzzle?size:'0px',zIndex:Math.round((origin.y+5)*10)+5} as React.CSSProperties} aria-hidden="true"><span style={{backgroundImage:`url(${CORE_EFFECT_ART})`}}/></div>;
+                    return <div key={origin.index} data-motion="core-beam" data-motion-id={volley.id} className="toybot-core-beam" style={{width:volley.count>=5?10:volley.count>1?17:27,left:origin.x+'%',top:end+'%',height:`calc(${Math.max(1,origin.y-end)}% - ${volley.muzzle?size:'0px'} / 4)`,'--beam-lift':volley.muzzle?size:'0px',zIndex:Math.round((origin.y+5)*10)+5} as React.CSSProperties} aria-hidden="true"><span style={{backgroundImage:`url(${CORE_EFFECT_ART})`}}/></div>;
                   }
                   if (volley.attackStyle === 'blade'&&!volley.burst) {
                     if (!volley.target || game.lane !== volley.lane) return null;
@@ -895,14 +895,14 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
                   // Origins are captured when firing, so changing lanes or losing
                   // a squad member cannot teleport projectiles already in flight.
                   const destinationY = volley.target ? targetY(game, volley.target, volley.targetIndex) : volley.y;
-                  const targetX = volley.target ? targetWorldX(game, volley.target, volley.targetIndex) : volley.targetIndex >= 0 ? laneXAt(volley.lane, destinationY) : 50;
+                  const targetX = volley.target ? targetWorldX(game, volley.target, volley.targetIndex) : volley.targetIndex >= 0 || volley.burst ? laneXAt(volley.lane, destinationY) : 50;
                   const angle = Math.atan2((targetX - origin.x) * .56, Math.max(1, origin.y - destinationY)) * 180 / Math.PI;
                   const depth = Math.round((origin.y + (destinationY - origin.y) * flightProgress + 5) * 10) + 2;
                   const lift = volley.muzzle||volley.burst&&!volley.splashDone ? size : '0px';
                   const top = `calc(${origin.y + (destinationY - origin.y) * flightProgress}% - ${lift} * ${(1 - flightProgress) / 4})`;
                   return <React.Fragment key={`${volley.id}-${origin.index}`}>
                     {volley.muzzle && volley.ticks === volley.duration && <div className="toybot-muzzle-event" style={{ left: `${origin.x}%`, top: `calc(${origin.y}% - ${size} / 4)` }} aria-hidden="true"><span className="toybot-muzzle-flash center" /></div>}
-                    <div data-motion="shot" data-motion-id={volley.id} className={`toybot-shot in-flight ${volley.attackStyle === 'heavy' ? 'is-heavy-round' : ''} ${tier}${volley.count >= 5 ? ' is-swarm' : ''}${volley.burst&&volley.attackStyle==='blade'?' is-core-blade-wave':''}${volley.burst&&volley.attackStyle==='heavy'?' is-core-siege-shell':''}${volley.focused ? ' is-focused' : ''}${volley.charged ? ' is-charged' : ''}${volley.burst ? ' is-core-burst-shot' : ''}${volley.arc?' has-arc-module':''}${volley.burn?' has-burn-module':''}`} style={{ left: `${origin.x + (targetX - origin.x) * flightProgress}%`, top, '--shot-lift':lift,'--flight-from-x': origin.x + '%', '--flight-to-x': targetX + '%', '--flight-from-y': `calc(${origin.y}% - ${lift} / 4)`, '--flight-to-y': destinationY + '%', '--flight-duration': volley.duration * STEP_MS + 'ms', '--flight-angle': angle + 'deg', '--flight-end-scale': volley.target ? '.65' : '.22', '--flight-end-opacity': volley.target ? '1' : '0', zIndex: depth } as React.CSSProperties} aria-hidden="true">
+                    <div data-motion="shot" data-motion-id={volley.id} className={`toybot-shot in-flight ${volley.attackStyle === 'heavy' ? 'is-heavy-round' : ''} ${tier}${volley.count >= 5 ? ' is-swarm' : ''}${volley.burst&&volley.attackStyle==='blade'?' is-core-blade-wave':''}${volley.burst&&volley.attackStyle==='heavy'?' is-core-siege-shell':''}${volley.focused ? ' is-focused' : ''}${volley.charged ? ' is-charged' : ''}${volley.burst ? ' is-core-burst-shot' : ''}${volley.arc?' has-arc-module':''}${volley.burn?' has-burn-module':''}`} style={{ ...(volley.burst&&volley.attackStyle==='heavy'?{width:volley.count>=5?26:volley.count>1?34:46,height:volley.count>=5?26:volley.count>1?34:46}:volley.burst&&volley.attackStyle==='blade'?{width:volley.count>=5?38:volley.count>1?50:66,height:volley.count>=5?32:volley.count>1?44:56}:{}),left: `${origin.x + (targetX - origin.x) * flightProgress}%`, top, '--shot-lift':lift,'--flight-from-x': origin.x + '%', '--flight-to-x': targetX + '%', '--flight-from-y': `calc(${origin.y}% - ${lift} / 4)`, '--flight-to-y': destinationY + '%', '--flight-duration': volley.duration * STEP_MS + 'ms', '--flight-angle': angle + 'deg', '--flight-end-scale': volley.target ? '.65' : '.22', '--flight-end-opacity': volley.target ? '1' : '0', zIndex: depth } as React.CSSProperties} aria-hidden="true">
                       {volley.burst?<span className="toybot-core-attack-art" style={{backgroundImage:`url(${CORE_EFFECT_ART})`,backgroundPosition:volley.attackStyle==='heavy'?'50% 50%':'100% 50%'}}/>:volley.fusion?<FusionSprite fusion={volley.fusion} projectile/>:<ProjectileArt heavy={volley.attackStyle === 'heavy'} level={volley.charged || volley.burst ? 4 : volley.focused?Math.max(1,volley.weaponLevel):volley.weaponLevel} />}
                     </div>
                   </React.Fragment>;
@@ -974,22 +974,14 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
                 className={`toybot-robot ${game.upgradeFx?.positive?'is-equipment-deploying':''} ${game.burstTicks>0?'is-core-burst':''} ${game.dodgeTicks>0?'is-dodging':''} ${robot.index === 0 ? 'lead' : ''}`}
                 style={{ left: `${robot.x}%`, top: `${robot.y}%`, zIndex: Math.round((robot.y + 5) * 10) }}
               >
-                <Robot mechClass={game.mechClass} combat={arena} dodging={game.dodgeTicks > 0} dodgeDirection={game.dodgeDirection} motionFrame={(motionFrame + robot.index) % 4} attacking={attackActive && game.dodgeTicks === 0} index={robot.index} weaponPhase={weaponPhase} firing={canShoot(displayStatus ?? 'home') && game.fireCooldown === attackInterval} weaponLevel={activeWeapon} armorLevel={game.armorLevel} coreLevel={visualCore} />
-                {(Object.keys(MODULES) as RunModule[]).filter(key=>game.modules[key]>0).map(key=><span key={key} className={'toybot-mounted-module mounted-'+key} style={{'--module-size':(10+game.modules[key]*2)+'px'} as React.CSSProperties} aria-hidden="true"/>)}
-                {game.ops.fusion&&<span className="toybot-fusion-mounted" aria-hidden="true"><FusionSprite fusion={game.ops.fusion}/></span>}
+                <Robot awakened={game.burstTicks>0} mechClass={game.mechClass} combat={arena} dodging={game.dodgeTicks > 0} dodgeDirection={game.dodgeDirection} motionFrame={(motionFrame + robot.index) % 4} attacking={attackActive && game.dodgeTicks === 0} index={robot.index} weaponPhase={weaponPhase} firing={canShoot(displayStatus ?? 'home') && game.fireCooldown === attackInterval} weaponLevel={activeWeapon} armorLevel={game.armorLevel} coreLevel={visualCore} />
                 {game.mechClass==='heavy'&&canShoot(game.status)&&game.fireCooldown>0&&game.fireCooldown<=3&&game.dodgeTicks===0&&<span className="toybot-charge-orbit" aria-hidden="true"/>}
                 <DefenseVfx game={game} index={robot.index} reduced={quality==='low'||reducedMotion}/>
-                {robot.index === 0 && (game.weaponLevel > 0 || game.armorLevel > 0 || visualCore > 0) && (
-                  <div className="toybot-equipment-tag" aria-hidden="true">
-                    {game.weaponLevel > 0 && <span className="weapon-tag">⚡ W{game.weaponLevel}</span>}
-                    {game.armorLevel > 0 && <span className="armor-tag">⬡ A{game.armorLevel}</span>}
-                    {game.garageCoreLevel > 0 && <span className="core-tag">✦ R{game.garageCoreLevel}</span>}
-                  </div>
-                )}
+
               </div>
             ))}
             {game.damageSequence > 0 && <div key={`damage-vignette-${game.damageSequence}`} className={`toybot-damage-vignette damage-${game.damageKind}`} aria-hidden="true" />}
-            {arena&&game.dodgeTicks>0&&formationFor(game.bots,game.dodgeFromLane).map(robot=><div key={'echo-'+robot.index} className="toybot-robot toybot-dodge-echo" style={{left:robot.x+'%',top:robot.y+'%',opacity:game.dodgeTicks/10,zIndex:Math.round((robot.y+4)*10)}} aria-hidden="true"><Robot combat mechClass={game.mechClass} index={robot.index} /></div>)}
+            {arena&&game.dodgeTicks>0&&formationFor(game.bots,game.dodgeFromLane).map(robot=><div key={'echo-'+robot.index} className="toybot-robot toybot-dodge-echo" style={{left:robot.x+'%',top:robot.y+'%',opacity:game.dodgeTicks/10,zIndex:Math.round((robot.y+4)*10)}} aria-hidden="true"><Robot awakened={game.burstTicks>0} combat mechClass={game.mechClass} index={robot.index} /></div>)}
             {arena&&game.evadeTicks>0&&<span key={game.evadeSequence} className="toybot-evade-success" style={{left:LANE_CENTERS[game.lane]+'%'}} role="status">{game.ops.perfectTicks>0?'完美闪避':'闪避'}</span>}
             {displayStatus === 'defeat' && (
               <div className={`toybot-defeat-scene ${game.defeatReason}`} style={{ '--defeat-lane': `${LANE_CENTERS[game.lane]}%` } as React.CSSProperties} role="status" aria-live="assertive">
@@ -1041,9 +1033,9 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState}>
                     </div>
         )}
 
+        {canShoot(game.status)&&!game.narrative.scene&&<div className="toybot-story-top"><StoryMission game={game}/><StoryRadio game={game} dispatch={dispatch}/></div>}
         <OperationsHud game={game}/>
         {game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'&&<div className="toybot-bottom cockpit-bottom">
-          <StoryMission game={game}/><StoryRadio game={game} dispatch={dispatch}/>
           <Cockpit game={game} blocked={!!game.narrative.scene} onMove={lane=>dispatch({type:'MOVE_LANE',lane})} onBurst={()=>dispatch({type:'ACTIVATE_BURST'})}/>
         </div>}
         {!game.narrative.scene&&<CoreBurstScreen game={game} reduced={reducedMotion||quality==='low'}/>}

@@ -1,0 +1,18 @@
+.toybot-shell .whole-mech-awaken{position:absolute;inset:0;filter:none!important}
+.toybot-shell .robot-awakened-sprite{position:absolute;inset:-12%;background-size:400% 400%;background-repeat:no-repeat;transform:scaleX(var(--awaken-mirror,1));pointer-events:none}
+.toybot-shell .whole-mech-awaken.class-blade .robot-awakened-sprite{inset:-16%}
+.toybot-shell .is-core-burst>.whole-mech-awaken{animation:mech-armor-lock .25s ease-out both}
+.toybot-shell .toybot-story-top{position:absolute;top:154px;left:12px;right:12px;z-index:6;pointer-events:none}
+.toybot-shell .toybot-story-top .campaign-mission{margin:0;padding:5px 8px;gap:6px;border-radius:5px;font-size:9px;background:#102b3be8}
+.toybot-shell .toybot-story-top .campaign-mission b,.toybot-shell .toybot-story-top .campaign-mission span{font-size:9px}
+.toybot-shell .toybot-story-top .campaign-radio{position:relative;inset:auto;margin:0;padding:6px 10px 8px;max-height:88px;overflow:auto;border-radius:8px;background:#0e273cf2;pointer-events:none}
+.toybot-shell .toybot-story-top .campaign-radio p{font-size:11px;line-height:1.5;margin-top:0;padding-right:8px}
+.toybot-shell .toybot-story-top .campaign-radio button{min-width:28px;min-height:26px;padding:0;pointer-events:auto}
+.toybot-shell.has-story-radio .toybot-story-top{top:110px}
+.toybot-shell.has-story-radio .toybot-story-top .campaign-mission,.toybot-shell.has-story-radio>.ops-mission-hud{display:none}
+.toybot-shell .cockpit-bottom .campaign-radio,.toybot-shell .cockpit-bottom .campaign-mission{display:none}
+@keyframes mech-armor-lock{from{opacity:.5;scale:.94}to{opacity:1;scale:1}}
+@media(prefers-reduced-motion:reduce){.toybot-shell .is-core-burst>.whole-mech-awaken{animation:none}}
+@media(max-height:650px){.toybot-shell .toybot-story-top{top:145px}.toybot-shell.has-story-radio .toybot-story-top{top:106px}.toybot-shell .toybot-story-top .campaign-radio{max-height:78px}}
+
+.toybot-shell.core-style-heavy .toybot-core-detonation:not(.reaction-arc):not(.reaction-energy){filter:sepia(1) saturate(2.5)}

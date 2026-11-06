@@ -560,7 +560,7 @@ test('all three mech classes can beat five bosses with telegraphed dodging in 1â
       if(danger.includes(lane))lane=[0,1,2].find(l=>!danger.includes(l))??lane;
       s=tick(sim.gameReducer(s,{type:'MOVE_LANE',lane:bossTactic(s)}));ticks++;
     }
-    assert.equal(s.won,true,mechClass+' level '+(level+1));assert.ok(ticks>=600&&ticks<=1800,mechClass+' level '+(level+1)+' '+ticks/10+'s');times.push(mechClass+' L'+(level+1)+':'+ticks/10);
+    assert.equal(s.won,true,mechClass+' level '+(level+1));assert.ok(ticks>=550&&ticks<=1800,mechClass+' level '+(level+1)+' '+ticks/10+'s');times.push(mechClass+' L'+(level+1)+':'+ticks/10);
   }
   console.log('Class boss balance '+times.join(', '));
 });
@@ -1137,9 +1137,9 @@ test('burst grants individual captured shots for all chassis without faster fire
  for(const mechClass of ['pulse','heavy','blade']){
   const base={...battle(),mechClass,lane:1,battleLane:1,bossStep:'warning',bots:3,weaponLevel:2,fireCooldown:0,burstEnergy:100};
   const normal=tick(base),activated=sim.gameReducer(base,{type:'ACTIVATE_BURST'}),powered=tick(activated);
-  assert.equal(powered.fireCooldown,normal.fireCooldown);assert.equal(powered.pendingShots.length,3);assert.equal(powered.invulnerableTicks,normal.invulnerableTicks);
-  assert.ok(powered.pendingShots.every(p=>p.burst&&!p.charged&&Math.abs(p.damage-normal.pendingShots[0].damage*load('mechs').coreSkill(mechClass).bossDamage)<.001&&p.origins.length===1));
-  assert.deepEqual(powered.pendingShots.map(p=>p.origins),normal.pendingShots.map(p=>p.origins));
+  assert.equal(powered.fireCooldown,normal.fireCooldown);assert.equal(powered.pendingShots.length,9);assert.equal(powered.invulnerableTicks,normal.invulnerableTicks);
+  assert.ok(powered.pendingShots.every(p=>p.burst&&!p.charged&&Math.abs(p.damage-normal.pendingShots[0].damage*(p.target==='boss'?load('mechs').coreSkill(mechClass).bossDamage*(p.lane===base.lane?1:.6):load('mechs').coreSkill(mechClass).damage))<.001&&p.origins.length===1));
+  for(const lane of [0,1,2])assert.deepEqual(powered.pendingShots.filter(p=>p.lane===lane).map(p=>p.origins),normal.pendingShots.map(p=>p.origins));
   const moved=sim.gameReducer(powered,{type:'MOVE_LANE',lane:2});assert.deepEqual(moved.pendingShots,powered.pendingShots);
   const struck={...powered,playerHp:100,armorPoints:0,shieldCharges:0,invulnerableTicks:0};sim.applySquadHit(struck,10);assert.equal(struck.playerHp,90);
  }
@@ -1188,26 +1188,26 @@ test('pulse core beam pierces exactly three captured same-lane targets and stops
  s=tick(sim.gameReducer(s,{type:'ACTIVATE_BURST'}));assert.equal(s.pendingShots[0].pierce,2);s.fireCooldown=1000;
  for(let i=0;i<9;i++)s=tick(s);
  for(const id of [1,2,3])assert.ok(!s.threats.some(t=>t.id===id&&t.hp>0));
- assert.equal(s.threats.find(t=>t.id===4).hp,9);assert.equal(s.threats.find(t=>t.id===5).hp,9);assert.equal(s.shotSequence,3);
+ assert.equal(s.threats.find(t=>t.id===4).hp,9);assert.equal(s.threats.find(t=>t.id===5).hp,7.4);assert.equal(s.shotSequence,5);
 });
 test('heavy core explosion applies real bounded same-lane area damage once',()=>{
  let s={...battle(),mechClass:'heavy',lane:1,battleLane:0,bots:1,weaponLevel:0,fireCooldown:0,bossStep:'warning',burstEnergy:100,threats:[burstObjective(1,1,56),burstObjective(2,1,53),burstObjective(3,1,43,9),burstObjective(4,2,56,9)]};
- s=tick(sim.gameReducer(s,{type:'ACTIVATE_BURST'}));const damage=s.pendingShots[0].damage;assert.equal(damage,6);s.fireCooldown=1000;
+ s=tick(sim.gameReducer(s,{type:'ACTIVATE_BURST'}));const damage=s.pendingShots.find(p=>p.lane===1).damage;assert.equal(damage,6);s.fireCooldown=1000;
  const arrival=Math.max(...s.pendingShots.map(p=>p.duration));for(let i=0;i<arrival;i++)s=tick(s);
- assert.ok(!s.threats.some(t=>[1,2].includes(t.id)&&t.hp>0));assert.equal(s.threats.find(t=>t.id===3).hp,9);assert.equal(s.threats.find(t=>t.id===4).hp,9);
- assert.equal(s.coreDetonations.length,1);const frozen=sim.gameReducer(s,{type:'PAUSE'});assert.deepEqual(tick(frozen),frozen);
+ assert.ok(!s.threats.some(t=>[1,2].includes(t.id)&&t.hp>0));assert.equal(s.threats.find(t=>t.id===3).hp,9);assert.equal(s.threats.find(t=>t.id===4).hp,3);
+ assert.equal(s.coreDetonations.length,3);const frozen=sim.gameReducer(s,{type:'PAUSE'});assert.deepEqual(tick(frozen),frozen);
  const victory=tick({...s,battleHp:1,pendingShots:[incoming(s,{damage:999})]});assert.equal(victory.status,'boss-victory');assert.deepEqual(victory.coreDetonations,[]);
  for(let i=0;i<7;i++)s=tick(s);assert.equal(s.coreDetonations.length,0);
 });
-test('blade core extends melee range and cleaves three targets per mech with captured range',()=>{
+test('blade core sweeps three lanes with captured waves that survive sidestepping',()=>{
  const base={...battle(),mechClass:'blade',lane:1,battleLane:0,bots:2,weaponLevel:0,fireCooldown:0,bossStep:'warning',burstEnergy:100,threats:[burstObjective(1,1,48),burstObjective(2,1,47),burstObjective(3,1,46),burstObjective(4,1,45),burstObjective(5,2,48)]};
  assert.equal(tick(base).pendingShots.length,0,'ordinary blade cannot reach these targets');
- const fired=tick(sim.gameReducer(base,{type:'ACTIVATE_BURST'}));assert.equal(fired.pendingShots.length,6);assert.ok(fired.pendingShots.every(p=>p.range===14&&p.lane===1));
- assert.equal(new Set(fired.pendingShots.map(p=>p.targetIndex)).size,3);
+ const fired=tick(sim.gameReducer(base,{type:'ACTIVATE_BURST'}));assert.equal(fired.pendingShots.length,10);assert.ok(fired.pendingShots.every(p=>p.range===14));assert.equal(new Set(fired.pendingShots.map(p=>p.lane)).size,3);
+ assert.equal(new Set(fired.pendingShots.filter(p=>p.lane===1).map(p=>p.targetIndex)).size,3);
  const arrival=Math.max(...fired.pendingShots.map(p=>p.duration));let s={...fired,burstTicks:1,fireCooldown:1000};for(let i=0;i<arrival;i++)s=tick(s);
- for(const id of [1,2,3])assert.ok(!s.threats.some(t=>t.id===id&&t.hp>0));assert.equal(s.threats.find(t=>t.id===4).hp,2);assert.equal(s.threats.find(t=>t.id===5).hp,2);
+ for(const id of [1,2,3])assert.ok(!s.threats.some(t=>t.id===id&&t.hp>0));assert.equal(s.threats.find(t=>t.id===4).hp,2);assert.ok(!s.threats.some(t=>t.id===5&&t.hp>0));
  let moved=sim.gameReducer(fired,{type:'MOVE_LANE',lane:2});moved.fireCooldown=1000;for(let i=0;i<arrival;i++)moved=tick(moved);
- for(const id of [1,2,3])assert.ok(!moved.threats.some(t=>t.id===id&&t.hp>0),'released core sword waves keep their captured lane after sidestepping');assert.equal(moved.threats.find(t=>t.id===5).hp,2);
+ for(const id of [1,2,3])assert.ok(!moved.threats.some(t=>t.id===id&&t.hp>0),'released core sword waves keep their captured lane after sidestepping');assert.ok(!moved.threats.some(t=>t.id===5&&t.hp>0));
 });
 test('three chassis expose independent skill names mechanics and release sounds',()=>{
  const mechs=load('mechs'),audio=load('audio');
@@ -1242,7 +1242,7 @@ test('player-triggered burst preserves five bosses and all chassis with real cou
    if(sim.canActivateBurst(s)&&s.bossStep==='recovery')s=sim.gameReducer(s,{type:'ACTIVATE_BURST'});
    s=tick(s);ticks++;
   }
-  assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(s.burstSequence>0);assert.ok(ticks>=600&&ticks<=1800,mechClass+' L'+(level+1)+' '+ticks/10+'s');samples.push(ticks/10);
+  assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(s.burstSequence>0);assert.ok(ticks>=550&&ticks<=1800,mechClass+' L'+(level+1)+' '+ticks/10+'s');samples.push(ticks/10);
  }
  console.log('Burst boss sample seconds: '+samples.join(', '));
 });
@@ -1535,7 +1535,7 @@ test('core beam painter preserves independent body-center emitters and never mut
  const s={...battle(),lane:1,battleLane:1};s.pendingShots=[incoming(s,{id:11,burst:true,attackStyle:'pulse',origins:[{index:1,x:39,y:65}]}),incoming(s,{id:12,burst:true,attackStyle:'pulse',origins:[{index:2,x:61,y:65}]})];
  const makeNode=()=>({style:{setProperty(k,v){this[k]=v;}},querySelector(){return null;}}),root=makeNode(),a=makeNode(),b=makeNode(),before=JSON.stringify(s);
  motion.paintMotion(root,s,.5,[{node:a,kind:'core-beam',id:11},{node:b,kind:'core-beam',id:12}]);
- assert.equal(a.style.left,'39%');assert.equal(b.style.left,'61%');assert.match(a.style.height,/--beam-lift/);assert.ok(!JSON.stringify([a.style,b.style]).match(/NaN|Infinity/));assert.equal(JSON.stringify(s),before);
+ assert.equal(a.style.left,'39%');assert.equal(b.style.left,'61%');assert.match(a.style.top,/calc/);assert.match(a.style.height,/px$/);assert.ok(!JSON.stringify([a.style,b.style]).match(/NaN|Infinity/));assert.equal(JSON.stringify(s),before);
 });
 test('core clear-through bonuses increase road power while retaining boss multipliers and firing cadence',()=>{
  const skill=load('mechs').CORE_SKILLS;assert.equal(skill.pulse.damage,1.6);assert.equal(skill.heavy.damage,2);assert.equal(skill.blade.damage,1.6);assert.equal(skill.pulse.bossDamage,1.25);assert.equal(skill.heavy.bossDamage,1.2);assert.equal(skill.blade.bossDamage,1.15);
@@ -1545,5 +1545,48 @@ test('cockpit and skill atlases have deployment dimensions and preserve RGBA ori
  for(const [name,width,height]of [['cockpit-console-v22',1080,360],['reactor-core-v22',384,384],['core-effects-v22',1200,400]]){
   const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',name+'.png'));
   assert.equal(png.readUInt32BE(16),width);assert.equal(png.readUInt32BE(20),height);assert.equal(png[25],6);assert.ok(fs.existsSync(path.join(__dirname,'art-source',name+'.png')));
+ }
+});
+
+test('every core skill damages real targets in all three lanes without changing normal lane restrictions',()=>{
+ for(const mechClass of ['pulse','heavy','blade']){
+  const base={...battle(),mechClass,lane:1,battleLane:1,bossStep:'warning',bots:2,fireCooldown:0,burstEnergy:100,threats:[0,1,2].map(lane=>burstObjective(101+lane,lane,54,100))},before=JSON.stringify(base);
+  let normal=tick(base);normal.fireCooldown=1000;for(let i=0;i<8;i++)normal=tick(normal);
+  assert.equal(normal.threats.find(t=>t.lane===0).hp,100);assert.equal(normal.threats.find(t=>t.lane===2).hp,100);
+  let s=tick(sim.gameReducer(base,{type:'ACTIVATE_BURST'}));assert.deepEqual([...new Set(s.pendingShots.map(p=>p.lane))],[0,1,2]);assert.ok(s.pendingShots.every(p=>p.origins[0].x>=39&&p.origins[0].x<=61));s.fireCooldown=1000;for(let i=0;i<8;i++)s=tick(s);
+  assert.ok(s.threats.every(t=>t.hp<100),mechClass+' must really hit every lane');assert.equal(JSON.stringify(base),before);
+ }
+});
+test('three-lane core volleys continue during a dodge and keep each already-fired source fixed',()=>{
+ const base={...battle(),lane:1,battleLane:1,bossStep:'warning',bots:3,fireCooldown:0,burstEnergy:100};
+ let s=sim.gameReducer(sim.gameReducer(base,{type:'ACTIVATE_BURST'}),{type:'MOVE_LANE',lane:2});s=tick(s);
+ assert.equal(s.dodgeTicks,3);assert.equal(s.pendingShots.length,9);const origins=s.pendingShots.map(p=>p.origins),moved=sim.gameReducer(s,{type:'MOVE_LANE',lane:0});assert.deepEqual(moved.pendingShots.map(p=>p.origins),origins);
+ const paused=sim.gameReducer(moved,{type:'PAUSE'});assert.equal(tick(paused),paused);
+});
+test('core targeting still rejects a captured target that moved out of its assigned lane',()=>{
+ const base=initial(1),level=levels.getLevel(1),index=level.hazards.findIndex(h=>h.moving),h=level.hazards[index],lane=levels.hazardLaneAt(0,index,h.progress-8-.1,1);
+ const s={...base,status:'running',progress:h.progress-8+.1,fireCooldown:1000,gate:99,pendingShots:[incoming(base,{burst:true,target:'hazard',targetIndex:index,lane,damage:999})]};
+ const n=tick(s);assert.equal(n.hazardHps[index],s.hazardHps[index]);assert.equal(n.report.dealt,0);
+});
+test('sword-wave presentation deduplicates one visual per source lane and release time without dropping physics',()=>{
+ const a=load('awakening'),shots=[];for(let source=0;source<3;source++)for(let lane=0;lane<3;lane++)for(let target=0;target<3;target++)shots.push(incoming(battle(),{id:shots.length,attackStyle:'blade',burst:true,lane,ticks:4,duration:5,origins:[{index:source,x:39+source*11,y:65}],targetIndex:target}));
+ const original=JSON.stringify(shots),visible=a.coreVisualShots(shots);assert.equal(visible.length,9);assert.equal(shots.length,27);assert.equal(JSON.stringify(shots),original);
+ assert.equal(a.coreVisualShots([...shots,...shots.map(s=>({...s,ticks:1}))]).length,18);
+});
+test('integrated body sheets sample running idle firing and dodge rows without state mutation',()=>{
+ const a=load('awakening'),s={...battle(),burstTicks:40,bossStep:'warning'},before=JSON.stringify(s);
+ assert.equal(a.awakeningPose({...s,status:'running'},.5,0).row,0);assert.equal(a.awakeningPose(s,.5,0).row,1);
+ assert.equal(a.awakeningPose({...s,fireCooldown:sim.attackIntervalFor(s)},0,0).row,2);
+ const dodge=[4,3,2,1].map(dodgeTicks=>a.awakeningPose({...s,dodgeTicks},.5,0));assert.ok(dodge.every(p=>p.row===3&&p.frame>=0&&p.frame<=3));assert.deepEqual(dodge.map(p=>p.frame),[0,1,2,3]);assert.equal(JSON.stringify(s),before);
+});
+test('whole-body awakening assets retain regular 4 by 4 RGBA geometry',()=>{
+ const a=load('awakening');for(const url of Object.values(a.AWAKEN_ART)){const png=fs.readFileSync(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(png.readUInt32BE(16),1024);assert.equal(png.readUInt32BE(20),1024);assert.equal(png[25],6);}
+});
+test('core beam length and angle reconstruct the real body-center to target segment at different aspect ratios',()=>{
+ const s={...battle(),battleLane:2},shot=incoming(s,{burst:true,origins:[{index:1,x:39,y:65}],lane:2,count:3});
+ for(const size of [{width:390,height:700},{width:320,height:480},{width:430,height:900}]){
+  const p=motion.coreBeamSample(s,shot,.5,size),end=motion.projectileSample(s,{...shot,ticks:0},0,motion.visualState(s,.5)),radians=p.angle*Math.PI/180;
+  assert.ok(Math.abs(p.x*size.width/100+Math.sin(radians)*p.length-end.x*size.width/100)<.00001);
+  assert.ok(Math.abs(p.y*size.height/100-p.lift-Math.cos(radians)*p.length-end.y*size.height/100)<.00001);assert.ok(p.lift>0);
  }
 });

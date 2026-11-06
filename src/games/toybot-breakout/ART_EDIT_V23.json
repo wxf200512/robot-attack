@@ -1,0 +1,6 @@
+{
+  "mode": "built-in image_gen",
+  "target": "art-source/mech-heavy-awaken-v23-raw.png",
+  "output": "art-source/mech-heavy-awaken-v23.png",
+  "prompt": "Edit this exact game sprite atlas. Preserve all sixteen robots, their exact silhouettes, positions, colors, grid arrangement, frame boundaries and proportions. Remove ONLY the pale white/gray background and soft background haze between robots and between all cells. Output genuinely clear fully transparent RGBA empty space with alpha zero everywhere outside actual robot silhouettes and tiny muzzle flashes. No white sheet, no gray mist, no added border, no drawn checkerboard. Keep ivory armor opaque, preserve the amber emitter glows. Do not repaint or reposition the robots. This is background extraction for a production game sprite sheet."
+}

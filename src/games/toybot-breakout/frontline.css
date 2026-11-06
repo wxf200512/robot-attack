@@ -1,0 +1,21 @@
+.toybot-shell .frontline-time-goal{font-size:9px;font-style:normal;font-weight:500;color:#a3c3cf}
+.sector-enemy-0{--enemy-theme:#ffb16e}.sector-enemy-1{--enemy-theme:#7be7ff}.sector-enemy-2{--enemy-theme:#edce8d}.sector-enemy-3{--enemy-theme:#c6a4ff}.sector-enemy-4{--enemy-theme:#ff9cae}
+.toybot-shell .is-sector-elite .toybot-drone-sprite{width:62px;filter:drop-shadow(0 0 5px var(--enemy-theme));animation-duration:1s}
+.toybot-shell .is-sector-elite .toybot-hazard-hp{width:48px;height:5px;opacity:1;border:1px solid var(--enemy-theme)}
+.toybot-shell .is-sector-elite .toybot-elite-tag{font-size:9px;top:-14px;padding:3px 6px;border:1px solid var(--enemy-theme);color:var(--enemy-theme);background:#102439ed}
+.toybot-shell .sector-enemy-0.enemy-kind-bomber .toybot-drone-sprite{filter:sepia(.6) saturate(1.5)}
+.toybot-shell .sector-enemy-3 .toybot-drone-sprite{filter:hue-rotate(35deg)}
+.toybot-shell .sector-enemy-4 .toybot-drone-sprite{filter:sepia(.25) saturate(1.35)}
+.toybot-shell .toybot-enemy-target.attack-heat-mine,.toybot-shell .toybot-enemy-target.attack-storm-orb{height:14%;top:51%;border-radius:8px;background:#e59b5122}
+.toybot-shell .toybot-enemy-target.attack-storm-orb{border-color:#c39aff;background:#ac88ff22}
+.toybot-shell .toybot-enemy-target.attack-siege-laser{height:26%;top:34%;border-radius:4px;background:linear-gradient(transparent,#ffcd7133);border-color:#ffdc91}
+.toybot-shell .toybot-enemy-target.attack-royal-salvo{border-color:#ff97ad;background:#ff778822}
+.toybot-shell .bolt-heat-mine{filter:sepia(1) saturate(2)}.toybot-shell .bolt-storm-orb{filter:hue-rotate(40deg);width:26px;height:26px}.toybot-shell .bolt-hunter-fan{filter:drop-shadow(0 0 3px #72eaff)}.toybot-shell .bolt-royal-salvo{filter:hue-rotate(120deg)}
+.toybot-shell .toybot-road-field{position:absolute;top:59%;width:21%;height:14%;translate:-50% -50%;border:1px solid #ffb775;border-radius:50%;background:radial-gradient(ellipse,#ffbe4c44,#9b3c2922);pointer-events:none;z-index:690;color:#ffdbab}
+.toybot-road-field>span{position:absolute;inset:5%;background:url('/games/toybot-breakout/optimized/plasma-impact.png') center/contain no-repeat;filter:sepia(1) saturate(2);opacity:.55;animation:frontline-field-pulse .6s ease-in-out infinite alternate}
+.toybot-road-field>b{position:absolute;left:50%;top:-14px;translate:-50% 0;font-size:9px;white-space:nowrap;color:inherit}.toybot-road-field>i{position:absolute;left:0;bottom:1px;height:2px;background:currentColor;transition:width .1s linear}
+.toybot-shell .toybot-road-field.kind-storm-orb{border-color:#ba94ff;color:#d1b6ff;background:radial-gradient(ellipse,#9b78f044,#493c7d22)}.kind-storm-orb>span{filter:hue-rotate(45deg)}
+.toybot-shell .toybot-road-rail{position:absolute;top:34%;height:26%;width:3%;translate:-50% 0;background:linear-gradient(90deg,#fff0,#ffdb8a,#fffbdc,#ffdb8a,#fff0);box-shadow:0 0 12px #ffe1a4;z-index:740;pointer-events:none}
+@keyframes frontline-field-pulse{to{opacity:.3;scale:.85}}
+.quality-low .toybot-road-field>span{animation:none;filter:none}
+@media(prefers-reduced-motion:reduce){.toybot-road-field>span{animation:none}.toybot-road-field>i{transition:none}}

@@ -1,3 +1,4 @@
+import { ELITE_ATTACKS, roadEnemyName, frontlineStage, type ElitePattern } from './frontline';
 import { AWAKEN_ART, coreVisualShots } from './awakening';
 import { Cockpit, CoreBurstScreen, COCKPIT_ART, REACTOR_ART, CORE_EFFECT_ART } from './Cockpit';
 import { ExperienceLayer, RunAnalysis } from './ExperienceLayer';
@@ -32,12 +33,13 @@ import './motion.css';
 import './experience.css';
 import './cockpit.css';
 import './awakening.css';
+import './frontline.css';
 import { hazardMaxHpFor, gateChoicesFor, guardSourceFor, commanderFor, eliteRoleName, COMBO_WINDOW_TICKS } from './simulation';
 import { OBJECTIVE_NAMES, SPECIAL_LABELS } from './bossSkills';
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MAP_ART, BOSS_ART, BOSS_INTRO_ART, BOSS_STAGE2_ART, BOSS_DEFEAT_ART, BOSS_RUSH_ART, GATE_ART, PLAYER_ART, THREAT_ART, UI_HANGAR_ART, UI_RESULT_CRESTS, UI_MENU_ART, UI_MENU_ICONS, BLADE_SLASH_ART, ENEMY_ART, BATTLE_ART, BOSS_CAST_ART, BOSS_OBJECTIVE_ART } from './art';
-import { getLevel, LEVELS, hazardLaneAt, stageLabel, ENEMY_NAMES } from './level';
+import { getLevel, LEVELS, hazardLaneAt } from './level';
 import { createInitialState, formationFor, effectiveWeapon, bossPhase, bossY, gateEffectDetail, LANE_CENTERS, STEP_MS, laneXAt, targetY, bossFiring, gateGroundY, GATE_CONTACT_Y, isActiveStatus, canMove, canShoot, isBossArena, bossEnrage, BOSS_INTRO_TICKS, BOSS_SHIFT_TICKS, BOSS_VICTORY_TICKS, bossX, rushProgress, isRush, attackIntervalFor, bossAttackLabel, bossWarningTicks, enemyThreatY, playerFormation, bossGuarded, roadEnemyY, roadEnemyX, targetX as targetWorldX } from './simulation';
 import { purchaseUpgrade, readGarage, rewardParts, saveGarage, toggleUpgrade, upgradeCost, UPGRADES, moduleLevel, garageStats, previewUpgrade, equipAllUpgrades, MODULE_MAX_LEVEL, canEnterLevel, recordLevelCompletion, type Garage, type UpgradeId } from './progression';
 
@@ -851,11 +853,11 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState &
               </>
             )}
             {visibleHazards.map(h => (
-              <div key={h.index} data-motion="hazard" data-motion-id={h.index} className={`toybot-hazard enemy-kind-${h.kind ?? 'drone'} ${h.horde?'is-horde':''} elite-${h.eliteRole??'none'} ${guardSourceFor(game,h.index)>=0?'is-guarded':''} ${commanderFor(game,h.index)>=0?'is-commanded':''} ${h.hp<hazardMaxHpFor(game,h.index)?'is-damaged':''} ${game.medicPulses.includes(h.index) ? 'is-repairing' : ''} ${h.armor ? 'is-armored' : ''} ${game.enemyAttacks.some(a => a.source === 'hazard' && a.sourceId === h.index && a.phase === 'warning') ? 'enemy-charging' : ''}`} style={{ left: h.x + '%', top: h.y + '%', '--enemy-offset': (h.slot??h.index)*-97+'ms', '--hazard-scale': .72 + (h.y - 39) / 19 * .34, zIndex: Math.round((h.y + 4) * 10) } as React.CSSProperties} role="img" aria-label={eliteRoleName(h.eliteRole)||ENEMY_NAMES[h.kind ?? 'drone']}>
-                <div className="toybot-drone-sprite" aria-hidden="true" />{h.eliteRole&&<small className="toybot-elite-tag">{eliteRoleName(h.eliteRole)}</small>}{guardSourceFor(game,h.index)>=0&&<span className="toybot-guard-link" aria-label="护卫减伤35%">⬡</span>}
-                {h.kind && h.kind !== 'swarm' && <small className="toybot-enemy-role">{ENEMY_NAMES[h.kind]}</small>}
+              <div key={h.index} data-motion="hazard" data-motion-id={h.index} className={`toybot-hazard enemy-kind-${h.kind ?? 'drone'} sector-enemy-${game.levelIndex} ${h.elite?'is-sector-elite':''} ${h.horde?'is-horde':''} elite-${h.eliteRole??'none'} ${guardSourceFor(game,h.index)>=0?'is-guarded':''} ${commanderFor(game,h.index)>=0?'is-commanded':''} ${h.hp<hazardMaxHpFor(game,h.index)?'is-damaged':''} ${game.medicPulses.includes(h.index) ? 'is-repairing' : ''} ${h.armor ? 'is-armored' : ''} ${game.enemyAttacks.some(a => a.source === 'hazard' && a.sourceId === h.index && a.phase === 'warning') ? 'enemy-charging' : ''}`} style={{ left: h.x + '%', top: h.y + '%', '--enemy-offset': (h.slot??h.index)*-97+'ms', '--hazard-scale': .72 + (h.y - 39) / 19 * .34, zIndex: Math.round((h.y + 4) * 10) } as React.CSSProperties} role="img" aria-label={roadEnemyName(game.levelIndex,h)}>
+                <div className="toybot-drone-sprite" aria-hidden="true" />{h.eliteRole&&<small className="toybot-elite-tag">{h.elite?roadEnemyName(game.levelIndex,h):eliteRoleName(h.eliteRole)}</small>}{guardSourceFor(game,h.index)>=0&&<span className="toybot-guard-link" aria-label="护卫减伤35%">⬡</span>}
+                {h.kind && h.kind !== 'swarm' && !h.horde && !h.elite && <small className="toybot-enemy-role">{roadEnemyName(game.levelIndex,h)}</small>}
                 {h.kind === 'medic' && <span className="toybot-medic-pulse" aria-hidden="true">✚</span>}
-                {h.armor && <span className="toybot-enemy-armor" aria-label={`装甲 ${h.armor}`}>⬡{h.armor}</span>}
+                {!!h.armor && <span className="toybot-enemy-armor" aria-label={`装甲 ${h.armor}`}>⬡{h.armor}</span>}
                 <div className="toybot-hazard-hp" aria-label={`障碍耐久 ${h.hp}/${h.hp > 0 ? hazardMaxHpFor(game,h.index) : 0}`}><span style={{ width: h.hp / hazardMaxHpFor(game,h.index) * 100 + '%' }} /></div>
               </div>
             ))}
@@ -869,9 +871,11 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState &
               const y = attack.fromY + (59 - attack.fromY) * progress;
               const angle = Math.atan2((LANE_CENTERS[attack.lane] - fromX) * .56, Math.max(1, 59 - attack.fromY)) * -180 / Math.PI;
               return <React.Fragment key={attack.id}>
-                <div className={'toybot-enemy-target attack-' + attack.kind + (attack.phase === 'flight' ? ' is-live' : '')} style={{ left: LANE_CENTERS[attack.lane] + '%', '--warning-fill': (1 - attack.ticks / attack.duration) * 100 + '%' } as React.CSSProperties} role="img" aria-label={attack.kind === 'sniper-shot' ? '狙击锁定，离开标记轨道' : attack.kind === 'bombard' ? '双列轰炸，前往空白轨道' : attack.kind === 'charge' ? '突击蜂蓄力冲锋，击破或换道' : attack.kind === 'drone-burst' ? '无人机锁定轨道，准备连射' : attack.kind === 'shockwave' ? '路障电磁冲击波，离开该轨道' : '小机器人准备扑击，击毁或换道'} />
+                {attack.phase!=='field'&&<div className={'toybot-enemy-target attack-' + attack.kind + (attack.phase === 'flight' ? ' is-live' : '')} style={{ left: LANE_CENTERS[attack.lane] + '%', '--warning-fill': (1 - attack.ticks / attack.duration) * 100 + '%' } as React.CSSProperties} role="img" aria-label={attack.kind in ELITE_ATTACKS?ELITE_ATTACKS[attack.kind as ElitePattern].name+'，离开标记轨道':attack.kind === 'sniper-shot' ? '狙击锁定，离开标记轨道' : attack.kind === 'bombard' ? '双列轰炸，前往空白轨道' : attack.kind === 'charge' ? '突击蜂蓄力冲锋，击破或换道' : attack.kind === 'drone-burst' ? '无人机锁定轨道，准备连射' : attack.kind === 'shockwave' ? '路障电磁冲击波，离开该轨道' : '小机器人准备扑击，击毁或换道'} />}
                 {attack.phase === 'warning' && <span className="toybot-enemy-charge" style={{ left: fromX + '%', top: attack.fromY + '%', zIndex: Math.round((attack.fromY + 5) * 10) }} aria-hidden="true">{attack.kind === 'drone-burst' || attack.kind === 'sniper-shot' ? '⌖' : attack.kind === 'bombard' ? '◎' : attack.kind === 'shockwave' ? 'ϟ' : '»'}</span>}
-                {attack.phase === 'flight' && ['drone-burst', 'sniper-shot', 'bombard'].includes(attack.kind) && <div data-motion="enemy-bolt" data-motion-id={attack.id} className={'toybot-enemy-bolt bolt-' + attack.kind + (attack.ticks <= 1 ? ' at-contact' : '')} style={{ left: x + '%', top: y + '%', rotate: angle + 'deg', zIndex: Math.round((y + 5) * 10) + 4, backgroundImage: 'url(' + THREAT_ART + ')' }} aria-hidden="true" />}
+                {attack.phase === 'flight' && ['drone-burst', 'sniper-shot', 'bombard','heat-mine','hunter-fan','storm-orb','royal-salvo'].includes(attack.kind) && <div data-motion="enemy-bolt" data-motion-id={attack.id} className={'toybot-enemy-bolt bolt-' + attack.kind + (attack.ticks <= 1 ? ' at-contact' : '')} style={{ left: x + '%', top: y + '%', rotate: angle + 'deg', zIndex: Math.round((y + 5) * 10) + 4, backgroundImage: 'url(' + THREAT_ART + ')' }} aria-hidden="true" />}
+                {attack.phase==='field'&&<div className={'toybot-road-field kind-'+attack.kind} style={{left:LANE_CENTERS[attack.lane]+'%'}} role="img" aria-label={attack.kind==='heat-mine'?'熔焰地面，换道避开持续灼烧':'导电球场，换道避开干扰'}><span/><b>{attack.kind==='heat-mine'?'灼烧':'导电'}</b><i style={{width:attack.ticks/attack.duration*100+'%'}}/></div>}
+                {attack.phase==='flight'&&attack.kind==='siege-laser'&&<div className="toybot-road-rail" style={{left:LANE_CENTERS[attack.lane]+'%'}} role="img" aria-label="重轨炮正在射击该轨道"/>}
                 {attack.phase === 'flight' && attack.kind === 'shockwave' && <div className="toybot-enemy-shockwave" style={{ left: laneXAt(attack.lane, y) + '%', top: y + '%', zIndex: Math.round((y + 5) * 10) + 4 }} aria-hidden="true" />}
               </React.Fragment>;
             })}
@@ -1018,7 +1022,7 @@ const ToybotBreakout: React.FC<{previewState?:import('./simulation').GameState &
 
 
         <div className="toybot-stats">
-          <div className="toybot-pill"><small>{stageLabel(game.progress)}</small><b>{Math.floor(game.progress)}%</b></div>
+          <div className="toybot-pill"><small>{frontlineStage(game.levelIndex,game.progress).name}</small><b>{Math.floor(game.roadTicks/600)}:{String(Math.floor(game.roadTicks/10)%60).padStart(2,'0')}<em className="frontline-time-goal"> / 2:00</em></b></div>
           <div className="toybot-pill"><small>修复分数</small><b>{game.score}</b></div>
         </div>
         <div className="toybot-meter" aria-label={`关卡进度 ${Math.floor(game.progress)}%`}>

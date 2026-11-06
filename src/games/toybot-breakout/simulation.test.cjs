@@ -111,6 +111,7 @@ test('raw growth damage has no fraction-of-max-hp cap; cross-lane shots never da
 });
 test('tier two pierces one further enemy in same lane and cannot hit a different lane', () => {
   const s = { ...initial(1), status: 'running', progress: 20, gate: 2, fireCooldown: 100 };
+  s.hazardHps=s.hazardHps.map((hp,i)=>i<6?hp:-1);
   s.pendingShots = [incoming(s, { target: 'hazard', targetIndex: 0, lane: 1, damage: 20, weaponLevel: 2, pierce: 1 })];
   let n = tick(s);
   assert.equal(n.hazardHps[0], 0);
@@ -214,22 +215,22 @@ test('all five levels and three classes complete roads and bosses by collecting 
         const gate = s.gateChoices[s.gate]?.[0], mark = level.gateMarks[s.gate];
         const enemy = level.hazards.findIndex((h, i) => s.hazardHps[i] > 0 && s.progress >= h.progress - 14 && s.progress < h.progress);
         if (enemy >= 0) lane = levels.hazardLaneAt(s.layoutIndex, enemy, s.progress, levelIndex);
-        const danger = level.hazards.flatMap((h, index) => s.hazardHps[index] > 0 && h.progress - s.progress < 1.5 && h.progress > s.progress ? [levels.hazardLaneAt(s.layoutIndex, index, s.progress, levelIndex)] : []);
+        const danger = [...s.enemyAttacks.map(a=>a.lane),...level.hazards.flatMap((h, index) => s.hazardHps[index] > 0 && h.progress - s.progress < 1.5 && h.progress > s.progress ? [levels.hazardLaneAt(s.layoutIndex, index, s.progress, levelIndex)] : [])];
         if (danger.includes(lane)) lane = [0,1,2].find(l => !danger.includes(l));
         if (!s.bossDefeated && s.progress >= level.encounters[0].progress - 5) lane = s.battleLane;
         if (gate && !s.gateResolved && s.progress >= mark - 2.5 && s.progress <= mark + 2) lane = gate.polarity === 'reward' ? gate.lane : (gate.lane + 1) % 3;
       }
       s = sim.gameReducer(s, { type: 'MOVE_LANE', lane }); s = tick(s); ticks++;
-      assert.ok(ticks < 3500, `run must terminate: seed=${seed}, level=${levelIndex}, status=${s.status}, step=${s.bossStep}, phase=${s.bossPhaseTicks}, hp=${s.battleHp}, bots=${s.bots}, time=${s.battleTime}, cooldown=${s.fireCooldown}`);
+      assert.ok(ticks < 5000, `run must terminate: seed=${seed}, level=${levelIndex}, status=${s.status}, step=${s.bossStep}, phase=${s.bossPhaseTicks}, hp=${s.battleHp}, bots=${s.bots}, time=${s.battleTime}, cooldown=${s.fireCooldown}`);
     }
     assert.equal(s.won, true, `seed ${seed} level ${levelIndex + 1}: ${s.status} ${s.defeatReason} hp=${s.battleHp}, bots=${s.bots}`);
-    assert.ok(ticks >= 450 && ticks <= 3500, `level ${levelIndex + 1}: ${ticks / 10}s`);
+    assert.ok(ticks >= 1800 && ticks <= 5000, `level ${levelIndex + 1}: ${ticks / 10}s`);
   }
 });
 test('gate art threshold and simulation share exact contact point; passing is once-only and a missed lane is not collected', () => {
   const mark = levels.getLevel(0).gateMarks[0];
   assert.equal(sim.gateGroundY(mark - 1.5, mark), sim.GATE_CONTACT_Y);
-  const s = { ...initial(), status: 'running', progress: mark - 1.8, lane: 0, gateChoices: [[{ id: 'core', effect: 'coreUp', amount: 2, polarity: 'reward', lane: 0 }]], fireCooldown: 100 };
+  const s = { ...initial(), status: 'running', progress: mark - 1.5 - sim.RUN_SPEED * 1.5, lane: 0, gateChoices: [[{ id: 'core', effect: 'coreUp', amount: 2, polarity: 'reward', lane: 0 }]], fireCooldown: 100 };
   let before = tick(s); assert.equal(before.gateResolved, false);
   const crossed = tick({ ...before, laneMoveTicks: 1 });
   assert.equal(crossed.gateCollected, true); assert.equal(crossed.bots, 3);
@@ -278,7 +279,7 @@ test('gate depth changes from behind the leader to in front only after crossing 
 });
 test('arena entry cleans ordinary stage objects, preserves movement, and finishes the complete entrance before attacking', () => {
   const level = levels.getLevel(0), mark = level.encounters[0].progress;
-  let s = { ...initial(), status: 'running', progress: mark - .1, gate: level.gateMarks.length, hazardHps: level.hazards.map(() => -1), pendingShots: [incoming(initial(), { target: null, ticks: 5 })], overloadTicks: 30 };
+  let s = { ...initial(), status: 'running', progress: mark - sim.RUN_SPEED/2, gate: level.gateMarks.length, hazardHps: level.hazards.map(() => -1), pendingShots: [incoming(initial(), { target: null, ticks: 5 })], overloadTicks: 30 };
   s = tick(s); assert.equal(s.status, 'boss-intro'); assert.equal(s.pendingShots.length, 0); assert.equal(s.gate, level.gateMarks.length);
   const progress = s.progress, hp = s.battleHp;
   s = sim.gameReducer(s, { type: 'MOVE_LANE', lane: 2 }); assert.equal(s.lane, 2);
@@ -365,11 +366,11 @@ test('new skill telegraphs remain locked while the player sidesteps and never fa
     const released=tick(s);assert.equal(released.bossStep,'flight');
   }
 });
-test('five bosses take 1–3 minutes with representative loadouts and telegraph-aware dodging', () => {
+test('five bosses take roughly three minutes with representative loadouts and telegraph-aware dodging', () => {
   const samples=[];
   for(let level=0;level<5;level++) for(const [bots,weaponLevel] of [[3,2],[5,3],[7,4]]) {
     const spec=levels.getLevel(level);
-    let s=tick({...initial(level),status:'running',progress:spec.encounters[0].progress-.1,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots,weaponLevel});
+    let s=tick({...initial(level),status:'running',progress:spec.encounters[0].progress - sim.RUN_SPEED/2,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots,weaponLevel});
     const maxHp=s.battleMaxHp; let ticks=0;
     while(sim.isActiveStatus(s.status) && ticks<4000){
       let lane=s.battleLane;
@@ -380,7 +381,7 @@ test('five bosses take 1–3 minutes with representative loadouts and telegraph-
       assert.equal(s.battleMaxHp,maxHp,'boss HP must not grow during combat');
     }
     assert.equal(s.won,true); const seconds=ticks/10; samples.push(seconds);
-    assert.ok(seconds>=60&&seconds<=180, 'level '+(level+1)+' bots '+bots+' W'+weaponLevel+': '+seconds+'s');
+    assert.ok(seconds>=100&&seconds<=210, 'level '+(level+1)+' bots '+bots+' W'+weaponLevel+': '+seconds+'s');
   }
   console.log('Boss balance sample seconds: '+samples.join(', '));
 });
@@ -512,7 +513,7 @@ test('small robot visibly pounces along its own lane, deals one hit and leaves n
 });
 test('extra enemy attacks freeze on pause and are cleared on arena entry, victory or lethal damage', () => {
   const s=roadDrone();const paused=sim.gameReducer(s,{type:'PAUSE'});assert.deepEqual(tick(paused),paused);
-  const spec=levels.getLevel(0);const arena=tick({...s,gate:spec.gateMarks.length,progress:spec.encounters[0].progress-.1,hazardHps:s.hazardHps.map(()=>-1)});assert.equal(arena.status,'boss-intro');assert.equal(arena.enemyAttacks.length,0);
+  const spec=levels.getLevel(0);const arena=tick({...s,gate:spec.gateMarks.length,progress:spec.encounters[0].progress - sim.RUN_SPEED/2,hazardHps:s.hazardHps.map(()=>-1)});assert.equal(arena.status,'boss-intro');assert.equal(arena.enemyAttacks.length,0);
   const b=supportEnemy('barrier');const won=tick({...b,battleHp:1,pendingShots:[incoming(b,{lane:b.battleLane,damage:999})]});assert.equal(won.status,'boss-victory');assert.equal(won.enemyAttacks.length,0);
   let death=roadDrone();for(let i=0;i<12;i++)death=tick(death);death=tick({...death,playerHp:1,enemyAttacks:death.enemyAttacks.map(a=>({...a,ticks:1}))});assert.equal(death.status,'defeat');assert.equal(death.enemyAttacks.length,0);
 });
@@ -549,18 +550,18 @@ test('old garage saves migrate to pulse and new class choice persists across sta
   for(const type of ['START','RESTART','HOME'])assert.equal(sim.gameReducer(initial(),{type,garage:selected}).mechClass,'heavy');
   assert.equal(sim.gameReducer({...initial(),won:true,status:'result',bossDefeated:true,progress:100},{type:'NEXT_LEVEL',garage:selected}).mechClass,'heavy');
 });
-test('all three mech classes can beat five bosses with telegraphed dodging in 1–3 minutes', () => {
+test('all three mech classes can beat five bosses with telegraphed dodging in roughly three minutes', () => {
   const times=[];
   for(const mechClass of ['pulse','heavy','blade']) for(let level=0;level<5;level++){
-    const spec=levels.getLevel(level);let s=tick({...initial(level),mechClass,status:'running',progress:spec.encounters[0].progress-.1,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3});let ticks=0;
-    while(sim.isActiveStatus(s.status)&&ticks<3500){
+    const spec=levels.getLevel(level);let s=tick({...initial(level),mechClass,status:'running',progress:spec.encounters[0].progress - sim.RUN_SPEED/2,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3});let ticks=0;
+    while(sim.isActiveStatus(s.status)&&ticks<5000){
       let lane=s.battleLane;const danger=s.threats.filter(t=>t.hp!==0&&t.ticks<=8).map(t=>t.lane);
       danger.push(...s.enemyAttacks.filter(a=>a.phase==='flight'||a.ticks<=4).map(a=>a.lane));
       if(sim.isRush(s)&&(s.bossStep==='rush'||(s.bossStep==='warning'&&s.bossStepTicks>=10)))danger.push(...s.bossAttackLanes);
       if(danger.includes(lane))lane=[0,1,2].find(l=>!danger.includes(l))??lane;
       s=tick(sim.gameReducer(s,{type:'MOVE_LANE',lane:bossTactic(s)}));ticks++;
     }
-    assert.equal(s.won,true,mechClass+' level '+(level+1));assert.ok(ticks>=550&&ticks<=1800,mechClass+' level '+(level+1)+' '+ticks/10+'s');times.push(mechClass+' L'+(level+1)+':'+ticks/10);
+    assert.equal(s.won,true,mechClass+' level '+(level+1));assert.ok(ticks>=1000&&ticks<=2100,mechClass+' level '+(level+1)+' '+ticks/10+'s');times.push(mechClass+' L'+(level+1)+':'+ticks/10);
   }
   console.log('Class boss balance '+times.join(', '));
 });
@@ -699,9 +700,9 @@ test('permanent tuning does not increase boss HP and visibly reduces simulated d
     const results=[];let hp;
     for(const tuned of [false,true]){
       const g=progression.normalizeGarage({...garage,mechClass,levels:{weapon:tuned?5:0,armor:tuned?5:0,core:tuned?5:0},equipped:{weapon:tuned,armor:tuned,core:tuned}}),spec=levels.getLevel(level);
-      let s=tick({...sim.createInitialState(g,level,0),bossRandomSeed:42,status:'running',progress:spec.encounters[0].progress-.1,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3}),ticks=0;
+      let s=tick({...sim.createInitialState(g,level,0),bossRandomSeed:42,status:'running',progress:spec.encounters[0].progress - sim.RUN_SPEED/2,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3}),ticks=0;
       if(hp===undefined)hp=s.battleMaxHp;else assert.equal(s.battleMaxHp,hp,'permanent upgrades must not strengthen this boss');
-      while(sim.isActiveStatus(s.status)&&ticks<3500){let lane=s.battleLane;const danger=s.threats.filter(t=>t.hp!==0&&t.ticks<=8).map(t=>t.lane);danger.push(...s.enemyAttacks.filter(a=>a.phase==='flight'||a.ticks<=4).map(a=>a.lane));if(sim.isRush(s)&&(s.bossStep==='rush'||(s.bossStep==='warning'&&s.bossStepTicks>=10)))danger.push(...s.bossAttackLanes);if(danger.includes(lane))lane=[0,1,2].find(l=>!danger.includes(l))??lane;s=tick(sim.gameReducer(s,{type:'MOVE_LANE',lane:bossTactic(s)}));ticks++;}
+      while(sim.isActiveStatus(s.status)&&ticks<5000){let lane=s.battleLane;const danger=s.threats.filter(t=>t.hp!==0&&t.ticks<=8).map(t=>t.lane);danger.push(...s.enemyAttacks.filter(a=>a.phase==='flight'||a.ticks<=4).map(a=>a.lane));if(sim.isRush(s)&&(s.bossStep==='rush'||(s.bossStep==='warning'&&s.bossStepTicks>=10)))danger.push(...s.bossAttackLanes);if(danger.includes(lane))lane=[0,1,2].find(l=>!danger.includes(l))??lane;s=tick(sim.gameReducer(s,{type:'MOVE_LANE',lane:bossTactic(s)}));ticks++;}
       assert.equal(s.won,true);results.push(ticks/10);
     }
     assert.ok(results[1]<results[0]*.8,mechClass+' permanent tuning should be clearly faster');times.push(mechClass+' L'+(level+1)+' '+results.join(' -> '));
@@ -796,12 +797,12 @@ test('chapter scenes freeze all simulation and input, survive pause, and skippin
 test('support route is a real same-lane road pickup with a contact window and once-only reward',()=>{
  for(const route of ['rescue','signal']){
   const base=campaignStart(route),lane=base.narrative.relayLane;
-  const s={...base,lane,progress:22.4,fireCooldown:1000,hazardHps:base.hazardHps.map(()=>-1),gate:levels.getLevel(0).gateMarks.length};
+  const s={...base,lane,progress:24-1.5-sim.RUN_SPEED/2,fireCooldown:1000,hazardHps:base.hazardHps.map(()=>-1),gate:levels.getLevel(0).gateMarks.length};
   const before=JSON.stringify(s),collected=campaignTick(s);assert.equal(JSON.stringify(s),before,'input remains immutable');assert.equal(collected.narrative.objective,'collected');
   assert.equal(collected.bots,s.bots+Number(route==='rescue'));assert.equal(collected.shieldCharges,s.shieldCharges+Number(route==='signal'));assert.equal(campaignTick(collected).bots,collected.bots);assert.equal(campaignTick(collected).shieldCharges,collected.shieldCharges);
   let missed=campaignTick({...s,lane:(lane+1)%3});assert.equal(missed.narrative.objective,'pending');
   const late=campaignTick({...missed,lane});assert.equal(late.narrative.objective,'collected','lateral correction still works inside the contact window');
-  for(let i=0;i<15;i++)missed=campaignTick(missed);assert.equal(missed.narrative.objective,'missed');assert.equal(missed.bots,s.bots);assert.equal(missed.shieldCharges,s.shieldCharges);
+  for(let i=0;i<40;i++)missed=campaignTick(missed);assert.equal(missed.narrative.objective,'missed');assert.equal(missed.bots,s.bots);assert.equal(missed.shieldCharges,s.shieldCharges);
  }
 });
 test('support relays avoid nearby obstacle lanes across all chapters',()=>{
@@ -811,7 +812,7 @@ test('support relays avoid nearby obstacle lanes across all chapters',()=>{
  }
 });
 test('boss conversation triggers on actual arena entry, never spends warning time, and does not repeat',()=>{
- let s=campaignStart();s={...s,progress:levels.getLevel(0).encounters[0].progress-.1,gate:levels.getLevel(0).gateMarks.length,hazardHps:s.hazardHps.map(()=>-1),fireCooldown:1000};
+ let s=campaignStart();s={...s,progress:levels.getLevel(0).encounters[0].progress - sim.RUN_SPEED/2,gate:levels.getLevel(0).gateMarks.length,hazardHps:s.hazardHps.map(()=>-1),fireCooldown:1000};
  s=campaignTick(s);assert.equal(s.status,'boss-intro');assert.equal(s.narrative.scene.kind,'confrontation');assert.equal(campaignTick(s),s);
  s=campaign.campaignReducer(s,{type:'STORY_NEXT'});assert.equal(s.narrative.scene.step,1);s=campaign.campaignReducer(s,{type:'STORY_NEXT'});
  for(let i=0;i<sim.BOSS_INTRO_TICKS;i++)s=campaignTick(s);assert.equal(s.status,'battle');assert.equal(s.narrative.scene,null);assert.equal(s.battleTime,0);
@@ -826,7 +827,7 @@ test('victory dialogue and ordered sync never create extra rewards or block next
  const defeat=campaignTick({...base,status:'defeat',defeatTicks:sim.BOSS_DEFEAT_TICKS-1,bossDefeated:false});assert.equal(defeat.won,false);assert.equal(defeat.narrative.scene,null);
 });
 test('background lore is once per run, nonmodal, dismissible, and freezes during pause',()=>{
- let s=campaignStart();s=campaignTick({...s,progress:54.9,hazardHps:s.hazardHps.map(()=>-1),gate:levels.getLevel(0).gateMarks.length});assert.equal(s.narrative.radio.id,'sector-lore');assert.equal(s.narrative.scene,null);
+ let s=campaignStart();s=campaignTick({...s,progress:55-sim.RUN_SPEED/2,hazardHps:s.hazardHps.map(()=>-1),gate:levels.getLevel(0).gateMarks.length});assert.equal(s.narrative.radio.id,'sector-lore');assert.equal(s.narrative.scene,null);
  const paused=campaign.campaignReducer(s,{type:'PAUSE'});assert.equal(campaignTick(paused).narrative.radio.ticks,s.narrative.radio.ticks);
  s=campaign.campaignReducer(s,{type:'STORY_DISMISS_RADIO'});assert.equal(campaignTick(s).narrative.radio,null);
  const reset=campaign.campaignReducer(s,{type:'RESTART',garage});assert.deepEqual(reset.narrative.seen,['briefing']);
@@ -850,13 +851,13 @@ test('interactive campaign completes all five sectors with both support routes a
     const gate=s.gateChoices[s.gate]?.[0],mark=chapter.gateMarks[s.gate];
     const enemy=chapter.hazards.findIndex((h,i)=>s.hazardHps[i]>0&&s.progress>=h.progress-14&&s.progress<h.progress);
     if(enemy>=0)lane=levels.hazardLaneAt(s.layoutIndex,enemy,s.progress,sector);
-    const danger=chapter.hazards.flatMap((h,i)=>s.hazardHps[i]>0&&h.progress-s.progress<1.5&&h.progress>s.progress?[levels.hazardLaneAt(s.layoutIndex,i,s.progress,sector)]:[]);
+    const danger=[...s.enemyAttacks.map(a=>a.lane),...chapter.hazards.flatMap((h,i)=>s.hazardHps[i]>0&&h.progress-s.progress<1.5&&h.progress>s.progress?[levels.hazardLaneAt(s.layoutIndex,i,s.progress,sector)]:[])];
     if(danger.includes(lane))lane=[0,1,2].find(l=>!danger.includes(l));
     if(s.progress>=chapter.encounters[0].progress-5)lane=s.battleLane;
     if(gate&&!s.gateResolved&&s.progress>=mark-2.5&&s.progress<=mark+2)lane=gate.polarity==='reward'?gate.lane:(gate.lane+1)%3;
     if(s.narrative.objective==='pending'&&s.progress>=22&&s.progress<26)lane=s.narrative.relayLane;
    }
-   s=campaign.campaignReducer(s,{type:'MOVE_LANE',lane});s=campaignTick(s);assert.ok(++ticks<3500);
+   s=campaign.campaignReducer(s,{type:'MOVE_LANE',lane});s=campaignTick(s);assert.ok(++ticks<5000);
   }
   assert.equal(s.won,true,`${route} ${mechClass} sector ${sector+1}`);assert.equal(s.narrative.objective,'collected');assert.deepEqual(scenes,['confrontation','aftermath']);
  }
@@ -864,12 +865,12 @@ test('interactive campaign completes all five sectors with both support routes a
 
 test('road encounter density grows by sector and introduces specialists gradually', () => {
   const totals = levels.LEVELS.map(l => l.hazards.length);
-  assert.deepEqual(totals, [68,81,95,107,119]);
+  assert.deepEqual(totals, [119,147,176,203,230]);
   assert.ok(totals.every((n,i) => i===0 || n>totals[i-1]));
   for(const [sector,l] of levels.LEVELS.entries()) {
     assert.equal(new Set(l.hazards.filter(h=>h.wave!==undefined).map(h=>h.wave)).size,3);
-    assert.ok(l.hazards.filter(h=>h.kind==='swarm').every(h=>h.hp<=6));
-    if(sector<2) assert.ok(!l.hazards.some(h=>h.kind==='bomber'));
+    assert.ok(l.hazards.filter(h=>h.kind==='swarm').every(h=>h.hp<=7));
+    assert.equal(l.hazards.filter(h=>h.elite).length,3);
     if(sector<3) assert.ok(!l.hazards.some(h=>h.kind==='medic'));
   }
 });
@@ -941,12 +942,12 @@ test('three kills grant a score multiplier and small capped recovery without cha
 test('mixed road pressure is bounded to two attack lanes and safely cleans up on arena entry', () => {
   for(let sector=0;sector<5;sector++)for(let layout=0;layout<3;layout++) {
     const spec=levels.getLevel(sector);let s={...sim.createInitialState(garage,sector,layout),status:'running',gate:spec.gateMarks.length,fireCooldown:10000,playerHp:10000,playerMaxHp:10000};
-    let maxVisible=0;
-    for(let i=0;i<450&&s.status==='running';i++) {
-      s=tick(s);assert.ok(new Set(s.enemyAttacks.map(a=>a.lane)).size<=2);assert.ok(s.enemyAttacks.length<=2);
+    let maxVisible=0;const eliteSources=new Set();
+    for(let i=0;i<1250&&s.status==='running';i++) {
+      s=tick(s);s.enemyAttacks.filter(a=>a.source==='hazard'&&spec.hazards[a.sourceId]?.elite).forEach(a=>eliteSources.add(a.sourceId));assert.ok(new Set(s.enemyAttacks.map(a=>a.lane)).size<=2);assert.ok(s.enemyAttacks.length<=2);
       maxVisible=Math.max(maxVisible,spec.hazards.filter((h,j)=>s.hazardHps[j]>0&&s.progress>=h.progress-14&&s.progress<h.progress).length);
     }
-    assert.equal(s.status,'boss-intro');assert.deepEqual(s.enemyAttacks,[]);assert.ok(s.hazardHps.every(hp=>hp===-1));assert.ok(maxVisible<=40,`visible crowd budget: ${maxVisible}`);
+    assert.equal(s.status,'boss-intro');assert.deepEqual(s.enemyAttacks,[]);assert.ok(s.hazardHps.every(hp=>hp===-1));assert.ok(maxVisible<=72,`visible crowd budget: ${maxVisible}`);assert.equal(eliteSources.size,3,`every surviving elite must get a safe attack opportunity: sector ${sector}, layout ${layout}`);
   }
 });
 
@@ -966,7 +967,7 @@ test('enemy formation uses distinct horizontal muzzles and matched aiming positi
 test('road attacks and incoming body collisions never remove the final escape lane', () => {
   for(let sector=0;sector<5;sector++)for(let layout=0;layout<3;layout++) {
     const spec=levels.getLevel(sector);let s={...sim.createInitialState(garage,sector,layout),status:'running',gate:spec.gateMarks.length,fireCooldown:10000,playerHp:10000,playerMaxHp:10000};
-    for(let i=0;i<450&&s.status==='running';i++) {
+    for(let i=0;i<1250&&s.status==='running';i++) {
       const lanes=s.enemyAttacks.map(a=>a.lane);
       spec.hazards.forEach((h,j)=>{if(s.hazardHps[j]>0&&h.progress-s.progress<1.5&&h.progress>s.progress)lanes.push(levels.hazardLaneAt(layout,j,h.progress,sector));});
       assert.ok(new Set(lanes).size<=2,`sector ${sector} layout ${layout} progress ${s.progress}: ${lanes}`);
@@ -978,7 +979,7 @@ test('road attacks and incoming body collisions never remove the final escape la
 test('specialist spacing converges at contact and enemy shots start at the actual unit center', () => {
   for(const kind of ['swarm','sniper','bomber','medic']) {
     const {state,index}=roadSpecialist(kind),h=levels.getLevel(4).hazards[index];
-    const contact={...state,progress:h.progress-.1};assert.ok(sim.roadEnemyY(contact,index)>57);
+    const contact={...state,progress:h.progress - sim.RUN_SPEED/2};assert.ok(sim.roadEnemyY(contact,index)>57);
     if(kind!=='medic') {const queued=tick({...state,progress:h.progress-(kind==='swarm'?4.9:9.5)});assert.equal(queued.enemyAttacks[0].fromX,sim.roadEnemyX(queued,index));}
   }
 });
@@ -1112,7 +1113,7 @@ test('armor glow follows remaining protection, not upgrade level or weapon color
  const shield={...s,shieldCharges:1};assert.deepEqual(defense.defenseLayers({...shield,mechClass:'heavy'},0),defense.defenseLayers({...shield,mechClass:'blade'},0));assert.equal(defense.defenseLayers(shield,0,true)[0].frame,0);
 });
 test('stale defense impacts clear on arena entry, boss victory, restart and defeat',()=>{
- let s={...initial(),status:'running',shieldCharges:1,progress:levels.getLevel(0).encounters[0].progress-.1,fireCooldown:1000};sim.applySquadHit(s,10);s=tick(s);assert.equal(s.status,'boss-intro');assert.equal(s.defenseFx,null);
+ let s={...initial(),status:'running',shieldCharges:1,progress:levels.getLevel(0).encounters[0].progress - sim.RUN_SPEED/2,fireCooldown:1000};sim.applySquadHit(s,10);s=tick(s);assert.equal(s.status,'boss-intro');assert.equal(s.defenseFx,null);
  s={...battle(),battleHp:1,shieldCharges:1};sim.applySquadHit(s,10);s.pendingShots=[incoming(s,{damage:9999})];s=tick(s);assert.equal(s.status,'boss-victory');assert.equal(s.defenseFx,null);
  const reset=sim.gameReducer(s,{type:'RESTART',garage});assert.equal(reset.defenseFx,null);assert.deepEqual(defense.defenseLayers({...reset,status:'defeat',bots:0,playerHp:0},0),[]);assert.deepEqual(defense.defenseLayers({...reset,status:'running'},11),[]);
  const dead=tick({...reset,status:'running',bots:0,playerHp:0,defenseFx:{kind:'shield',exhausted:true,ticks:8,id:1}});assert.equal(dead.status,'defeat');assert.equal(dead.defenseFx,null);
@@ -1221,7 +1222,7 @@ test('each sector adds three weak horde waves and preserves final supply breathi
  const old=[14,18,23,26,29];
  for(const [sector,l]of levels.LEVELS.entries()){
   assert.ok(l.hazards.length>=old[sector]*3);
-  const crowd=l.hazards.filter(h=>h.horde);assert.equal(crowd.length,3*(18+sector*3));
+  const crowd=l.hazards.filter(h=>h.horde);assert.equal(crowd.length,3*(18+sector*3)+3*(12+sector*4));
   assert.ok(crowd.every(h=>(h.eliteRole?h.hp<=6:h.hp<=3)&&!h.armor&&h.progress<=80&&h.progress<l.encounters[0].progress-10));
   for(let wave=0;wave<3;wave++)assert.equal(new Set(crowd.filter(h=>h.wave===wave).map(h=>Math.floor(h.slot%6/2))).size,3);
  }
@@ -1229,20 +1230,20 @@ test('each sector adds three weak horde waves and preserves final supply breathi
 test('horde body contact is grouped by invulnerability and escaped fodder awards no free score',()=>{
  const spec=levels.getLevel(0),index=spec.hazards.findIndex(h=>h.horde),mark=spec.hazards[index].progress,lane=levels.hazardLaneAt(0,index,mark,0);
  const ids=spec.hazards.flatMap((h,i)=>h.horde&&h.progress===mark?[i]:[]);
- const base={...initial(),status:'running',progress:mark-.1,lane,gate:spec.gateMarks.length,fireCooldown:1000,armorPoints:0,shieldCharges:0,hazardHps:spec.hazards.map((h,i)=>ids.includes(i)?h.hp:-1)};
+ const base={...initial(),status:'running',progress:mark - sim.RUN_SPEED/2,lane,gate:spec.gateMarks.length,fireCooldown:1000,armorPoints:0,shieldCharges:0,hazardHps:spec.hazards.map((h,i)=>ids.includes(i)?h.hp:-1)};
  const struck=tick(base);assert.equal(struck.playerHp,94);assert.equal(struck.damageSequence,1);
  const escaped=tick({...base,lane:(lane+2)%3});assert.equal(escaped.playerHp,100);assert.equal(escaped.score,0);assert.ok(ids.every(i=>escaped.hazardHps[i]===-1));
 });
 test('player-triggered burst preserves five bosses and all chassis with real counterplay',()=>{
  const samples=[];
  for(const mechClass of ['pulse','heavy','blade'])for(let level=0;level<5;level++){
-  const spec=levels.getLevel(level);let s=tick({...initial(level),mechClass,status:'running',progress:spec.encounters[0].progress-.1,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3});let ticks=0;
+  const spec=levels.getLevel(level);let s=tick({...initial(level),mechClass,status:'running',progress:spec.encounters[0].progress - sim.RUN_SPEED/2,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3});let ticks=0;
   while(sim.isActiveStatus(s.status)&&ticks<2400){
    s=sim.gameReducer(s,{type:'MOVE_LANE',lane:bossTactic(s)});
    if(sim.canActivateBurst(s)&&s.bossStep==='recovery')s=sim.gameReducer(s,{type:'ACTIVATE_BURST'});
    s=tick(s);ticks++;
   }
-  assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(s.burstSequence>0);assert.ok(ticks>=550&&ticks<=1800,mechClass+' L'+(level+1)+' '+ticks/10+'s');samples.push(ticks/10);
+  assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(s.burstSequence>0);assert.ok(ticks>=1000&&ticks<=2100,mechClass+' L'+(level+1)+' '+ticks/10+'s');samples.push(ticks/10);
  }
  console.log('Burst boss sample seconds: '+samples.join(', '));
 });
@@ -1318,15 +1319,15 @@ test('all chassis capture module upgrades on their own shots, leaving old projec
 test('fully combined modules complete every boss with all chassis and clear remaining reaction effects',()=>{
  const samples=[];
  for(const mechClass of ['pulse','heavy','blade'])for(let level=0;level<5;level++){
-  const spec=levels.getLevel(level);let s=tick({...initial(level),modules:{arc:3,burn:3,recycle:3},mechClass,status:'running',progress:spec.encounters[0].progress-.1,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3});let ticks=0;
+  const spec=levels.getLevel(level);let s=tick({...initial(level),modules:{arc:3,burn:3,recycle:3},mechClass,status:'running',progress:spec.encounters[0].progress - sim.RUN_SPEED/2,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3});let ticks=0;
   while(sim.isActiveStatus(s.status)&&ticks<2400){s=sim.gameReducer(s,{type:'MOVE_LANE',lane:bossTactic(s)});if(sim.canActivateBurst(s)&&s.bossStep==='recovery')s=sim.gameReducer(s,{type:'ACTIVATE_BURST'});s=tick(s);ticks++;}
-  assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(ticks>=550&&ticks<=1800,mechClass+' L'+(level+1)+' '+ticks/10+'s');assert.equal(s.coreDetonations.length,0);samples.push(ticks/10);
+  assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(ticks>=1000&&ticks<=2100,mechClass+' L'+(level+1)+' '+ticks/10+'s');assert.equal(s.coreDetonations.length,0);samples.push(ticks/10);
  }
  console.log('Module boss sample seconds: '+samples.join(', '));
 });
 
 test('module doors resolve once at the ground contact line and only on their own lane',()=>{
- const level=levels.getLevel(0),gate=2,mark=level.gateMarks[gate],base={...initial(),status:'running',progress:mark-1.6,lane:1,gate,gateChoices:sim.createGateChoices(0,0,()=>0),fireCooldown:1000,hazardHps:level.hazards.map(()=>-1)};
+ const level=levels.getLevel(0),gate=2,mark=level.gateMarks[gate],base={...initial(),status:'running',progress:mark-1.5-sim.RUN_SPEED/2,lane:1,gate,gateChoices:sim.createGateChoices(0,0,()=>0),fireCooldown:1000,hazardHps:level.hazards.map(()=>-1)};
  base.gateChoices[gate]=[moduleGate('burn')];
  const collected=tick(base);assert.equal(collected.modules.burn,1);assert.equal(tick(collected).modules.burn,1);assert.equal(base.modules.burn,0);
  assert.equal(tick({...base,lane:0}).modules.burn,0);
@@ -1351,7 +1352,7 @@ test('each chassis captures its own real counter volley without changing base at
  }
 });
 test('fusion gates use the same displayed choice at ground contact, once, on the right lane',()=>{
- const l=levels.getLevel(0),base={...quietRoad(),gate:3,progress:l.gateMarks[3]-1.6,lane:1,modules:{arc:1,burn:1,recycle:0}};
+ const l=levels.getLevel(0),base={...quietRoad(),gate:3,progress:l.gateMarks[3]-1.5-sim.RUN_SPEED/2,lane:1,modules:{arc:1,burn:1,recycle:0}};
  base.gateChoices=sim.createGateChoices(0,0,()=>0);base.gateChoices[3]=[{...moduleGate('arc'),effect:'weaponUp'}];
  assert.equal(sim.gateChoicesFor(base)[0].effect,'fuse');const next=tick(base);assert.equal(next.ops.fusion,'stormfire');assert.equal(next.weaponLevel,base.weaponLevel);assert.equal(sim.gateChoicesFor(next)[0].title,'雷焰反应');assert.equal(tick(next).ops.fusion,'stormfire');
  assert.equal(tick({...base,lane:0}).ops.fusion,null);assert.equal(base.ops.fusion,null);
@@ -1372,7 +1373,7 @@ test('every sector owns a real same-lane mission target, once-only rewards and p
  }
 });
 test('cargo risk is telegraphed, pinned to one lane, avoidable and yields no automatic reward on a miss',()=>{
- const base=quietRoad();base.progress=60.9;base.lane=base.ops.event.lane;
+ const base=quietRoad();base.progress=61-sim.RUN_SPEED/2;base.lane=base.ops.event.lane;
  let warning=tick(base);assert.equal(warning.ops.eventWarning,16);const pinned=warning.ops.eventLane;
  warning={...warning,lane:(pinned+1)%3};const safeHp=warning.playerHp;for(let i=0;i<16;i++)warning=tick(warning);assert.equal(warning.playerHp,safeHp);assert.equal(warning.ops.bonusParts,0);
  let hit=tick(base);for(let i=0;i<16;i++)hit=tick(hit);assert.equal(hit.playerHp,base.playerHp-12);
@@ -1382,7 +1383,7 @@ test('cargo risk is telegraphed, pinned to one lane, avoidable and yields no aut
 test('pre-boss preparation is three ground choices that resolve once and freeze during pause',()=>{
  const seed=quietRoad(),contact=operations.prepMark(seed)-1.5;
  for(let lane=0;lane<3;lane++){
-  const base={...seed,progress:contact-.1,lane,playerHp:30,modules:{arc:1,burn:0,recycle:0}};const next=tick(base);
+  const base={...seed,progress:contact - sim.RUN_SPEED/2,lane,playerHp:30,modules:{arc:1,burn:0,recycle:0}};const next=tick(base);
   assert.equal(next.ops.prep,['repair','retune','amplify'][lane]);assert.equal(base.ops.prep,'pending');
   if(lane===0)assert.equal(next.playerHp,65);if(lane===1)assert.equal(next.modules.arc,2);if(lane===2)assert.equal(next.chargedVolleys,2);
   assert.equal(tick(next).chargedVolleys,next.chargedVolleys);assert.equal(tick(next).modules.arc,next.modules.arc);
@@ -1433,21 +1434,21 @@ test('scarcity and overdrive affect actual health changes while elite health bar
  const base=battle(),threat={id:4,kind:'shell',lane:base.lane,ticks:1,duration:8,hp:-1,maxHp:0,damage:10,fromLane:1};
  const overloaded=tick({...base,ops:{...base.ops,protocol:'overdrive'},threats:[threat]});assert.equal(overloaded.playerHp,88);
  const road=quietRoad();road.ops.protocol='elite';assert.equal(sim.hazardMaxHpFor(road,0),Math.ceil(levels.getLevel(0).hazards[0].hp*1.4));
- const contact=operations.prepMark(road)-1.5;const repaired=tick({...road,ops:{...road.ops,protocol:'scarcity'},progress:contact-.1,playerHp:20,lane:0});assert.equal(repaired.playerHp,38);
+ const contact=operations.prepMark(road)-1.5;const repaired=tick({...road,ops:{...road.ops,protocol:'scarcity'},progress:contact - sim.RUN_SPEED/2,playerHp:20,lane:0});assert.equal(repaired.playerHp,38);
 });
 
 test('fusion plus perfect counters and new parts preserve full five-sector boss counterplay',()=>{
  const samples=[];
  for(const mechClass of ['pulse','heavy','blade'])for(let level=0;level<5;level++){
   const spec=levels.getLevel(level),seed=initial(level);seed.ops.fusion=['stormfire','furnace','ion'][level%3];seed.ops.mission.status='done';
-  let s=tick({...seed,modules:{arc:2,burn:2,recycle:2},mechClass,status:'running',progress:spec.encounters[0].progress-.1,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3});let ticks=0;
+  let s=tick({...seed,modules:{arc:2,burn:2,recycle:2},mechClass,status:'running',progress:spec.encounters[0].progress - sim.RUN_SPEED/2,gate:spec.gateMarks.length,hazardHps:spec.hazards.map(()=>-1),bots:5,weaponLevel:3});let ticks=0;
   while(sim.isActiveStatus(s.status)&&ticks<2400){s=sim.gameReducer(s,{type:'MOVE_LANE',lane:bossTactic(s)});if(sim.canActivateBurst(s)&&s.bossStep==='recovery')s=sim.gameReducer(s,{type:'ACTIVATE_BURST'});s=tick(s);ticks++;}
-  assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(ticks>450&&ticks<=1800,mechClass+' L'+(level+1)+' '+ticks/10);assert.ok(s.ops.broken>=1);samples.push(ticks/10);
+  assert.equal(s.won,true,mechClass+' L'+(level+1));assert.ok(ticks>1000&&ticks<=2100,mechClass+' L'+(level+1)+' '+ticks/10);assert.ok(s.ops.broken>=1);samples.push(ticks/10);
  }
  console.log('Operations boss sample seconds: '+samples.join(', '));
 });
 test('maxed preparation rewards a fallback score and new operation sounds are driven by outcomes',()=>{
- const s=quietRoad();s.progress=operations.prepMark(s)-1.6;s.lane=1;s.modules={arc:3,burn:3,recycle:3};const next=tick(s);assert.equal(next.score,s.score+40);
+ const s=quietRoad();s.progress=operations.prepMark(s)-1.5-sim.RUN_SPEED/2;s.lane=1;s.modules={arc:3,burn:3,recycle:3};const next=tick(s);assert.equal(next.score,s.score+40);
  const audio=load('audio'),base=battle();assert.ok(audio.gameSoundEvents(base,{...base,ops:{...base.ops,perfects:1}}).includes('perfect'));
  assert.ok(audio.gameSoundEvents(base,{...base,ops:{...base.ops,fusion:'ion'}}).includes('upgrade'));
 });
@@ -1589,4 +1590,78 @@ test('core beam length and angle reconstruct the real body-center to target segm
   assert.ok(Math.abs(p.x*size.width/100+Math.sin(radians)*p.length-end.x*size.width/100)<.00001);
   assert.ok(Math.abs(p.y*size.height/100-p.lift-Math.cos(radians)*p.length-end.y*size.height/100)<.00001);assert.ok(p.lift>0);
  }
+});
+
+
+const frontline=load('frontline');
+function sectorElite(pattern){
+ const sector=levels.LEVELS.findIndex(l=>l.hazards.some(h=>h.elite&&h.pattern===pattern));
+ const l=levels.getLevel(sector),index=l.hazards.findIndex(h=>h.elite&&h.pattern===pattern),h=l.hazards[index];
+ const state={...initial(sector),status:'running',progress:h.progress-13.4,fireCooldown:10000,gate:l.gateMarks.length,playerHp:100,playerMaxHp:100};
+ state.hazardHps=state.hazardHps.map((hp,i)=>i===index?hp:-1);
+ state.lane=levels.hazardLaneAt(0,index,state.progress,sector);
+ return {state,index};
+}
+test('five-minute structure reaches every boss after roughly two minutes without modifying gun cadence',()=>{
+ const seconds=[];
+ for(let sector=0;sector<5;sector++){
+  let s={...quietRoad(sector),fireCooldown:10000},ticks=0;
+  const interval=sim.attackIntervalFor(s);
+  while(s.status==='running'&&ticks<1300){s=tick(s);ticks++;}
+  assert.equal(s.status,'boss-intro');assert.ok(ticks>=1160&&ticks<=1220);assert.equal(sim.attackIntervalFor(s),interval);seconds.push(ticks/10);
+  const paused=sim.gameReducer({...s,status:'running'},{type:'PAUSE'});assert.equal(tick(paused),paused);
+ }
+ console.log('Road duration seconds: '+seconds.join(', '));
+});
+test('every sector has three named elite encounters and three extra themed swarms before preparation',()=>{
+ const themes=new Set();
+ for(const [sector,l]of levels.LEVELS.entries()){
+  const elites=l.hazards.filter(h=>h.elite);assert.equal(elites.length,3);assert.equal(new Set(elites.map(h=>h.encounterId)).size,3);
+  assert.ok(elites.every(h=>h.title&&h.pattern in frontline.ELITE_ATTACKS&&h.progress<l.encounters[0].progress-7));
+  for(let stage=0;stage<3;stage++)assert.equal(l.hazards.filter(h=>h.encounterId==='surge-'+stage).length,12+sector*4);
+  assert.equal(l.bossTargetSeconds,180);themes.add(frontline.frontlineStage(sector,50).theme);
+  assert.equal(frontline.roadEnemyName(sector,elites[0]),elites[0].title);
+ }
+ assert.equal(themes.size,5);
+});
+test('new elite patterns have fixed readable telegraphs, interruptible charges and pause-safe cooldowns',()=>{
+ for(const [pattern,profile]of Object.entries(frontline.ELITE_ATTACKS)){
+  const {state,index}=sectorElite(pattern);const old=JSON.stringify(state),s=tick(state);
+  assert.equal(JSON.stringify(state),old);assert.ok(s.enemyAttacks.length>0);assert.ok(s.enemyAttacks.every(a=>a.kind===pattern&&a.phase==='warning'&&a.ticks>=profile.warning));
+  const pinned=s.enemyAttacks.map(a=>a.lane),moved=tick({...s,lane:(state.lane+1)%3});assert.deepEqual(moved.enemyAttacks.map(a=>a.lane),pinned);
+  assert.equal(tick({...s,hazardHps:s.hazardHps.map(()=>-1)}).enemyAttacks.length,0);
+  assert.equal(s.roadCooldowns[index],profile.rearm);const paused=sim.gameReducer(s,{type:'PAUSE'});assert.equal(tick(paused),paused);
+ }
+});
+test('mines and storm orbs become real lingering fields after travel and survive a destroyed launcher',()=>{
+ for(const pattern of ['heat-mine','storm-orb']){
+  const {state,index}=sectorElite(pattern),profile=frontline.ELITE_ATTACKS[pattern];let s=tick(state),lane=s.enemyAttacks[0].lane;
+  for(let i=0;i<profile.warning;i++)s=tick(s);assert.equal(s.enemyAttacks[0].phase,'flight');
+  s={...s,lane,hazardHps:s.hazardHps.map(()=>-1),enemyAttackSources:['hazard:'+index]};
+  for(let i=0;i<profile.flight;i++)s=tick(s);assert.equal(s.enemyAttacks[0].phase,'field');assert.ok(s.playerHp<100);
+  s={...s,playerHp:100,invulnerableTicks:0};let damaged=false;
+  for(let i=0;i<8;i++){s=tick(s);if(s.playerHp<100){damaged=true;break;}}
+  assert.ok(damaged);if(pattern==='storm-orb')assert.ok(s.jamTicks>0);
+  const safe={...s,lane:(lane+1)%3,playerHp:100,invulnerableTicks:0,jamTicks:0};let n=safe;for(let i=0;i<30;i++)n=tick(n);assert.equal(n.playerHp,100);assert.equal(n.enemyAttacks.length,0);assert.equal(n.jamTicks,0);
+ }
+});
+test('elite rail strikes only after warning and royal paired salvos advertise their delayed second lane',()=>{
+ const {state}=sectorElite('siege-laser');let s=tick(state);const lane=s.enemyAttacks[0].lane;s={...s,lane};
+ for(let i=0;i<24;i++)s=tick(s);assert.equal(s.playerHp,100);assert.equal(s.enemyAttacks[0].phase,'flight');
+ s=tick(tick(s));assert.equal(s.playerHp,84);
+ const royal=tick(sectorElite('royal-salvo').state);assert.equal(royal.enemyAttacks.length,2);assert.equal(new Set(royal.enemyAttacks.map(a=>a.lane)).size,2);assert.equal(royal.enemyAttacks[1].ticks-royal.enemyAttacks[0].ticks,5);
+});
+test('elite can rearm after a full attack and cooldown, and actual destruction rewards exactly once',()=>{
+ const {state,index}=sectorElite('heat-mine');let s=tick(state),first=s.enemyAttackSequence;
+ for(let i=0;i<66;i++)s=tick(s);assert.ok(s.enemyAttackSequence>first);assert.ok(s.enemyAttacks.length<=2);
+ const before={...state,playerHp:70,burstEnergy:0};const dead=tick({...before,pendingShots:[incoming(before,{target:'hazard',targetIndex:index,lane:before.lane,damage:9999})]});
+ assert.equal(dead.hazardHps[index],0);assert.equal(dead.ops.bonusParts,before.ops.bonusParts+1);assert.ok(dead.burstEnergy>=30);assert.equal(dead.playerHp,78);assert.equal(tick(dead).ops.bonusParts,dead.ops.bonusParts);
+});
+
+test('hunter fan fires three real arrivals per lane and leaves the third lane safe',()=>{
+ const {state}=sectorElite('hunter-fan');let s=tick(state),profile=frontline.ELITE_ATTACKS['hunter-fan'];
+ const safe=[0,1,2].find(lane=>!s.enemyAttacks.some(a=>a.lane===lane));assert.notEqual(safe,undefined);
+ for(let i=0;i<profile.warning;i++)s=tick(s);assert.ok(s.enemyAttacks.every(a=>a.phase==='flight'&&a.shotsRemaining===3));
+ s={...s,lane:s.enemyAttacks[0].lane};for(let i=0;i<profile.flight;i++)s=tick(s);assert.ok(s.enemyAttacks.every(a=>a.shotsRemaining===2));assert.ok(s.playerHp<100);
+ s={...s,lane:safe};for(let i=0;i<12;i++)s=tick(s);assert.equal(s.enemyAttacks.length,0);
 });

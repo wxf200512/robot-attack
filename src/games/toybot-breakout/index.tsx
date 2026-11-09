@@ -1,3 +1,4 @@
+import { BLADE_ATTACK_V35 } from './bladeMotionV35';
 import { CORE_FX_V34, coreMuzzlesV34, signatureShotV34 } from './signatureV34';
 import './signatureV34.css';
 import './pulseVfxV33.css';
@@ -197,7 +198,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
     return()=>{document.removeEventListener('visibilitychange',visibility);window.removeEventListener('blur',suspend);window.removeEventListener('pagehide',suspend);};
   },[game.status]);
   const warmRoadAssets=game.status==='running';
-  useEffect(()=>{void preloadImages([CORE_FX_V34[game.mechClass],RUN_ART[game.mechClass],MOTION_ART[game.mechClass],MATERIAL_ART,PROP_ART,PORTRAIT_ART,REFERENCE_LOGO],'high');},[game.mechClass]);
+  useEffect(()=>{void preloadImages([...(game.mechClass==='blade'?[BLADE_ATTACK_V35]:[]),CORE_FX_V34[game.mechClass],RUN_ART[game.mechClass],MOTION_ART[game.mechClass],MATERIAL_ART,PROP_ART,PORTRAIT_ART,REFERENCE_LOGO],'high');},[game.mechClass]);
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages(Object.values(DEFENSE_ART));},[game.status]);
   useEffect(()=>{if(game.status==='home')void preloadImages([UI_MENU_ICONS,UI_MENU_ART.hangar,ART_V19,FUSION_ART_V19].filter(Boolean),'low');},[game.status]);
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages([CHAPTER_FILMS[game.levelIndex],RELAY_ART]);},[game.status,game.levelIndex]);

@@ -1931,7 +1931,7 @@ test('untargeted reference tracers remain visible between volleys without changi
 test('each mech uses an independent motion module with class-correct attack phases',()=>{
  const {MECH_ANIMATIONS,sampleMechMotion:sample}=load('animationModules');assert.notEqual(MECH_ANIMATIONS.pulse,MECH_ANIMATIONS.heavy);assert.notEqual(MECH_ANIMATIONS.heavy,MECH_ANIMATIONS.blade);
  const values={};for(const mechClass of ['pulse','heavy','blade']){const s={...battle(),mechClass};values[mechClass]=sample({...s,fireCooldown:sim.attackIntervalFor(s)-2},.5);assert.equal(values[mechClass].classId,mechClass);}
- assert.equal(values.pulse.action,'pulse-ready');assert.equal(values.heavy.action,'heavy-cannon');assert.equal(values.blade.action,'blade-cut');assert.equal(values.blade.frame,4);assert.ok(values.heavy.recoil>values.pulse.recoil);
+ assert.equal(values.pulse.action,'pulse-ready');assert.equal(values.heavy.action,'heavy-cannon');assert.equal(values.blade.action,'blade-cut');assert.equal(values.blade.sheet,'blade');assert.ok(values.blade.clipFrame>=4&&values.blade.clipFrame<=8);assert.ok(values.heavy.recoil>values.pulse.recoil);
 });
 test('ranged run aim keeps the stride continuous across all fire cooldowns',()=>{
  const sample=load('animationModules').sampleMechMotion;
@@ -1939,8 +1939,8 @@ test('ranged run aim keeps the stride continuous across all fire cooldowns',()=>
 });
 test('blade contact follows melee flight and its longer finisher rather than gun recoil',()=>{
  const sample=load('animationModules').sampleMechMotion,s={...battle(),mechClass:'blade'};s.pendingShots=[incoming(s,{attackStyle:'blade',duration:4,ticks:2,finisher:true})];
- const before=sample({...s,fireCooldown:sim.attackIntervalFor(s)-3},.5);assert.equal(before.action,'blade-cut');assert.equal(before.frame,4);assert.equal(before.recoil,0);
- const after=sample({...s,fireCooldown:sim.attackIntervalFor(s)-4},.2);assert.equal(after.frame,5);assert.equal(after.action,'blade-cut');
+ const before=sample({...s,fireCooldown:sim.attackIntervalFor(s)-3},.5);assert.equal(before.action,'blade-cut');assert.ok(before.clipFrame>=4&&before.clipFrame<8);assert.equal(before.sheet,'blade');
+ const after=sample({...s,fireCooldown:sim.attackIntervalFor(s)-4},.2);assert.ok(after.clipFrame>=8);assert.equal(after.action,'blade-cut');
 });
 test('independent animation modules remain presentation-only and freeze for reduced motion',()=>{
  const sample=load('animationModules').sampleMechMotion;
@@ -2027,7 +2027,7 @@ test('nearby skill explosions merge into bounded local feedback without modifyin
 });
 test('pulse core channel stays braced and sword core contact follows the travelling wave',()=>{
  const art=load('animationModules').sampleMechMotion,s={...battle(),burstTicks:40,mechClass:'pulse',fireCooldown:sim.attackIntervalFor({...battle(),mechClass:'pulse'})};assert.equal(art(s).action,'pulse-channel');assert.equal(art(s,.9).recoil,0);
- const blade={...battle(),mechClass:'blade',burstTicks:40};blade.pendingShots=[incoming(blade,{burst:true,attackStyle:'blade',duration:5,ticks:1})];const interval=sim.attackIntervalFor(blade);assert.equal(art({...blade,fireCooldown:interval-4},.5).frame,4);assert.equal(art({...blade,fireCooldown:interval-5},.2).frame,5);assert.equal(art({...blade,fireCooldown:interval-6},.1).frame,7);
+ const blade={...battle(),mechClass:'blade',burstTicks:40};blade.pendingShots=[incoming(blade,{burst:true,attackStyle:'blade',duration:5,ticks:1})];const interval=sim.attackIntervalFor(blade);assert.ok(art({...blade,fireCooldown:interval-4},.5).clipFrame<8);assert.ok(art({...blade,fireCooldown:interval-5},.2).clipFrame>=8);assert.equal(art({...blade,fireCooldown:interval-6},.1).clipFrame,15);
 });
 
 test('animated pulse position follows the captured projectile rather than drawing a full path',()=>{
@@ -2052,3 +2052,16 @@ test('swordstorm begins at its own body center even though it has no gun muzzle'
 test('overlapping skill impacts merge before budget selection and preserve critical destruction receipts',()=>{const fx=load('signatureV34'),records=[{id:1,x:50,y:40,ticks:5,kind:'boss',coreStyle:'heavy'},{id:2,x:50,y:40,ticks:4,kind:'heavy',coreStyle:'heavy'},{id:3,x:25,y:48,ticks:3,kind:'hit',coreStyle:'pulse'},{id:4,x:25,y:48,ticks:4,kind:'hit',coreStyle:'pulse'},{id:5,x:75,y:48,ticks:3,kind:'hit'}],before=JSON.stringify(records),out=fx.signatureFeedbackV34(records);assert.deepEqual(out.map(f=>f.id),[1,4,5]);assert.equal(JSON.stringify(records),before);});
 test('each core class tags its own real impact style and a cross-lane miss creates no impact art',()=>{for(const mechClass of ['pulse','heavy','blade']){const s={...battle(),mechClass,burstTicks:40,fireCooldown:1000};s.pendingShots=[incoming(s,{burst:true,attackStyle:mechClass,damage:1})];const n=tick(s);assert.ok(n.feedback.some(f=>f.coreStyle===mechClass));const miss={...s,pendingShots:[incoming(s,{burst:true,attackStyle:mechClass,lane:(s.battleLane+1)%3,damage:1})]};assert.equal(tick(miss).feedback.length,0);}});
 test('three signature atlases contain seventy-two transparent high-detail animation cells',()=>{const metadata=JSON.parse(fs.readFileSync(path.resolve(__dirname,'core-vfx-v34.json'),'utf8'));assert.equal(metadata.length,3);const hashes=new Set();for(const m of metadata){assert.equal(m.frames,24);assert.ok(m.transparentFraction>.45);const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/core-'+m.kind+'-v34.png'));assert.equal(png.readUInt32BE(16),1536);assert.equal(png.readUInt32BE(20),576);assert.equal(png[25],6);assert.ok(png.length<1500000);hashes.add(require('node:crypto').createHash('sha256').update(png).digest('hex'));}assert.equal(hashes.size,3);});
+
+test('blade strike traverses sixteen exclusive poses without changing combat state',()=>{
+ const {bladeStrikeV35}=load('bladeMotionV35'),{motionContext}=load('animationTypes');
+ const s={...battle(),mechClass:'blade'},old=JSON.stringify(s),frames=[];
+ for(let elapsed=-1.7;elapsed<4.6;elapsed+=.025){const cooldown=elapsed<0?-elapsed:7-elapsed;const c=motionContext({...s,fireCooldown:cooldown},0,0,false);frames.push(bladeStrikeV35(c,1.7,3).clipFrame);}
+ assert.equal(new Set(frames).size,16);assert.equal(JSON.stringify(s),old);
+ for(let i=1;i<frames.length;i++)assert.ok(frames[i]>=frames[i-1]&&frames[i]-frames[i-1]<=1);
+ const frozen=bladeStrikeV35(motionContext({...s,fireCooldown:5},.9,0,true),1.7,3);assert.equal(frozen.clipFrame,0);assert.equal(frozen.recoil,0);
+});
+test('blade slash art is a transparent separate sixteen-frame clip for each equipment tier',()=>{
+ const m=JSON.parse(fs.readFileSync(path.resolve(__dirname,'blade-motion-v35.json'),'utf8'));assert.equal(m.framesPerTier,16);assert.equal(m.frames,32);assert.ok(m.transparentFraction>.5);
+ const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/mech-blade-attack-v35.png'));assert.equal(png.readUInt32BE(16),1024);assert.equal(png.readUInt32BE(20),512);assert.equal(png[25],6);
+});

@@ -1,3 +1,4 @@
+import { BLADE_ATTACK_V35 } from './bladeMotionV35';
 import { coreFlightV34 } from './signatureV34';
 import { pulseImpactV33 } from './pulseVfxV33';
 import { bossMotionV31, enemyMotionV31, BOSS_MOTION_V31, ENEMY_MOTION_V31 } from './hostileMotionV31';
@@ -55,7 +56,7 @@ export function paintMotion(root:HTMLElement,s:GameState,alpha:number,entries:Mo
   if(kind==='robot'){
    const p=formation[id];if(p)place(node,squadScreenX(p.x,formation[0]?.x??50,s.bots),p.y);
    const art=artPose(s,t,id,reduced),body=node.querySelector<HTMLElement>('.toybot-v28-body');
-   if(body){body.style.backgroundImage=`url(${(art.sheet==='run'?RUN_ART:MOTION_ART)[s.mechClass]})`;body.style.backgroundSize=art.sheet==='run'?'800% 400%':'800% 800%';body.style.backgroundPosition=art.sheet==='run'?atlasCell(art.frame%8,(art.row>=4?2:0)+Math.floor(art.frame/8),8,4):atlasCell(art.frame,art.row);body.style.rotate=art.lean+'deg';body.style.translate='0 '+art.recoil+'px';}
+   if(body){body.style.backgroundImage=`url(${art.sheet==='blade'?BLADE_ATTACK_V35:(art.sheet==='run'?RUN_ART:MOTION_ART)[s.mechClass]})`;body.style.backgroundSize=art.sheet==='run'||art.sheet==='blade'?'800% 400%':'800% 800%';body.style.backgroundPosition=art.sheet==='run'?atlasCell(art.frame%8,(art.row>=4?2:0)+Math.floor(art.frame/8),8,4):atlasCell(art.frame,art.row,8,art.sheet==='blade'?4:8);body.dataset.mechAction=art.action;body.style.rotate=art.lean+'deg';body.style.translate='0 '+art.recoil+'px';}
 
    const dust=node.querySelector<HTMLElement>('.toybot-v28-footdust');if(dust){dust.style.opacity=String(reduced||isBossArena(s)?0:Math.max(0,Math.sin((s.roadTicks+t+id*.8)*Math.PI/3.2))*.28);dust.style.translate=(art.frame<4?'-20%':'0')+' 0';}
 

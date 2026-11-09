@@ -1,3 +1,6 @@
+import { CareerV44, ResultGradeV44, PilotFeedbackV44 } from './ReplayUIV44';
+import { recordMasteryV44, coatingUnlockedV44, type CoatingV44 } from './replayV44';
+import './finishV44.css';
 import { assetStageV43, crowdV43 } from './encounterV43';
 import { strongFeedbackV42 } from './polishV42';
 import { enemyVisibleV41 } from './flowV41';
@@ -49,7 +52,7 @@ import { rewardLedger, nextUpgrade } from './playability';
 import { musicSceneFor } from './music';
 import { createGameAudio, gameSoundEvents, soundPan } from './audio';
 import { advanceDrag, canStartPointerGesture } from './interaction';
-import { preloadImages } from './loading';
+import { preloadImages, retainImagePreloads } from './loading';
 import { clearTrainingCheckpoint } from './training';
 import Tutorial from './Tutorial';
 import { MECH_CLASSES, coreSkill, mechSpec, type MechClass } from './mechs';
@@ -102,7 +105,7 @@ function MechShowcase({ weapon, armor, core, className = '', mechClass }: { mech
   return <div className={`toybot-mech-showcase class-${mechClass}${weapon?' has-weapon':''}${armor?' has-armor':''}${core?' has-core':''} ${className}`} aria-hidden="true"><span className="toybot-v28-portrait" style={{backgroundImage:`url(${PORTRAIT_ART})`,backgroundPosition:equipmentCell(mechClass,weapon,armor,core)}}/></div>;
 }
 
-function GarageWorkshop({ garage, onUnlock, onToggle, onBack, onSelectMech, onEquipAll,recommended }: { recommended?:UpgradeId; onEquipAll: () => void; onSelectMech: (id: MechClass) => void; garage: Garage; onUnlock: (id: UpgradeId) => void; onToggle: (id: UpgradeId) => void; onBack: () => void }) {
+function GarageWorkshop({ career,garage, onUnlock, onToggle, onBack, onSelectMech, onEquipAll,recommended }: { career?:React.ReactNode;recommended?:UpgradeId; onEquipAll: () => void; onSelectMech: (id: MechClass) => void; garage: Garage; onUnlock: (id: UpgradeId) => void; onToggle: (id: UpgradeId) => void; onBack: () => void }) {
   const stats = garageStats(garage);
   const equippedCount = UPGRADES.filter(u => garage.equipped[u.id]).length;
   const formatDamage = (n: number) => Number(n.toFixed(2)).toString();
@@ -120,12 +123,12 @@ function GarageWorkshop({ garage, onUnlock, onToggle, onBack, onSelectMech, onEq
       const next = garageStats(previewUpgrade(garage,upgrade.id));
       const change = upgrade.id === 'armor' ? '生命 ' + stats.maxHp + ' → ' + next.maxHp + ' · 装甲 ' + stats.armorPoints + ' → ' + next.armorPoints : upgrade.id === 'weapon' ? '伤害 ' + formatDamage(stats.damage) + ' → ' + formatDamage(next.damage) : '伤害 ' + formatDamage(stats.damage) + ' → ' + formatDamage(next.damage) + ' · 间隔 ' + stats.interval / 10 + ' → ' + next.interval / 10 + '秒';
       return <div key={upgrade.id} className={'toybot-workshop-item item-' + upgrade.id + (equipped ? ' is-equipped' : '')+(recommended===upgrade.id?' is-recommended':'')}>
-        <span className="toybot-workshop-icon" aria-hidden="true">{upgrade.id === 'weapon' && garage.mechClass === 'blade' ? <span className="toybot-blade-upgrade-icon" style={{ backgroundImage: 'url(' + BLADE_SLASH_ART + ')' }} /> : <img src={'/games/toybot-breakout/optimized/upgrade-' + upgrade.id + '-v1.png'} alt="" draggable={false} />}</span>
+        <span className="toybot-workshop-icon" aria-hidden="true">{upgrade.id === 'weapon' && garage.mechClass === 'blade' ? <span className="toybot-blade-upgrade-icon" style={{ backgroundImage: 'url(' + BLADE_SLASH_ART + ')' }} /> : <OperationSprite cell={upgrade.id==='weapon'?1:upgrade.id==='armor'?2:0}/>}</span>
         <span className="toybot-workshop-copy"><em>{equipped ? '已装配' : level ? '已拥有 · 未装配' : '尚未研发'} / Lv.{level}/{MODULE_MAX_LEVEL}</em><strong>{upgrade.title}{recommended===upgrade.id&&<small className="garage-goal-badge">下一目标</small>}</strong><span className="toybot-module-levels" aria-hidden="true">{Array.from({length:MODULE_MAX_LEVEL},(_,i)=><i key={i} className={i<level?'filled':''}/>)}</span><small>{maxed ? upgrade.effect + ' · 已满级' : change}</small></span>
         <span className="toybot-workshop-actions">{maxed ? <span className="toybot-module-maxed">已满级</span> : <button type="button" className="toybot-workshop-action" disabled={!affordable} onClick={() => onUnlock(upgrade.id)} aria-label={upgrade.title + ' 升级至' + (level + 1) + '级，' + change + '，消耗' + cost + '零件'}><b>{level ? '升级' : '研发'} ◈{cost}</b>{!affordable && <small>还差 {cost-garage.parts}</small>}</button>}{level > 0 && <button type="button" className="toybot-workshop-action equip" aria-pressed={equipped} onClick={() => onToggle(upgrade.id)}>{equipped ? '卸下' : '装配'}</button>}</span>
       </div>;
     })}</div>
-    <p className="toybot-garage-note">升级后自动装配；卸下保留等级。改装在下一次出击生效，队友通过局内奖励招募。</p>
+    {career}<p className="toybot-garage-note">升级后自动装配；卸下保留等级。改装在下一次出击生效，队友通过局内奖励招募。</p>
     <button type="button" className="toybot-primary toybot-workshop-done" onClick={onBack}>完成改装，准备出击 <span aria-hidden="true">›</span></button>
   </div>;
 }
@@ -201,7 +204,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
         wins: current.wins + Number(game.won),
         bestScore: Math.max(current.bestScore, game.score),
       };
-      return updated;
+      return normalizeGarage(recordMasteryV44(updated,game));
     });
   }, [game.status, game.runId, game.score, game.won, game.levelIndex, game.bossDefeated, game.progress,game.ops.bonusParts,game.ops.protocol,resultReward,previewState,game]);
 
@@ -227,6 +230,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
     return()=>{document.removeEventListener('visibilitychange',visibility);window.removeEventListener('blur',suspend);window.removeEventListener('pagehide',suspend);};
   },[game.status]);
   const loadStage=assetStageV43(game.status,game.progress,garageOpen,!!storyView||!!game.narrative.scene);
+  useEffect(retainImagePreloads,[]);
   useEffect(()=>{void preloadImages([REFERENCE_LOGO,PORTRAIT_ART],'high');},[]);
   useEffect(()=>{if(!loadStage.home)return;const timer=window.setTimeout(()=>{void preloadImages([MAP_ART[game.levelIndex],RUN_ART[game.mechClass]],'low');},800);return()=>window.clearTimeout(timer);},[loadStage.home,game.levelIndex,game.mechClass]);
   useEffect(()=>{if(loadStage.workshop)void preloadImages([UI_MENU_ICONS,ART_V19,FUSION_ART_V19],'low');},[loadStage.workshop]);
@@ -237,6 +241,8 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
   useEffect(()=>{if(loadStage.result)void preloadImages([UI_MENU_ART.victory,UI_MENU_ART.medal],'low');},[loadStage.result]);
   const openSettings=()=>{ if(isActiveStatus(game.status))dispatch({type:'PAUSE'}); setSettingsOpen(true); };
 
+  const [coatingPreview,setCoatingPreview]=useState<CoatingV44|null>(null);
+  const applyCoating=(id:CoatingV44)=>{setGarage(current=>coatingUnlockedV44(current.mastery??{},id)?normalizeGarage({...current,coating:id}):current);setCoatingPreview(null);};
   const unlock = (id: UpgradeId) => {setGarageGoal(undefined);setGarage((current) => purchaseUpgrade(current, id));};
   const toggleEquip = (id: UpgradeId) => setGarage((current) => toggleUpgrade(current, id));
 
@@ -246,7 +252,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
   };
   const start = () => {
     if (!garage.tutorialCompleted) { setTrainingMode('first'); return; }
-    setEarnedParts(0);
+    setCoatingPreview(null);setEarnedParts(0);
     if(sortieChoice&&findSortieV39(sortieChoice)?.level===game.levelIndex)dispatch({type:'START_SORTIE',key:sortieChoice,garage});else dispatch({ type: 'START', garage });
   };
   const goHome = () => {
@@ -329,7 +335,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
     if(event.code==='Space'){event.preventDefault();if(!event.repeat)dispatch({type:'ACTIVATE_BURST'});return;}
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
     event.preventDefault();
-    dispatch({ type: 'MOVE_LANE', lane: game.lane + (event.key === 'ArrowLeft' ? -1 : 1) });
+    dispatch({ type: 'MOVE_LANE', lane: (game.queuedLane??game.lane) + (event.key === 'ArrowLeft' ? -1 : 1) });
   };
 
   return (
@@ -842,7 +848,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
         @media(prefers-reduced-motion:reduce){.is-player-hit .robot-player-art,.toybot-damage-vignette{animation:none}.toybot-damage-vignette{opacity:0}}
       `}</style>
 
-      <section className={'toybot-shell toybot-menu-system reference-v29'+(crowdV43(game)?' is-crowded-v43':'')+(game.burstTicks>0?' has-core-active has-core-readout':'')+' core-style-'+game.mechClass + (game.narrative.radio&&canShoot(game.status)&&!game.narrative.scene?' has-story-radio':'') + (game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'?' has-cockpit':'') + (game.burstTicks===0&&!game.pendingShots.some(shot=>shot.burst)&&settings.shake!==false&&!reducedMotion&&quality!=='low'&&game.feedback.some(f=>f.ticks>=4&&strongFeedbackV42(f))?' has-impact-shake':'') + ((displayStatus==='running'||displayStatus==='battle')?' has-core-control':'') + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
+      <section className={'toybot-shell toybot-menu-system reference-v29 coating-'+(game.status==='home'?(coatingPreview??garage.coating??'stock'):(garage.coating??'stock'))+(crowdV43(game)?' is-crowded-v43':'')+(game.burstTicks>0?' has-core-active has-core-readout':'')+' core-style-'+game.mechClass + (game.narrative.radio&&canShoot(game.status)&&!game.narrative.scene?' has-story-radio':'') + (game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'?' has-cockpit':'') + (game.burstTicks===0&&!game.pendingShots.some(shot=>shot.burst)&&settings.shake!==false&&!reducedMotion&&quality!=='low'&&game.feedback.some(f=>f.ticks>=4&&strongFeedbackV42(f))?' has-impact-shake':'') + ((displayStatus==='running'||displayStatus==='battle')?' has-core-control':'') + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
         {game.status !== 'home' && <div
           ref={sceneRef}
           className={`toybot-scene art-v28 sector-${game.levelIndex} formation-${formationColumns} weapon-tier-${activeWeapon} ${displayStatus === 'running' ? 'is-moving' : displayStatus === 'battle' ? 'is-battle' : displayStatus === 'defeat' ? `is-defeat ${game.defeatReason}` : ''} ${game.status === 'paused'||previewFrozen||game.finish.resumeTicks>0 ? 'is-paused' : ''} ${game.invulnerableTicks > 0 ? `is-player-hit damage-${game.damageKind}` : ''} ${arena ? 'is-arena' : ''} ${displayStatus === 'boss-intro' ? 'is-boss-intro' : displayStatus === 'boss-shift' ? 'is-boss-shift' : displayStatus === 'boss-victory' ? 'is-boss-victory' : ''}`}
@@ -1078,12 +1084,13 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
         {game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'&&<div className="toybot-bottom cockpit-bottom">
           <Cockpit game={game} blocked={!!game.narrative.scene} onMove={lane=>dispatch({type:'MOVE_LANE',lane})} onBurst={()=>dispatch({type:'ACTIVATE_BURST'})}/>
         </div>}
+        {!game.narrative.scene&&<PilotFeedbackV44 game={game}/>}
         {game.finish.resumeTicks>0&&game.status!=='paused'&&<div className="resume-receipt-v42" role="status">准备继续 {(game.finish.resumeTicks/10).toFixed(1)}s · 可先换轨</div>}{game.status==='defeat'&&game.defeatTicks>=6&&<button type="button" className="defeat-skip-v42" onClick={()=>dispatch({type:'SKIP_DEFEAT'})}>跳过战败演出</button>}{!game.narrative.scene&&game.finish.receipt&&game.burstTicks===0&&game.flow.introTicks===0&&canShoot(game.status)&&<div className="skill-receipt-v42" role="status"><b>{game.finish.receipt.name} · 本次成果</b><small>技能直伤 {game.finish.receipt.damage} · 期间击破 {game.finish.receipt.kills} · {game.finish.receipt.utility}</small></div>}{!game.narrative.scene&&<CoreBurstScreen game={game} reduced={reducedMotion||quality==='low'}/>}
 
         {game.status === 'home' && !trainingMode && !storyView && (
           <div className={`toybot-overlay toybot-home menu-refresh ${garageOpen ? 'is-workshop' : ''}`} role="dialog" aria-modal="true" aria-labelledby={garageOpen ? 'toybot-workshop-title' : 'toybot-home-title'}>
             <img className="toybot-home-backdrop" src={UI_HANGAR_ART} decoding="async" alt="" aria-hidden="true" draggable={false} />
-            {garageOpen ? <GarageWorkshop recommended={garageGoal??nextUpgrade(garage,game)?.id} garage={garage} onUnlock={unlock} onToggle={toggleEquip} onEquipAll={() => setGarage(current => equipAllUpgrades(current))} onSelectMech={id => setGarage(current => ({ ...current, mechClass: id }))} onBack={() => setGarageOpen(false)} /> :
+            {garageOpen ? <GarageWorkshop career={<CareerV44 garage={garage} level={game.levelIndex} preview={coatingPreview} onPreview={setCoatingPreview} onApply={applyCoating}/>} recommended={garageGoal??nextUpgrade(garage,game)?.id} garage={garage} onUnlock={unlock} onToggle={toggleEquip} onEquipAll={() => setGarage(current => equipAllUpgrades(current))} onSelectMech={id => setGarage(current => ({ ...current, mechClass: id }))} onBack={() => setGarageOpen(false)} /> :
             <div className="toybot-home-content">
               <header className="menu-commandbar">
                 <button type="button" className="menu-square-button menu-back" onClick={() => navigate('/home')} aria-label="返回游戏列表">‹</button>
@@ -1106,6 +1113,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
                 <div className="toybot-mission-heading"><span className="menu-sector-number">{String(game.levelIndex+1).padStart(2,'0')}</span><div><small>{selectedSortie?'短关任务 · '+selectedSortie.name:'主线任务 · '+STORY_CHAPTERS[game.levelIndex].title}</small><b>{LEVEL.title}</b></div><span className="menu-sector-status">{selectedSortie?(garage.sortieClears??[]).includes(selectedSortie.key)?'已完成':'待挑战':garage.completedLevels[game.levelIndex]?'已通关':'待突破'}</span></div>
                 <div className="toybot-level-select" role="group" aria-label="选择关卡">{LEVELS.map((level, index) => <button key={level.title} type="button" disabled={!canEnterLevel(garage,index)} title={!canEnterLevel(garage,index) ? '请先通关第 ' + index + ' 关' : garage.completedLevels[index] ? '已通关，可再次挑战' : '已解锁，可以挑战'} aria-pressed={game.levelIndex === index} aria-label={`第 ${index + 1} 关 ${level.title}`} onClick={() => dispatch({ type: 'SELECT_LEVEL', levelIndex: index, garage })}><b>{String(index + 1).padStart(2, '0')}</b><small>{!canEnterLevel(garage,index) ? '未解锁' : garage.completedLevels[index] ? '已通关' : '可挑战'}</small></button>)}</div>
                 <SortieSelectorV39 garage={garage} level={game.levelIndex} selected={selectedSortie?.key??null} onSelect={setSortieChoice}/>{!selectedSortie&&<ChallengePicker game={game} garage={garage} onSelect={protocol=>dispatch({type:'SET_PROTOCOL',protocol,garage})}/>}{!selectedSortie&&<TrialPickerV40 game={game} garage={garage} onSelect={trial=>dispatch({type:'SET_TRIAL',trial,garage})}/>}<TrialBadgeV40 garage={garage}/><p className="toybot-home-story-objective">{selectedSortie?selectedSortie.name+' · '+sortieGoalV39(selectedSortie)+' · 首通额外零件':STORY_CHAPTERS[game.levelIndex].objective}</p>
+                <CareerV44 garage={garage} level={game.levelIndex} preview={coatingPreview} onPreview={setCoatingPreview} onApply={applyCoating}/>
                 <button type="button" className="toybot-primary toybot-home-start" disabled={!selectedSortie&&game.tactics.trial==='signature'&&game.mechClass!==SECTOR_MECHS[game.levelIndex]} onClick={start}><span className="menu-play" aria-hidden="true">▶</span><span>{garage.tutorialCompleted ? selectedSortie?'开始短关':'开始突围' : '开始基础训练'}<small>单机甲出发 · 自动攻击</small></span><span className="menu-launch-arrow" aria-hidden="true">››</span></button>
               </div>
               <nav className="menu-bottom-nav" aria-label="游戏功能"><span className="is-current" aria-current="page"><MenuIcon name="battle"/><b>出击</b></span><button type="button" onClick={openGarage}><MenuIcon name="garage"/><b>机库</b></button><button type="button" onClick={()=>setStoryView('comic')}><MenuIcon name="story"/><b>剧情</b></button><button type="button" onClick={()=>setTrainingMode('replay')}><MenuIcon name="training"/><b>训练</b></button></nav>
@@ -1139,7 +1147,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
             <div className="toybot-debrief-panel">
               <div className="toybot-debrief-topline"><span>战后报告 / 0{game.levelIndex + 1}</span><span>{game.won ? '任务完成' : '机甲回收'}</span></div>
               <div className={game.won ? 'menu-victory-art' : undefined} aria-hidden="true">{game.won ? <><img className="menu-victory-medal" src={UI_MENU_ART.medal} alt="" decoding="async" draggable={false}/><div className="toybot-v28-victory-mech"><MechShowcase mechClass={game.mechClass} weapon={activeWeapon>0} armor={game.armorLevel>0} core={visualCore>0}/><BattleWear amount={game.report.taken/Math.max(1,game.playerMaxHp)}/></div></> : <div className="toybot-result-crest" style={{ backgroundImage: 'url(' + UI_RESULT_CRESTS + ')', backgroundPositionX: '100%' }} />}</div>
-              <div className="toybot-debrief-kicker">{game.won ? 'MISSION COMPLETE' : 'MISSION INCOMPLETE'}</div>
+              <ResultGradeV44 game={game}/><div className="toybot-debrief-kicker">{game.won ? 'MISSION COMPLETE' : 'MISSION INCOMPLETE'}</div>
               <h2 id="result-title">{game.sortie?(game.won?'短关完成':'目标未达成'):game.won ? (game.levelIndex === LEVELS.length - 1 ? '全境突破' : '突围成功') : '突围受阻'}</h2>
               <p className="toybot-result-summary">{game.sortie?game.sortie.name+' · '+sortieGoalV39(game.sortie)+' · 实际 '+sortieCountV39(game):game.won ? LEVEL.encounters[0].label + ' 已击败 · 区域安全' : game.defeatReason === 'boss-wipe' ? '核心生命耗尽，整备后再次出击' : '小队停止作战，返回机库重新整备'}</p>
               <div className="toybot-debrief-score"><span>本次作战得分</span><strong>{game.score.toLocaleString()}</strong><small>历史最佳 {garage.bestScore.toLocaleString()}</small></div>

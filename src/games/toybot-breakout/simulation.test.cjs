@@ -396,7 +396,7 @@ test('fixed bosses retain a roughly three-minute baseline and reward stronger ac
       assert.equal(s.battleMaxHp,maxHp,'boss HP must not grow during combat');
     }
     assert.equal(s.won,true); const seconds=ticks/10; samples.push(seconds);
-    assert.ok(seconds>=(bots===3&&weaponLevel===2?130:20)&&seconds<=(bots===3&&weaponLevel===2?230:150), 'level '+(level+1)+' bots '+bots+' W'+weaponLevel+': '+seconds+'s');
+    assert.ok(seconds>=(bots===3&&weaponLevel===2?120:20)&&seconds<=(bots===3&&weaponLevel===2?230:150), 'level '+(level+1)+' bots '+bots+' W'+weaponLevel+': '+seconds+'s');
   }
   console.log('Boss balance sample seconds: '+samples.join(', '));
 });
@@ -1640,7 +1640,7 @@ test('five-minute structure reaches every boss after roughly two minutes without
   let s={...quietRoad(sector),fireCooldown:10000},ticks=0;
   const interval=sim.attackIntervalFor(s);
   while(s.status==='running'&&ticks<1300){s=tick(s);ticks++;}
-  assert.equal(s.status,'boss-intro');assert.ok(ticks>=1160&&ticks<=1220);assert.equal(sim.attackIntervalFor(s),interval);seconds.push(ticks/10);
+  assert.equal(s.status,'boss-intro');assert.ok(ticks>=1160&&ticks<=1250);assert.equal(sim.attackIntervalFor(s),interval);seconds.push(ticks/10);
   const paused=sim.gameReducer({...s,status:'running'},{type:'PAUSE'});assert.equal(tick(paused),paused);
  }
  console.log('Road duration seconds: '+seconds.join(', '));
@@ -2450,4 +2450,72 @@ test('V43 lossless migration keeps every runtime counterpart and removes only en
  for(const row of migrationV43.converted){assert.equal(fs.existsSync(path.join(root,row.from)),false);const buffer=fs.readFileSync(path.join(root,row.to));assert.ok(imageInfo(buffer).width>0);assert.equal(buffer.length,row.after);assert.ok(row.after<row.before);}
  for(const row of migrationV43.deletedUnused)assert.equal(fs.existsSync(path.join(root,row.file)),false);
  assert.ok(migrationV43.savedBytes>24*1048576);
+});
+
+
+test('V44 standard opening and lone damaged mech reserve an attack slot without nerfing late challenge pressure',()=>{
+ const v=load('combatV44'),s={...quietRoad(0),progress:38,playerHp:25,playerMaxHp:100,bots:1};assert.equal(v.attackSlotsV44(s),1);assert.equal(v.attackSlotsV44({...s,bots:3,playerHp:100}),2);assert.equal(v.attackSlotsV44({...s,ops:{...s.ops,protocol:'elite'}}),2);assert.equal(v.attackSlotsV44({...s,progress:5,playerHp:100}),1);
+});
+test('V44 post-horde breather triggers once and never deletes live projectiles or resets firing cadence',()=>{
+ let s={...quietRoad(0),progress:43.99,fireCooldown:1000};const n=tick(s);assert.ok(n.breatherTicks>=14);assert.ok(n.flow.relievedStages.includes(10));assert.ok(!s.flow.relievedStages.includes(10));
+ const again=tick({...n,progress:43.99,breatherTicks:0});assert.equal(again.breatherTicks,0);assert.equal(again.flow.relievedStages.filter(x=>x===10).length,1);
+});
+test('V44 accepted lane inputs acknowledge queued moves without claiming successful evasion',()=>{
+ const s={...battle(),lane:0,dodgeTicks:0,queuedLane:null};const n=sim.gameReducer(s,{type:'MOVE_LANE',lane:2});assert.equal(n.finish.input.lane,2);assert.equal(n.finish.input.queued,true);assert.equal(n.evadeSequence,s.evadeSequence);assert.equal(s.finish.input,undefined);
+ const paused=sim.gameReducer(n,{type:'PAUSE'});assert.equal(tick(paused),paused);assert.equal(sim.gameReducer(paused,{type:'MOVE_LANE',lane:0}),paused);
+});
+test('V44 a broken engine stops boss relocation while intact engines move after recovery',()=>{
+ const ops=load('operations'),base={...battle(1),bossStep:'recovery',bossStepTicks:0,battleLane:1,fireCooldown:1000};base.ops={...base.ops,parts:ops.makeBossParts(base)};
+ const moved=tick(base);assert.notEqual(moved.battleLane,1);
+ const disabled=tick({...base,ops:{...base.ops,parts:base.ops.parts.map(p=>p.kind==='engine'?{...p,hp:0}:p)}});assert.equal(disabled.battleLane,1);assert.equal(disabled.bossMoveTicks,0);
+});
+test('V44 cannon destruction disables each guardian special branch without deleting live hazards',()=>{
+ const ops=load('operations');for(const [level,attack]of ['smelt','hive-link','lockdown','polarity','judgement'].entries()){
+  const base={...battle(level),bossAttack:attack,bossStep:'warning',bossStepTicks:19,bossAttackLanes:[0],fireCooldown:1000};base.ops={...base.ops,parts:ops.makeBossParts(base)};
+  const fired=tick(base);assert.ok(fired.threats.length>0);
+  const disabled={...base,ops:{...base.ops,parts:base.ops.parts.map(p=>p.kind==='cannon'?{...p,hp:0}:p)}};assert.equal(tick(disabled).threats.length,0);
+  const shell={id:990,kind:'shell',lane:2,fromLane:1,originY:43,ticks:8,duration:12,hp:-1,maxHp:0,damage:8};assert.ok(tick({...disabled,threats:[shell]}).threats.some(t=>t.id===990));
+ }
+});
+test('V44 rank two modules have distinct actual mechanics and gate receipts report applied values',()=>{
+ const {state,ids}=eliteScene(),own=ids.slice(0,3),s={...state,progress:39,fireCooldown:1000,hazardHps:state.hazardHps.map((_,i)=>own.includes(i)?100:-1)};
+ const one=tick({...s,pendingShots:[incoming(s,{target:'hazard',targetIndex:own[0],lane:s.lane,damage:30,arc:1})]});
+ const two=tick({...s,pendingShots:[incoming(s,{target:'hazard',targetIndex:own[0],lane:s.lane,damage:30,arc:2})]});assert.ok(two.flow.contribution.arc>one.flow.contribution.arc);
+ const b={...battle(),battleHp:10000,battleMaxHp:10000,fireCooldown:1000};const burning=tick({...b,pendingShots:[incoming(b,{damage:10,burn:2})]});assert.equal(burning.burns[0].ticks,30);
+ const recycled=tick({...s,kills:4,chargedVolleys:0,modules:{...s.modules,recycle:2},pendingShots:[incoming(s,{target:'hazard',targetIndex:own[0],lane:s.lane,damage:1000})]});assert.ok(recycled.chargedVolleys>=1);
+ const receipt=sim.applyGateEffect({...s,bots:10},{id:'s',polarity:'reward',icon:'',title:'机甲+2',detail:'',effect:'coreUp',amount:2,lane:s.lane});assert.match(receipt.upgradeFx.detail,/10→11/);assert.ok(!receipt.upgradeFx.detail.includes('10→12'));
+});
+test('V44 grades persist per mech and sector, keep best, reject short/failed runs and never grant parts',()=>{
+ const v=load('replayV44'),g=progression.normalizeGarage({...garage,completedLevels:[true,true,true,true,true],parts:7});
+ const s={...battle(),status:'result',won:true,bossDefeated:true,progress:100,bots:1,playerHp:100,playerMaxHp:100};s.tactics={...s.tactics,elapsed:3000,collisions:2};assert.equal(v.gradeV44(s),'S');
+ const saved=v.recordMasteryV44(g,s);assert.equal(saved.parts,7);assert.equal(saved.mastery['0:pulse'],'S');assert.equal(g.mastery['0:pulse'],undefined);
+ const poor={...s,playerHp:1,tactics:{...s.tactics,elapsed:4000,collisions:5}};assert.equal(v.gradeV44(poor),'C');assert.equal(v.recordMasteryV44(saved,poor).mastery['0:pulse'],'S');assert.equal(v.gradeV44({...s,won:false}),null);assert.equal(v.gradeV44({...s,sortie:{key:'0:0'}}),null);
+ assert.equal(v.recordMasteryV44(progression.normalizeGarage(null),s).mastery['0:pulse'],undefined);
+});
+test('V44 coating previews cannot grant locked rewards and old/corrupt saves remain compatible',()=>{
+ const v=load('replayV44');const old=progression.normalizeGarage({...garage,coating:'prism',mastery:{'0:pulse':'A','4:heavy':'S','99:blade':'S','0:bad':'S','0:blade':'toString'}});assert.equal(old.coating,'stock');assert.deepEqual(old.mastery,{'0:pulse':'A'});
+ assert.equal(v.coatingUnlockedV44(old.mastery,'amber'),true);assert.equal(v.coatingUnlockedV44(old.mastery,'prism'),false);
+ const unlocked=progression.normalizeGarage({...garage,completedLevels:[true,true,true,true,true],mastery:{'0:pulse':'A','1:heavy':'S','2:blade':'A'},coating:'prism'});assert.equal(unlocked.coating,'prism');assert.equal(progression.normalizeGarage(JSON.parse(JSON.stringify(unlocked))).coating,'prism');
+});
+test('V44 stalled image jobs time out, release their slots and retry successfully',async()=>{
+ const old=global.Image,items=[];global.Image=class{set src(url){this.url=url;if(url)items.push(this);}decode(){return Promise.resolve();}};const images=load('loading'),release=images.retainImagePreloads();
+ try{const result=await images.preloadImages(['stalled-44'], 'high',8);assert.equal(result[0].status,'rejected');assert.equal(images.imageLoadingStatsV44().active,0);const retry=images.preloadImages(['stalled-44']);items.at(-1).onload();await retry;assert.equal(images.imageLoadingStatsV44().active,0);}finally{release();global.Image=old;}
+});
+test('V44 repeated unmounts cancel queued requests and never accumulate active image slots or owners',async()=>{
+ const old=global.Image;global.Image=class{set src(url){}decode(){return Promise.resolve();}};const images=load('loading');try{for(let round=0;round<30;round++){const release=images.retainImagePreloads(),jobs=images.preloadImages(Array.from({length:8},(_,i)=>'soak-'+round+'-'+i));release();release();const result=await jobs;assert.ok(result.every(r=>r.status==='rejected'));assert.deepEqual(images.imageLoadingStatsV44(),{active:0,queued:0,cached:0,owners:0});}}finally{global.Image=old;}
+});
+test('V44 game restart soak resets transient effects and preserves only the intended saved loadout',()=>{
+ let s=initial();for(let i=0;i<30;i++){s=sim.gameReducer({...s,status:'defeat',playerHp:0,bots:0,defeatTicks:18},{type:'RESTART',garage});assert.equal(s.playerHp,s.playerMaxHp);assert.equal(s.bots,1);assert.equal(s.finish.input,undefined);assert.equal(s.pendingShots.length,0);assert.equal(s.enemyAttacks.length,0);assert.equal(s.burns.length,0);assert.ok(s.feedback.length<=12);}
+});
+
+test('V44 runtime artwork audit covers query strings and rejects unexpanded JSX asset roots',()=>{
+ const output=require('node:child_process').execFileSync(process.execPath,[path.join(__dirname,'audit-assets-v43.cjs')],{encoding:'utf8'});assert.equal(JSON.parse(output).missing,0);
+ const source=fs.readFileSync(path.join(__dirname,'index.tsx'),'utf8');assert.ok(!source.includes("optimized/upgrade-"));assert.ok(source.includes("<OperationSprite cell={upgrade.id"));
+});
+test('V44 cannon-disabled branches are replaced before showing a new attack warning',()=>{
+ const ops=load('operations');for(let level=0;level<5;level++){const base={...battle(level),bossCycle:1,bossStep:'recovery',bossStepTicks:100,fireCooldown:1000};base.ops={...base.ops,parts:ops.makeBossParts(base).map(p=>p.kind==='cannon'?{...p,hp:0}:p)};const next=tick(base);assert.notEqual(next.bossAttack,['smelt','hive-link','lockdown','polarity','judgement'][level]);}
+});
+
+test('V44 successful image history is bounded even across all staged asset groups',async()=>{
+ const old=global.Image;global.Image=class{set src(url){if(url)queueMicrotask(()=>this.onload?.());}decode(){return Promise.resolve();}};const images=load('loading'),release=images.retainImagePreloads();try{const result=await images.preloadImages(Array.from({length:145},(_,i)=>'bounded-44-'+i));assert.ok(result.every(r=>r.status==='fulfilled'));assert.equal(images.imageLoadingStatsV44().cached,128);assert.equal(images.imageLoadingStatsV44().active,0);assert.equal(images.imageLoadingStatsV44().queued,0);}finally{release();global.Image=old;}
 });

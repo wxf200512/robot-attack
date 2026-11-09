@@ -1,9 +1,10 @@
+import type { InputReceiptV44 } from './combatV44';
 import type { GameState } from './simulation';
 import type { CombatFeedback } from './experience';
 import { dangerWindowsV42 } from './safetyV42';
 import { getLevel } from './level';
 import { enemyVisibleV41 } from './flowV41';
-export type FinalPassV42={resumeTicks:number;baselineDamage:number;receipt:{ticks:number;sequence:number;damage:number;kills:number;utility:string;name:string}|null};
+export type FinalPassV42={input?:InputReceiptV44;resumeTicks:number;baselineDamage:number;receipt:{ticks:number;sequence:number;damage:number;kills:number;utility:string;name:string}|null};
 export const newFinalPassV42=():FinalPassV42=>({resumeTicks:0,baselineDamage:0,receipt:null});
 export const strongFeedbackV42=(f:CombatFeedback)=>!!f.destroyed&&(f.kind==='elite'||f.kind==='boss');
 export function readableFeedbackV42(feedback:CombatFeedback[],low:boolean){

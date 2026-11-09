@@ -1,7 +1,8 @@
+import { attackSlotsV44, upgradeDeltaV44 } from './combatV44';
 import { bossMoveV43, eliteRearmV43, recoveryScaleV43 } from './encounterV43';
 import { newFinalPassV42, type FinalPassV42 } from './polishV42';
 import { enemyFlightV42, safeToQueueV42 } from './safetyV42';
-import { newFlowV41, copyFlowV41, enemyLeadV41, enemyVisibleV41, pressureV41, protectComboV41, usefulGatesV41, recordUpgradeV41, recordContributionV41, damageAdviceV41, LESSONS_V41, type FlowV41, type ContributionV41 } from './flowV41';
+import { newFlowV41, copyFlowV41, enemyLeadV41, enemyVisibleV41, protectComboV41, usefulGatesV41, recordUpgradeV41, recordContributionV41, damageAdviceV41, LESSONS_V41, type FlowV41, type ContributionV41 } from './flowV41';
 import { newTacticsV40, copyTacticsV40, canTrialV40, SECTOR_MECHS, type TacticsV40, type Trial } from './tacticsV40';
 import { findSortieV39, canEnterSortieV39, sortieCountV39, type SortieSpec } from './sortiesV39';
 import { pursuitForV37, pursuitPointV37, pursuitLaneV37 } from './pursuitV37';
@@ -56,7 +57,7 @@ export type GameState = {
   flow:FlowV41;
   tactics:TacticsV40;
   sortie?:SortieSpec & {firstClear:boolean};
-  report:CombatReport; feedback:CombatFeedback[]; feedbackSequence:number; upgradeFx:{id:number;ticks:number;title:string;positive:boolean}|null;
+  report:CombatReport; feedback:CombatFeedback[]; feedbackSequence:number; upgradeFx:{detail?:string;id:number;ticks:number;title:string;positive:boolean}|null;
   ops:Operations;
   modules: Record<RunModule,number>;
   mechClass: MechClass;
@@ -279,7 +280,7 @@ export const applyGateEffect = (state: GameState, option: GateOption): GameState
     case 'scoreDown': next.score = Math.max(0, next.score - option.amount); break;
   }
   recordUpgradeV41(next,'补给门',option.title);
-  next.upgradeFx={id:(state.upgradeFx?.id??0)+1,ticks:12,title:option.title,positive:option.polarity==='reward'};
+  next.upgradeFx={id:(state.upgradeFx?.id??0)+1,ticks:12,title:option.title,detail:upgradeDeltaV44(state,next),positive:option.polarity==='reward'};
   if (next.bots < state.bots) { next.damageSequence++; next.damageLoss = state.bots - next.bots; next.damageLane = state.lane; next.damageKind = 'squad'; next.damageAbsorbed = 0; }
   return next;
 };
@@ -404,7 +405,7 @@ const damageTarget = (s: GameState, target: Target, index: number, raw: number, 
     if(h.elite){s.report.elites++;s.breatherTicks=25;s.score+=100+s.levelIndex*20;gainBurstEnergy(s,30);s.playerHp=Math.min(s.playerMaxHp,s.playerHp+8);s.ops.bonusParts++;}
     if(chain)s.tactics.chainKills++;
     s.flow.moveGuard=true;
-    s.kills++; if(s.ops.fusion==='furnace'&&s.kills%6===0)s.chargedVolleys=Math.min(3,s.chargedVolleys+1);s.combo = s.comboTicks > 0 ? s.combo + 1 : 1; s.comboTicks = COMBO_WINDOW_TICKS; s.bestCombo = Math.max(s.bestCombo, s.combo);
+    s.kills++;if(s.modules.recycle>=2&&s.kills%5===0)s.chargedVolleys=Math.min(3,s.chargedVolleys+1); if(s.ops.fusion==='furnace'&&s.kills%6===0)s.chargedVolleys=Math.min(3,s.chargedVolleys+1);s.combo = s.comboTicks > 0 ? s.combo + 1 : 1; s.comboTicks = COMBO_WINDOW_TICKS; s.bestCombo = Math.max(s.bestCombo, s.combo);
     gainBurstEnergy(s, 12 + s.modules.recycle*3 + (s.combo % 3 === 0 ? 8 : 0));
     const points = kind === 'swarm' ? 15 : kind === 'medic' ? 60 : kind === 'drone' ? 45 : 55;
     s.score += Math.round(points * (1 + Math.min(3, Math.floor(s.combo / 3)) * .25));
@@ -456,6 +457,7 @@ const beginWarning = (s: GameState) => {
   s.bossStep = 'warning'; s.bossStepTicks = 0; s.bossRushHit = false; s.bossWave = 0;
   s.bossAttack = bossMoveV43(s.levelIndex,s.bossStage,s.bossCycle);
   if(partBroken(s,'engine')&&isRush(s))s.bossAttack='cannon';
+  if(partBroken(s,'cannon')&&s.bossAttack===(['smelt','hive-link','lockdown','polarity','judgement'] as const)[s.levelIndex])s.bossAttack=(['vents','eggs','pylons','orbits','seals'] as const)[s.levelIndex];
   if (s.bossAttack === 'orbits') s.bossAttackLanes = [0,1,2].filter(lane => lane !== s.battleLane);
   else if (s.bossAttack === 'hive-link') s.bossAttackLanes = [s.battleLane];
   else if (s.bossAttack === 'vents' || s.bossAttack === 'polarity') s.bossAttackLanes = [s.bossCycle % 3];
@@ -474,6 +476,7 @@ const spawnObjective = (s: GameState, kind: BossThreat['kind'], lane: number, du
   s.threats.push(t); return t;
 };
 const fireBossSalvo = (s: GameState) => {
+  if(partBroken(s,'cannon')&&s.bossAttack===(['smelt','hive-link','lockdown','polarity','judgement'] as const)[s.levelIndex]){s.bossFiredTick=s.battleTime;return;}
   if(partBroken(s,'cannon')&&['cannon','burst','mortar','crossfire'].includes(s.bossAttack)&&s.bossCycle%2===0){s.bossFiredTick=s.battleTime;return;}
   if (s.bossAttack in SPECIAL_LABELS) {
     const lanes = s.bossAttackLanes, hp = 5 + s.levelIndex;
@@ -501,7 +504,7 @@ const fireBossSalvo = (s: GameState) => {
   });
 };
 const relocateBoss = (s: GameState) => {
-  if(s.levelIndex===4){s.battleLane=1;s.bossMoveFromLane=1;s.bossMoveTicks=0;return;}
+  if(s.levelIndex===4||partBroken(s,'engine')){s.battleLane=s.levelIndex===4?1:s.battleLane;s.bossMoveFromLane=s.battleLane;s.bossMoveTicks=0;return;}
   // Store randomness in reducer state so pauses/replays never reroll a move.
   s.bossRandomSeed = (Math.imul(s.bossRandomSeed, 1664525) + 1013904223) >>> 0;
   s.bossMoveFromLane = s.battleLane;
@@ -574,7 +577,7 @@ const advanceRoadEnemies = (s: GameState) => {
   visible.filter(i => level.hazards[i].progress - s.progress < RUN_SPEED*65+1.5).forEach(i => busy.add(hazardLaneAt(s.layoutIndex, i, level.hazards[i].progress, s.levelIndex)));
   const gate = s.gateChoices[s.gate]?.[0], mark = level.gateMarks[s.gate];
   const protectedLane = gate?.polarity === 'reward' && !s.gateResolved && Math.abs(mark - s.progress) < 7 ? gate.lane : -1;
-  const limit=pressureV41(s)==='build'||s.flow.introTicks>0?1:2;
+  const limit=attackSlotsV44(s);
   if (s.enemyAttacks.length >= limit||s.breatherTicks>0) return;
   // Retaliation waits for a safe slot instead of being dropped under pressure.
   for(const i of visible.filter(i=>s.enemyAttackSources.includes('pursuit-ready:'+i))){
@@ -743,6 +746,7 @@ function reduceGameV42(state: GameState, action: Action): GameState {
     return {...state,tactics:{...state.tactics,trial:action.trial},ops:{...state.ops,protocol:'standard'}};
   }
   if (action.type === 'MOVE_LANE') {
+    if(!Number.isFinite(action.lane))return state;
     if (!canMove(state.status)) return state;
     const lane = Math.max(0, Math.min(2, Math.round(action.lane)));
     if(isBossArena(state)&&state.dodgeTicks>0){
@@ -838,13 +842,13 @@ function reduceGameV42(state: GameState, action: Action): GameState {
     }
     if (hit > 0 && (shot.weaponLevel === 3 || (shot.burn??0)>0) && targetAlive(s, shot.target, shot.targetIndex)) {
       const existing = s.burns.find(b => b.target === shot.target && b.index === shot.targetIndex);
-      if (existing) { existing.ticks = 20; existing.damage = Math.max(existing.damage, Math.max(1,Math.ceil(shot.damage * Math.max(shot.weaponLevel===3?.4:0,Math.min(shot.target==='boss'?.3:1,.15*(shot.burn??0)*(shot.fusion==='stormfire'?1.25:1)))))); }
-      else s.burns.push({ target: shot.target, index: shot.targetIndex, lane: shot.lane, ticks: 20, damage: Math.max(1,Math.ceil(shot.damage * Math.max(shot.weaponLevel===3?.4:0,Math.min(shot.target==='boss'?.3:1,.15*(shot.burn??0)*(shot.fusion==='stormfire'?1.25:1))))) });
+      if (existing) { existing.ticks = Math.max(existing.ticks,(shot.burn??0)>=2?30:20); existing.damage = Math.max(existing.damage, Math.max(1,Math.ceil(shot.damage * Math.max(shot.weaponLevel===3?.4:0,Math.min(shot.target==='boss'?.3:1,.15*(shot.burn??0)*(shot.fusion==='stormfire'?1.25:1)))))); }
+      else s.burns.push({ target: shot.target, index: shot.targetIndex, lane: shot.lane, ticks:(shot.burn??0)>=2?30:20, damage: Math.max(1,Math.ceil(shot.damage * Math.max(shot.weaponLevel===3?.4:0,Math.min(shot.target==='boss'?.3:1,.15*(shot.burn??0)*(shot.fusion==='stormfire'?1.25:1))))) });
     }
     if(hit>0&&(shot.arc??0)>0&&!shot.splashDone){
       const y=targetY(s,shot.target,shot.targetIndex);
-      const allies=targetsInLane(s,shot.lane).filter(t=>t.target!=='boss'&&!(t.target===shot.target&&t.index===shot.targetIndex)&&Math.abs(t.y-y)<=6).slice(0,(shot.arc??0)+(shot.fusion==='stormfire'?1:0));
-      for(const other of allies){s.coreDetonations=[...s.coreDetonations,{kind:'arc' as const,id:++s.shotSequence,x:targetX(s,other.target,other.index),y:other.y,ticks:6}].slice(-6);damageTarget(s,other.target,other.index,shot.damage*.35,shot.weaponLevel,shot.lane,true,false,'arc');if(s.battleHp===0&&s.bossDefeated)return s;}
+      const allies=targetsInLane(s,shot.lane).filter(t=>t.target!=='boss'&&!(t.target===shot.target&&t.index===shot.targetIndex)&&Math.abs(t.y-y)<=((shot.arc??0)>=2?7:6)).slice(0,(shot.arc??0)+(shot.fusion==='stormfire'?1:0));
+      for(const other of allies){s.coreDetonations=[...s.coreDetonations,{kind:'arc' as const,id:++s.shotSequence,x:targetX(s,other.target,other.index),y:other.y,ticks:6}].slice(-6);damageTarget(s,other.target,other.index,shot.damage*((shot.arc??0)>=2?.45:.35),shot.weaponLevel,shot.lane,true,false,'arc');if(s.battleHp===0&&s.bossDefeated)return s;}
     }
     // A piercing bolt can continue after another bolt destroyed its first target,
     // but never after that target has moved to a different lane.
@@ -953,6 +957,11 @@ function reduceGameV42(state: GameState, action: Action): GameState {
 
 export function gameReducer(state:GameState,action:Action):GameState{
  const next=reduceGameV42(state,action);if(next===state)return state;
+ if(action.type==='MOVE_LANE'&&(next.lane!==state.lane||next.queuedLane!==state.queuedLane))next.finish={...next.finish,input:{lane:next.queuedLane??next.lane,queued:next.queuedLane!==null,ticks:6}};
+ if(action.type==='TICK'&&canMove(next.status)&&next.finish.input)next.finish={...next.finish,input:next.finish.input.ticks>1?{...next.finish.input,ticks:next.finish.input.ticks-1}:undefined};
+ if(action.type==='TICK'&&next.status==='running'&&!next.sortie){
+  for(const [index,mark]of [44,60,78].entries())if(state.progress<mark&&next.progress>=mark&&!next.flow.relievedStages.includes(index+10)){next.flow={...next.flow,relievedStages:[...next.flow.relievedStages,index+10]};next.breatherTicks=Math.max(next.breatherTicks,14);}
+ }
  if(action.type==='RESUME'&&state.status==='paused'&&canMove(next.status))return {...next,finish:{...next.finish,resumeTicks:8}};
  if(action.type==='TICK'&&canShoot(next.status)){
   if(state.burstTicks>0&&next.burstTicks===0)next.finish={...next.finish,receipt:{ticks:24,sequence:next.burstSequence,damage:0,kills:Math.max(0,next.kills-(next.burstStart?.kills??next.kills)),utility:next.mechClass==='pulse'?'净化 '+next.tactics.castCleared:next.mechClass==='heavy'?'压制/破拆 '+next.tactics.castBreaks:'格挡 '+next.tactics.castParries,name:coreSkill(next.mechClass).name}};

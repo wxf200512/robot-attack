@@ -5,6 +5,11 @@ const urls=new Set(),seen=new Set();
 function visit(value){if(typeof value==='string'&&value.startsWith('/games/toybot-breakout/')&&/\.(?:png|webp|jpg|mp3)$/.test(value))urls.add(value);if(value&&typeof value==='object'&&!seen.has(value)){seen.add(value);for(const item of Object.values(value))visit(item);}}
 for(const module of ['art','visualArt','referenceCamera','hostileMotionV31','signatureV34','arenaMotionV36','roadMotionV37','partDamageV38','campaign','defenseArt','operations','awakening','musicTracks'])visit(load(module));
 for(const name of fs.readdirSync(__dirname).filter(n=>/\.(?:tsx?|css)$/.test(n))){const code=fs.readFileSync(path.join(__dirname,name),'utf8');for(const match of code.matchAll(/["'`](\/games\/toybot-breakout\/[^"'`\s{}]+\.(?:png|webp|jpg|mp3))["'`]/g))urls.add(match[1]);}
+// Absolute dynamic roots must live in evaluated asset modules, never in JSX call sites.
+for(const name of fs.readdirSync(__dirname).filter(n=>/\.(?:tsx?|css)$/.test(n))){const code=fs.readFileSync(path.join(__dirname,name),'utf8');for(const match of code.matchAll(/["'`](\/games\/toybot-breakout\/[^"'`\s]*)["'`]/g)){
+ const url=match[1].split(/[?#]/)[0];if(url.includes('${')){if(name!=='campaign.ts')throw Error('Unchecked template artwork in '+name);continue;}if(/\.(?:png|webp|jpg|mp3)$/.test(url))urls.add(url);
+ else if(!url.endsWith('/')&&!['roadMotionV37.ts'].includes(name))throw Error('Unresolved dynamic artwork path in '+name+': '+url);
+}}
 const missing=[...urls].filter(url=>!fs.existsSync(path.resolve(__dirname,'../../../public',url.slice(1))));
 if(missing.length)throw Error('Missing runtime assets: '+missing.join(', '));
 console.log(JSON.stringify({runtimeAssetUrls:urls.size,missing:0}));

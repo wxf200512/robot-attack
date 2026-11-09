@@ -1,5 +1,5 @@
 // Locally synthesized combat Foley; no remote audio, codec loading or autoplay.
-export type AudioCue='armor-hit'|'armor-block'|'elite-break'|'perfect'|'pulse'|'heavy'|'blade'|'hit'|'hit-heavy'|'hit-blade'|'destroy'|'shield'|'shield-break'|'damage'|'warning'|'boss-warning'|'gate'|'upgrade'|'victory'|'defeat'|'dodge'|'evade'|'burst-pulse'|'burst-heavy'|'burst-blade'|'burst-ready'|'pulse-up'|'heavy-up'|'blade-up'|'blade-finisher'|'core-shot-pulse'|'core-shot-heavy'|'core-shot-blade';
+export type AudioCue='armor-break'|'armor-hit'|'armor-block'|'elite-break'|'perfect'|'pulse'|'heavy'|'blade'|'hit'|'hit-heavy'|'hit-blade'|'destroy'|'shield'|'shield-break'|'damage'|'warning'|'boss-warning'|'gate'|'upgrade'|'victory'|'defeat'|'dodge'|'evade'|'burst-pulse'|'burst-heavy'|'burst-blade'|'burst-ready'|'pulse-up'|'heavy-up'|'blade-up'|'blade-finisher'|'core-shot-pulse'|'core-shot-heavy'|'core-shot-blade';
 export type SoundLayer={wave:OscillatorType|'noise';from:number;to:number;duration:number;gain:number;delay?:number;filter?:BiquadFilterType;q?:number;attack?:number};
 export type SoundSpec={layers:SoundLayer[];priority:number;gap:number;bus:'weapon'|'impact'|'signal';vary?:boolean};
 const tone=(from:number,to:number,duration:number,gain:number,wave:OscillatorType='sine',delay=0):SoundLayer=>({wave,from,to,duration,gain,delay});
@@ -19,6 +19,7 @@ export const SOUND_BANK:Record<AudioCue,SoundSpec>={
  hit:impact([noise(2600,600,.065,.27,'bandpass'),tone(260,90,.07,.2)]),
  'hit-heavy':impact([noise(1800,180,.13,.35),tone(125,42,.19,.33),noise(4200,1400,.05,.13,'highpass')]),
  'hit-blade':impact([noise(4800,1200,.08,.25,'bandpass'),tone(1850,1050,.11,.16,'sine'),tone(190,65,.075,.15)]),
+ 'armor-break':impact([noise(4200,900,.16,.18,'bandpass'),tone(1350,280,.15,.16),tone(3000,1600,.08,.08,'sine',.03)],4,180),
  'armor-hit':impact([tone(2650,1840,.12,.14),tone(3910,2750,.085,.08,'sine',.008),noise(6200,2300,.045,.17,'highpass')]),
  destroy:impact([noise(2400,140,.3,.38),tone(110,32,.3,.35),noise(5800,700,.19,.17,'bandpass',.025)],3,110),
  'armor-block':impact([noise(2400,700,.1,.24,'bandpass'),tone(320,95,.12,.19),tone(1650,880,.1,.11)],4,140),

@@ -54,8 +54,14 @@ export function campaignReducer(state:CampaignState,action:CampaignAction):Campa
  if(n.scene&&(action.type==='TICK'||action.type==='MOVE_LANE'||action.type==='ACTIVATE_BURST'))return state;
  const next=gameReducer(state,action as Action);
  if(next===state)return state;
- if('garage' in action){const narrative=freshNarrative();if(next.sortie){narrative.radio=radio('sortie-brief',next.sortie.name+'：'+sortieGoalV39(next.sortie)+'，抵达终点后结算。');return {...next,narrative};}narrative.replay=normalizeGarage(action.garage).completedLevels[next.levelIndex]===true;if(next.status==='running'){narrative.scene={kind:'briefing',step:0,synced:0};narrative.seen=['briefing'];}return {...next,narrative};}
- if(action.type!=='TICK')return {...next,narrative:n};
+ if('garage' in action){const narrative=freshNarrative();if(next.sortie){narrative.radio=radio('sortie-brief',next.sortie.name+'：'+sortieGoalV39(next.sortie)+'，抵达终点后结算。');return {...next,narrative};}narrative.replay=normalizeGarage(action.garage).completedLevels[next.levelIndex]===true;if(next.status==='running'){
+ if(action.type==='RESTART'&&n.seen.includes('briefing')){
+  narrative.seen=n.seen.filter(key=>['briefing','confrontation','lore','supply-story','aftermath'].includes(key));narrative.route=n.route??'signal';narrative.objective='pending';
+  const blocked=getLevel(next.levelIndex).hazards.flatMap((h,i)=>Math.abs(h.progress-narrative.relayMark)<=5?[hazardLaneAt(next.layoutIndex,i,narrative.relayMark,next.levelIndex)]:[]);
+  narrative.relayLane=[0,1,2].find(lane=>!blocked.includes(lane))??1;
+ }else{narrative.scene={kind:'briefing',step:0,synced:0};narrative.seen=['briefing'];}
+ }return {...next,narrative};}
+ if(action.type!=='TICK')return {...next,...(action.type==='RESUME'&&n.scene?{finish:{...next.finish,resumeTicks:0}}:{}),narrative:n};
  const narrative:Narrative={...n,seen:[...n.seen],radio:n.radio&&n.radio.ticks>1?{...n.radio,ticks:n.radio.ticks-1}:null};
  if(next.sortie)return {...next,narrative:{...narrative,radio:next.status==='result'||next.status==='defeat'?null:narrative.radio}};
  if(next.status==='running'&&n.objective==='pending'){

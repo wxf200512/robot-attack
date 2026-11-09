@@ -22,7 +22,7 @@ export function gameSoundEvents(previous:GameState,current:GameState):AudioCue[]
  if(current.impactSequence>previous.impactSequence){
   const destroyed=current.ops.broken>previous.ops.broken||current.hazardHps.some((hp,i)=>hp===0&&previous.hazardHps[i]>0)||current.threats.some(t=>t.hp===0&&previous.threats.some(p=>p.id===t.id&&p.hp>0));
   const elite=current.feedback.some(f=>f.id>previous.feedbackSequence&&f.kind==='elite');
-  cues.push(elite?'elite-break':destroyed?'destroy':current.feedback.some(f=>f.id>previous.feedbackSequence&&f.kind==='armor')?'armor-hit':current.mechClass==='heavy'?'hit-heavy':current.mechClass==='blade'?'hit-blade':'hit');
+  cues.push(elite?'elite-break':destroyed?'destroy':current.feedback.some(f=>f.id>previous.feedbackSequence&&f.armorBreak)?'armor-break':current.feedback.some(f=>f.id>previous.feedbackSequence&&f.kind==='armor')?'armor-hit':current.mechClass==='heavy'?'hit-heavy':current.mechClass==='blade'?'hit-blade':'hit');
  }
  if(current.damageSequence>previous.damageSequence)cues.push(current.damageKind==='shield'&&current.defenseFx?.exhausted?'shield-break':current.damageKind==='shield'?'shield':current.damageKind==='armor'?'armor-block':'damage');
  if(current.gateCollected&&!previous.gateCollected)cues.push('gate');

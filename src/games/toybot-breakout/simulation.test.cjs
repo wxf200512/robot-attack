@@ -848,7 +848,7 @@ test('background lore is once per run, nonmodal, dismissible, and freezes during
  let s=campaignStart();s=campaignTick({...s,progress:55-sim.RUN_SPEED/2,hazardHps:s.hazardHps.map(()=>-1),gate:levels.getLevel(0).gateMarks.length});assert.equal(s.narrative.radio.id,'sector-lore');assert.equal(s.narrative.scene,null);
  const paused=campaign.campaignReducer(s,{type:'PAUSE'});assert.equal(campaignTick(paused).narrative.radio.ticks,s.narrative.radio.ticks);
  s=campaign.campaignReducer(s,{type:'STORY_DISMISS_RADIO'});assert.equal(campaignTick(s).narrative.radio,null);
- const reset=campaign.campaignReducer(s,{type:'RESTART',garage});assert.deepEqual(reset.narrative.seen,['briefing']);
+ const reset=campaign.campaignReducer(s,{type:'RESTART',garage});assert.deepEqual(reset.narrative.seen,['briefing','lore']);assert.equal(reset.narrative.scene,null);
 });
 test('all chapter film cells stay within six frames and generated assets resolve with alpha relay',()=>{
  for(const kind of ['briefing','confrontation','aftermath'])for(const step of [0,1])for(const time of [0,900,5000,999999]){const frame=campaign.filmFrame(kind,step,time);assert.ok(frame>=0&&frame<6);assert.equal(campaign.filmFrame(kind,step,time,true),campaign.filmFrame(kind,step,0));}
@@ -1121,7 +1121,7 @@ test('defense sprite timing freezes in pause and expires independently of immuni
  let s={...initial(),status:'running',shieldCharges:1,fireCooldown:1000};sim.applySquadHit(s,10);
  assert.equal(defense.defenseLayers(s,0).at(-1).frame,0);
  s=sim.gameReducer(s,{type:'PAUSE'});const frozen=s;assert.equal(tick(s),frozen);assert.equal(defense.defenseLayers(s,0).at(-1).frame,0);
- s=sim.gameReducer(s,{type:'RESUME'});for(let i=0;i<6;i++)s=tick(s);assert.equal(s.invulnerableTicks,0,'VFX does not extend immunity');assert.ok(s.defenseFx);
+ s=sim.gameReducer(s,{type:'RESUME'});for(let i=0;i<8;i++)s=tick(s);assert.equal(s.invulnerableTicks,6);for(let i=0;i<6;i++)s=tick(s);assert.equal(s.invulnerableTicks,0,'VFX does not extend immunity');assert.ok(s.defenseFx);
  s=tick(s);assert.equal(defense.defenseLayers(s,0).at(-1).frame,5);s=tick(s);assert.equal(s.defenseFx,null);assert.equal(defense.defenseLayers(s,0).some(l=>l.transient),false);
 });
 test('armor glow follows remaining protection, not upgrade level or weapon color',()=>{
@@ -2354,4 +2354,53 @@ test('V41 supplies also freeze fusion eligibility, so collecting a module cannot
  const base=initial(),s={...base,status:'running',gate:4,progress:52,modules:{arc:1,burn:0,recycle:0},fireCooldown:1000,hazardHps:base.hazardHps.map(()=>-1)};s.gateChoices=s.gateChoices.map((row,i)=>i===4?[{id:'fixed',effect:'weaponUp',title:'火力+1',polarity:'reward',lane:0,amount:1}]:row);
  const locked=tick(s),changed={...locked,modules:{arc:1,burn:1,recycle:0}};assert.equal(sim.gateChoicesFor(changed)[0].effect,'weaponUp');assert.equal(JSON.stringify(sim.gateChoicesFor(changed)),JSON.stringify(sim.gateChoicesFor(locked)));
  const ready=tick({...s,modules:{arc:1,burn:1,recycle:0}});assert.equal(sim.gateChoicesFor(ready)[0].effect,'fuse');
+});
+
+test('V42 heavy rounds retain a fixed local blast when a teammate destroys their target, never retargeting another lane',()=>{
+ const {state,ids,level}=eliteScene(),a=ids[1],b=ids[2],other=level.hazards.findIndex(h=>h.horde&&h.wave===0&&h.slot===1);
+ const s={...state,mechClass:'heavy',fireCooldown:1000,hazardHps:state.hazardHps.map((_,i)=>i===a?1:i===b||i===other?30:-1),pendingShots:[incoming(state,{id:901,target:'hazard',targetIndex:a,lane:state.lane,damage:5,attackStyle:'pulse'}),incoming(state,{id:902,target:'hazard',targetIndex:a,lane:state.lane,damage:10,attackStyle:'heavy',ticks:3,duration:3})]};
+ const n=tick(s),round=n.pendingShots.find(p=>p.id===902);assert.equal(round.target,null);assert.ok(round.blastAnchor);const old=JSON.stringify(n),anchor={...round.blastAnchor};const later=tick(tick(n));assert.equal(JSON.stringify(n),old);assert.ok(later.hazardHps[b]<n.hazardHps[b]);assert.equal(later.hazardHps[other],30);assert.ok(later.coreDetonations.some(e=>e.id===902&&e.x===anchor.x&&e.y===anchor.y));
+ const empty={...state,mechClass:'heavy',hazardHps:state.hazardHps.map(()=>-1),pendingShots:[incoming(state,{target:null,attackStyle:'heavy',damage:100})]};assert.equal(tick(empty).report.dealt,0);
+});
+
+const safety42=load('safetyV42');
+test('V42 temporal safety rejects a third-lane trap and permits staggered windows with a reachable escape',()=>{
+ const s={...battle(),lane:1};assert.equal(safety42.hasEscapeV42(s,[{lane:0,from:0,to:50},{lane:1,from:0,to:50},{lane:2,from:0,to:50}]),false);
+ assert.equal(safety42.hasEscapeV42(s,[{lane:1,from:15,to:25},{lane:2,from:15,to:25}]),true);
+ assert.equal(safety42.hasEscapeV42({...s,lane:0},[{lane:0,from:1,to:10},{lane:1,from:1,to:10}]),false,'four-tick dodge cannot teleport across two lanes');
+ const proposal={id:900,source:'threat',sourceId:900,kind:'pounce',lane:2,fromLane:2,fromY:45,phase:'warning',ticks:12,duration:12,damage:10,shotsRemaining:1};
+ const fields={...s,lane:2,threats:[0,1].map(lane=>({id:lane,kind:'field',hp:-1,maxHp:0,lane,damage:5,ticks:40,duration:40,fromLane:1}))};assert.equal(safety42.safeToQueueV42(fields,[proposal]),false);assert.equal(fields.enemyAttacks.length,0);
+});
+test('V42 a blocked boss minion waits visibly rather than expiring into an untelegraphed body hit',()=>{
+ const b={...battle(),lane:2,bossStep:'flight',bossSalvos:0,threats:[{id:99,kind:'minion',lane:0,fromLane:0,hp:20,maxHp:20,ticks:20,duration:32,damage:10},...[0,1].map(lane=>({id:100+lane,kind:'field',hp:-1,maxHp:0,lane,damage:5,ticks:40,duration:40,fromLane:1}))]};
+ const n=tick(b);assert.equal(n.enemyAttacks.length,0);assert.equal(n.threats.find(t=>t.id===99).ticks,20);assert.equal(n.playerHp,b.playerHp);
+});
+
+const polish42=load('polishV42');
+test('V42 effect merging keeps critical breaks readable without modifying real hit records',()=>{
+ const f=[{id:1,x:50,y:45,ticks:4,kind:'hit'},{id:2,x:50.2,y:45,ticks:4,kind:'armor',armorBreak:true},{id:3,x:50,y:45,ticks:8,kind:'elite',destroyed:true},{id:4,x:30,y:45,ticks:4,kind:'heavy'},{id:5,x:70,y:45,ticks:4,kind:'hit'}],before=JSON.stringify(f),merged=polish42.readableFeedbackV42(f,false);assert.ok(merged.some(x=>x.id===3));assert.ok(!merged.some(x=>x.id===1));assert.ok(polish42.readableFeedbackV42(f,true).length<=2);assert.equal(JSON.stringify(f),before);assert.equal(polish42.strongFeedbackV42(f[3]),false);assert.equal(polish42.strongFeedbackV42(f[2]),true);
+});
+test('V42 contextual skill hints match each actual utility and do not recommend clearing beams or fields',()=>{
+ const base={...battle(),burstEnergy:100,mechClass:'pulse',threats:[0,1].map(lane=>({id:lane,kind:'shell',hp:-1,lane,ticks:5,duration:12,damage:12,fromLane:1}))};assert.match(polish42.skillOpportunityV42(base),/净化/);assert.equal(polish42.skillOpportunityV42({...base,threats:base.threats.map(t=>({...t,kind:'beam'}))}),null);
+ const heavy={...base,mechClass:'heavy'};heavy.ops.parts=[{kind:'shield',hp:10,maxHp:10,lane:1,name:'护盾'}];assert.match(polish42.skillOpportunityV42(heavy),/破拆/);
+ const blade={...base,mechClass:'blade',lane:1};assert.match(polish42.skillOpportunityV42(blade),/格挡/);assert.equal(polish42.skillOpportunityV42({...blade,burstEnergy:99}),null);
+});
+test('V42 resume countdown freezes hostile world and shooting while accepting deliberate repositioning',()=>{
+ const base={...battle(),burstEnergy:100,threats:[{id:999,kind:'shell',hp:-1,maxHp:0,lane:1,fromLane:1,ticks:1,duration:10,damage:20}]};let s=sim.gameReducer(sim.gameReducer(base,{type:'PAUSE'}),{type:'RESUME'});assert.equal(s.finish.resumeTicks,8);assert.equal(sim.canActivateBurst(s),false);s=sim.gameReducer(s,{type:'MOVE_LANE',lane:2});for(let i=0;i<8;i++)s=tick(s);assert.equal(s.lane,2);assert.equal(s.dodgeTicks,0);assert.equal(s.threats[0].ticks,1);assert.equal(s.battleTime,base.battleTime);assert.equal(s.playerHp,base.playerHp);assert.equal(s.flow.contribution.direct,0);assert.equal(s.finish.resumeTicks,0);const n=tick(s);assert.equal(n.threats[0].hp,0);assert.equal(n.playerHp,base.playerHp);assert.equal(n.battleTime,base.battleTime+1);
+});
+test('V42 fast retry preserves the support choice and skips only already seen story scenes',()=>{
+ const c=load('campaign'),s=c.createCampaign({...initial(),status:'result',won:false});s.narrative.seen=['briefing','confrontation','lore'];s.narrative.route='rescue';const n=c.campaignReducer(s,{type:'RESTART',garage});assert.equal(n.status,'running');assert.equal(n.narrative.scene,null);assert.equal(n.narrative.route,'rescue');assert.equal(n.narrative.objective,'pending');assert.ok(n.narrative.seen.includes('confrontation'));assert.equal(n.playerHp,n.playerMaxHp);assert.equal(n.flow.lastHit,null);
+ const first=c.campaignReducer(c.createCampaign(initial()),{type:'START',garage});assert.equal(first.narrative.scene.kind,'briefing');
+});
+test('V42 defeat skipping cannot affect live combat and skill receipts use only real burst direct damage',()=>{
+ const s=battle();assert.equal(sim.gameReducer(s,{type:'SKIP_DEFEAT'}),s);const early={...s,status:'defeat',defeatTicks:5};assert.equal(sim.gameReducer(early,{type:'SKIP_DEFEAT'}),early);assert.equal(sim.gameReducer({...early,defeatTicks:6},{type:'SKIP_DEFEAT'}).status,'result');
+ const end={...s,burstTicks:1,burstSequence:1,burstStart:{damage:0,kills:0},finish:{...s.finish,baselineDamage:10},flow:{...s.flow,contribution:{...s.flow.contribution,burst:35,direct:100}}};const n=tick(end);assert.equal(n.finish.receipt.damage,25);assert.equal(n.finish.receipt.ticks,24);const frozen=sim.gameReducer(n,{type:'PAUSE'});assert.equal(tick(frozen).finish.receipt.ticks,24);
+});
+
+test('V42 simultaneous teammate kills still trigger the captured heavy splash exactly once',()=>{
+ const {state,ids}=eliteScene(),a=ids[1],b=ids[2];const s={...state,mechClass:'heavy',hazardHps:state.hazardHps.map((_,i)=>i===a?1:i===b?30:-1),pendingShots:[incoming(state,{id:201,target:'hazard',targetIndex:a,lane:state.lane,damage:10,attackStyle:'pulse'}),incoming(state,{id:202,target:'hazard',targetIndex:a,lane:state.lane,damage:10,attackStyle:'heavy'})]};const n=tick(s);assert.ok(n.hazardHps[b]<30);assert.equal(n.coreDetonations.filter(e=>e.id===202).length,1);assert.equal(tick(n).hazardHps[b],n.hazardHps[b]);
+});
+
+test('V42 destroy receipts include summoned units and never turn an ordinary surviving hit into a break',()=>{
+ const s={...battle(),lane:1,threats:[{id:900,kind:'minion',lane:1,fromLane:1,hp:2,maxHp:2,ticks:25,duration:32,damage:10}],pendingShots:[incoming(battle(),{target:'threat',targetIndex:900,lane:1,damage:10,attackStyle:'pulse'})]};const n=tick(s);assert.ok(n.feedback.some(f=>f.destroyed));const alive=tick({...s,threats:s.threats.map(t=>({...t,hp:50,maxHp:50}))});assert.ok(alive.feedback.every(f=>!f.destroyed));
 });

@@ -1,3 +1,4 @@
+import { strongFeedbackV42 } from './polishV42';
 import { enemyVisibleV41 } from './flowV41';
 import { BuildLogV41, BuildReportV41, LessonCueV41 } from './FlowUIV41';
 import { normalizeGarage } from './progression';
@@ -153,7 +154,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
   const previousGame = useRef(game);
   const previousModules = useRef(UPGRADES.reduce((sum,u)=>sum+moduleLevel(garage,u.id),0));
   const sceneRef=useRef<HTMLDivElement>(null);
-  useSceneMotion(sceneRef,game,(canShoot(game.status)||game.status==='boss-intro'||game.status==='boss-shift')&&!game.narrative.scene&&!previewFrozen,quality==='low',reducedMotion);
+  useSceneMotion(sceneRef,game,(canShoot(game.status)||game.status==='boss-intro'||game.status==='boss-shift')&&!game.narrative.scene&&!previewFrozen&&game.finish.resumeTicks===0,quality==='low',reducedMotion);
   const dragStart = useRef<{
     pointerId: number;
     startX: number;
@@ -844,10 +845,10 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
         @media(prefers-reduced-motion:reduce){.is-player-hit .robot-player-art,.toybot-damage-vignette{animation:none}.toybot-damage-vignette{opacity:0}}
       `}</style>
 
-      <section className={'toybot-shell toybot-menu-system reference-v29'+(game.burstTicks>0?' has-core-active has-core-readout':'')+' core-style-'+game.mechClass + (game.narrative.radio&&canShoot(game.status)&&!game.narrative.scene?' has-story-radio':'') + (game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'?' has-cockpit':'') + (game.burstTicks===0&&!game.pendingShots.some(shot=>shot.burst)&&settings.shake!==false&&!reducedMotion&&quality!=='low'&&game.feedback.some(f=>f.ticks>=4&&f.kind!=='hit'&&f.kind!=='armor')?' has-impact-shake':'') + ((displayStatus==='running'||displayStatus==='battle')?' has-core-control':'') + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
+      <section className={'toybot-shell toybot-menu-system reference-v29'+(game.burstTicks>0?' has-core-active has-core-readout':'')+' core-style-'+game.mechClass + (game.narrative.radio&&canShoot(game.status)&&!game.narrative.scene?' has-story-radio':'') + (game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'?' has-cockpit':'') + (game.burstTicks===0&&!game.pendingShots.some(shot=>shot.burst)&&settings.shake!==false&&!reducedMotion&&quality!=='low'&&game.feedback.some(f=>f.ticks>=4&&strongFeedbackV42(f))?' has-impact-shake':'') + ((displayStatus==='running'||displayStatus==='battle')?' has-core-control':'') + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
         {game.status !== 'home' && <div
           ref={sceneRef}
-          className={`toybot-scene art-v28 sector-${game.levelIndex} formation-${formationColumns} weapon-tier-${activeWeapon} ${displayStatus === 'running' ? 'is-moving' : displayStatus === 'battle' ? 'is-battle' : displayStatus === 'defeat' ? `is-defeat ${game.defeatReason}` : ''} ${game.status === 'paused'||previewFrozen ? 'is-paused' : ''} ${game.invulnerableTicks > 0 ? `is-player-hit damage-${game.damageKind}` : ''} ${arena ? 'is-arena' : ''} ${displayStatus === 'boss-intro' ? 'is-boss-intro' : displayStatus === 'boss-shift' ? 'is-boss-shift' : displayStatus === 'boss-victory' ? 'is-boss-victory' : ''}`}
+          className={`toybot-scene art-v28 sector-${game.levelIndex} formation-${formationColumns} weapon-tier-${activeWeapon} ${displayStatus === 'running' ? 'is-moving' : displayStatus === 'battle' ? 'is-battle' : displayStatus === 'defeat' ? `is-defeat ${game.defeatReason}` : ''} ${game.status === 'paused'||previewFrozen||game.finish.resumeTicks>0 ? 'is-paused' : ''} ${game.invulnerableTicks > 0 ? `is-player-hit damage-${game.damageKind}` : ''} ${arena ? 'is-arena' : ''} ${displayStatus === 'boss-intro' ? 'is-boss-intro' : displayStatus === 'boss-shift' ? 'is-boss-shift' : displayStatus === 'boss-victory' ? 'is-boss-victory' : ''}`}
           tabIndex={0}
           aria-keyshortcuts="ArrowLeft ArrowRight Space"
           aria-label="游戏场景。左右拖动或使用方向键切换三条队列，穿过随机奖励门或惩罚门，机器人会自动射击障碍和首领。"
@@ -1080,7 +1081,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
         {game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'&&<div className="toybot-bottom cockpit-bottom">
           <Cockpit game={game} blocked={!!game.narrative.scene} onMove={lane=>dispatch({type:'MOVE_LANE',lane})} onBurst={()=>dispatch({type:'ACTIVATE_BURST'})}/>
         </div>}
-        {!game.narrative.scene&&<CoreBurstScreen game={game} reduced={reducedMotion||quality==='low'}/>}
+        {game.finish.resumeTicks>0&&game.status!=='paused'&&<div className="resume-receipt-v42" role="status">准备继续 {(game.finish.resumeTicks/10).toFixed(1)}s · 可先换轨</div>}{game.status==='defeat'&&game.defeatTicks>=6&&<button type="button" className="defeat-skip-v42" onClick={()=>dispatch({type:'SKIP_DEFEAT'})}>跳过战败演出</button>}{!game.narrative.scene&&game.finish.receipt&&game.burstTicks===0&&game.flow.introTicks===0&&canShoot(game.status)&&<div className="skill-receipt-v42" role="status"><b>{game.finish.receipt.name} · 本次成果</b><small>技能直伤 {game.finish.receipt.damage} · 期间击破 {game.finish.receipt.kills} · {game.finish.receipt.utility}</small></div>}{!game.narrative.scene&&<CoreBurstScreen game={game} reduced={reducedMotion||quality==='low'}/>}
 
         {game.status === 'home' && !trainingMode && !storyView && (
           <div className={`toybot-overlay toybot-home menu-refresh ${garageOpen ? 'is-workshop' : ''}`} role="dialog" aria-modal="true" aria-labelledby={garageOpen ? 'toybot-workshop-title' : 'toybot-home-title'}>
@@ -1162,8 +1163,8 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
 
         {game.narrative.scene&&<CampaignStory game={game} dispatch={dispatch}/>}
         {game.status==='home'&&storyView&&<StoryDialog initialMode={storyView} initialPage={storyProgress.completed?0:storyProgress.page} completedLevels={garage.completedLevels} onPage={page=>setStoryProgress(current=>({...current,page}))} onClose={completed=>{setStoryProgress(current=>finishStory(current,completed));setStoryView(null);}} />}
-        {trainingMode && <Tutorial settingsOpen={settingsOpen} onSettings={openSettings} onSound={cue => audio.current?.play(cue)} first={trainingMode === 'first'} renderMech={(index,firing) => <Robot index={index} firing={firing} />} onExit={() => setTrainingMode(null)} onComplete={() => {
-          clearTrainingCheckpoint();
+        {trainingMode && <Tutorial persist={!previewState} dragSensitivity={settings.dragSensitivity??1} settingsOpen={settingsOpen} onSettings={openSettings} onSound={cue => audio.current?.play(cue)} first={trainingMode === 'first'} renderMech={(index,firing) => <Robot index={index} firing={firing} />} onExit={() => setTrainingMode(null)} onComplete={() => {
+          if(!previewState)clearTrainingCheckpoint();
           const updated = { ...garage, tutorialCompleted: true };
           setGarage(current => ({ ...current, tutorialCompleted: true }));
           if (trainingMode === 'first') { setEarnedParts(0); dispatch({ type:'SELECT_LEVEL', levelIndex:0, garage:updated }); dispatch({ type:'START', garage:updated }); }

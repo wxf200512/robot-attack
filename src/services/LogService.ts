@@ -27,10 +27,11 @@ export class LogService {
       try {
         if (typeof (window as any).FBInstant !== 'undefined') {
           const fbLocale = (window as any).FBInstant.getLocale();
-          if (fbLocale) {
-            currentLanguage = fbLocale.substring(0, 2).toLowerCase();
-            localStorage.setItem('language', currentLanguage);
-            localStorage.setItem('i18nextLng', currentLanguage);
+          if (typeof fbLocale === 'string' && fbLocale.trim()) {
+            const language = fbLocale.trim().substring(0, 2).toLowerCase();
+            currentLanguage = language;
+            localStorage.setItem('language', language);
+            localStorage.setItem('i18nextLng', language);
           }
         }
       } catch (error) {

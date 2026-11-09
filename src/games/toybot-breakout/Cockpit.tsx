@@ -1,3 +1,5 @@
+import { skillOpportunityV42 } from './polishV42';
+import './polishV42.css';
 import { skillUtilityV40 } from './tacticsV40';
 import { skillReadout } from './skillPresentationV32';
 import { frontlineStage } from './frontline';
@@ -9,6 +11,7 @@ export const COCKPIT_ART='/games/toybot-breakout/optimized/cockpit-v29.png';
 export const REACTOR_ART='/games/toybot-breakout/optimized/reactor-core-v22.png';
 export const CORE_EFFECT_ART='/games/toybot-breakout/optimized/core-effects-v22.png';
 export function Cockpit({game:s,blocked,onMove,onBurst}:{game:GameState;blocked:boolean;onMove:(lane:number)=>void;onBurst:()=>void}){
+ const opportunity=blocked?null:skillOpportunityV42(s);
  const skill=coreSkill(s.mechClass),active=s.burstTicks>0,ready=canActivateBurst(s)&&!blocked;
  const energy=active?s.burstTicks/BURST_TICKS*100:s.burstEnergy,hp=s.playerHp/s.playerMaxHp*100;
  const disabled=!canMove(s.status)||blocked;
@@ -19,13 +22,13 @@ export function Cockpit({game:s,blocked,onMove,onBurst}:{game:GameState;blocked:
    else if(!disabled&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){e.preventDefault();onMove(Math.max(0,Math.min(2,s.lane+(e.key==='ArrowLeft'?-1:1))));}
   }}>
   <div className={"cockpit-readout"+(warning?" has-danger":"")}><span>{mechSpec(s.mechClass).name}</span><b>{link}</b><span>W{s.weaponLevel} / A{s.armorLevel} / R{s.garageCoreLevel}</span></div>
-  <div className="cockpit-console" style={{backgroundImage:`url(${COCKPIT_ART})`}}>
+  <div className="cockpit-console" style={{backgroundImage:`url(${COCKPIT_ART})`}}>{opportunity&&<span className="core-opportunity-badge-v42">{opportunity}</span>}
    <div className={'cockpit-screen screen-health'+(hp<=25?' critical':'')} aria-label={`核心生命 ${s.playerHp}/${s.playerMaxHp}`}><small>机体耐久</small><strong>{Math.ceil(s.playerHp)}<em>/{s.playerMaxHp}</em></strong><div className="cockpit-hp-track" style={{'--hp-before':Math.min(100,(s.playerHp+(s.damageKind==='health'?s.damageLoss:0))/s.playerMaxHp*100)+'%','--hp-now':hp+'%'} as CSSProperties}><i className="cockpit-hp-trail" key={s.damageSequence}/><i style={{width:hp+'%'}}/></div></div>
-   <button type="button" className={'cockpit-reactor'+(ready?' is-ready':'')+(active?' is-active':'')} disabled={!ready} onClick={onBurst} aria-label={active?`${skill.name}中，剩余${(s.burstTicks/10).toFixed(1)}秒`:ready?'释放'+skill.name+'：'+skill.detail+'，持续5秒，清除干扰':`核心爆发充能${Math.floor(s.burstEnergy)}%，击破和成功闪避充能`} style={{'--core-fill':energy+'%'} as CSSProperties}>
+   <button type="button" className={'cockpit-reactor'+(ready?' is-ready':'')+(active?' is-active':'')+(opportunity?' has-opportunity':'')} disabled={!ready} onClick={onBurst} aria-label={active?`${skill.name}中，剩余${(s.burstTicks/10).toFixed(1)}秒`:ready?'释放'+skill.name+'：'+skill.detail+'，持续5秒，清除干扰'+(opportunity?'。时机提示：'+opportunity:''):`核心爆发充能${Math.floor(s.burstEnergy)}%，击破和成功闪避充能`} style={{'--core-fill':energy+'%'} as CSSProperties}>
     <span className="reactor-meter" aria-hidden="true"/><img src={REACTOR_ART} alt="" draggable={false}/><b>{active?(s.burstTicks/10).toFixed(1)+'s':ready?'释放':Math.floor(energy)+'%'}</b>
    </button>
    <div className="cockpit-screen screen-squad" aria-label={`小队 ${s.bots} 台，护盾 ${s.shieldCharges}，装甲 ${s.armorPoints}`}><small>小队链路</small><strong>{s.bots}<em> 台</em></strong><span>盾 {s.shieldCharges} · 甲 {s.armorPoints}</span></div>
-   <div className="cockpit-skill-title">{skill.name}<small>{active?skill.detail:ready?'点击核心 / 空格':'击破 · 闪避充能'}</small></div>
+   <div className="cockpit-skill-title">{skill.name}<small className={opportunity?'skill-opportunity-v42':undefined}>{active?skill.detail:ready?opportunity??'点击核心 / 空格':'击破 · 闪避充能'}</small></div>
   </div>
   <div className="cockpit-module-rail" aria-label="战斗状态">{s.flow.guardTicks>0&&s.combo>0&&<span>防守续连 {s.combo}</span>}{s.weaponLevel>=4&&<span>弹头 {s.charge}/4</span>}{s.chargedVolleys>0&&<span>强化×{s.chargedVolleys}</span>}{(Object.keys(MODULES) as RunModule[]).filter(k=>s.modules[k]>0).map(k=><span key={k}>{MODULES[k].icon} {MODULES[k].name}{s.modules[k]}</span>)}{s.ops.fusion&&<span>✧ {FUSIONS[s.ops.fusion].name}</span>}{s.ops.counterShots>0&&<span>反击×{s.ops.counterShots}</span>}{s.jamTicks>0&&<span>干扰 {Math.ceil(s.jamTicks/10)}s</span>}{s.overloadTicks>0&&<span>过载 {Math.ceil(s.overloadTicks/10)}s</span>}</div>
   <details className="cockpit-steering-access"><summary aria-label="展开换道按钮">⇆</summary><div className="cockpit-steering" role="group" aria-label="选择机器人队列">{[0,1,2].map(lane=><button type="button" key={lane} disabled={disabled} aria-label={`切换到第 ${lane+1} 队列`} aria-pressed={s.lane===lane} onClick={()=>onMove(lane)}><i aria-hidden="true">{lane===0?'◁':lane===2?'▷':'◇'}</i><span>{['左轨','中轨','右轨'][lane]}</span><b>{lane+1}</b></button>)}</div></details>

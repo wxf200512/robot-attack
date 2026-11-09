@@ -1,3 +1,5 @@
+import { newFinalPassV42, type FinalPassV42 } from './polishV42';
+import { enemyFlightV42, safeToQueueV42 } from './safetyV42';
 import { newFlowV41, copyFlowV41, enemyLeadV41, enemyVisibleV41, pressureV41, protectComboV41, usefulGatesV41, recordUpgradeV41, recordContributionV41, damageAdviceV41, LESSONS_V41, type FlowV41, type ContributionV41 } from './flowV41';
 import { newTacticsV40, copyTacticsV40, canTrialV40, SECTOR_MECHS, type TacticsV40, type Trial } from './tacticsV40';
 import { findSortieV39, canEnterSortieV39, sortieCountV39, type SortieSpec } from './sortiesV39';
@@ -44,11 +46,12 @@ export type GateOption = { id: string; polarity: 'reward' | 'penalty'; icon: str
 export type ShotOrigin = { index: number; x: number; y: number };
 type Target = 'hazard' | 'boss' | 'threat' | 'objective' | 'event' | 'part';
 export type BossThreat = { id: number; kind: 'shell' | 'barrier' | 'minion' | 'lava' | 'beam' | 'egg' | 'tether' | 'pylon' | 'wall' | 'orb' | 'seal' | 'field'; linkId?: number; lingerTicks?: number; lane: number; ticks: number; duration: number; hp: number; maxHp: number; damage: number; fromLane: number; originY?: number };
-export type PendingShot = {finisher?:boolean;volleyId?:number;bossSweepScale?:number;focused?:boolean;fusion?:Fusion|null;counter?:boolean; arc?:number; burn?:number; range?:number; splashDone?:boolean; burst?: boolean; attackStyle?: MechClass; id: number; ticks: number; duration: number; target: Target | null; targetIndex: number; damage: number; count: number; origins: ShotOrigin[]; weaponLevel: number; lane: number; y: number; charged: boolean; pierce: number; muzzle: boolean };
+export type PendingShot = {blastAnchor?:{x:number;y:number};finisher?:boolean;volleyId?:number;bossSweepScale?:number;focused?:boolean;fusion?:Fusion|null;counter?:boolean; arc?:number; burn?:number; range?:number; splashDone?:boolean; burst?: boolean; attackStyle?: MechClass; id: number; ticks: number; duration: number; target: Target | null; targetIndex: number; damage: number; count: number; origins: ShotOrigin[]; weaponLevel: number; lane: number; y: number; charged: boolean; pierce: number; muzzle: boolean };
 export type EnemyAttack = { id: number; source: 'hazard' | 'threat'; sourceId: number; kind: ElitePattern | 'drone-burst' | 'shockwave' | 'pounce' | 'sniper-shot' | 'bombard' | 'charge'; lane: number; fromLane: number; fromY: number; fromX?: number; phase: 'warning' | 'flight' | 'field'; ticks: number; duration: number; damage: number; shotsRemaining: number };
 export type KillEffect = { id: number; kind: EnemyKind; lane: number; x: number; y: number; ticks: number; combo: number };
 type Burn = { target: Target; index: number; lane: number; ticks: number; damage: number };
 export type GameState = {
+  finish:FinalPassV42;
   flow:FlowV41;
   tactics:TacticsV40;
   sortie?:SortieSpec & {firstClear:boolean};
@@ -84,7 +87,7 @@ export type GameState = {
   coreDetonations: {kind?:'arc'|'energy';id:number;x:number;y:number;ticks:number}[];
   roadTicks: number; medicPulses: number[];
 };
-export type Action = {type:'SET_TRIAL';trial:Trial|null;garage:Garage} | {type:'START_SORTIE';key:string;garage:Garage} | { type: 'TICK' | 'PAUSE' | 'RESUME' | 'CLEAR_TOAST' | 'ACTIVATE_BURST' } | { type: 'MOVE_LANE'; lane: number }
+export type Action = {type:'SET_TRIAL';trial:Trial|null;garage:Garage} | {type:'START_SORTIE';key:string;garage:Garage} | { type: 'TICK' | 'PAUSE' | 'RESUME' | 'CLEAR_TOAST' | 'ACTIVATE_BURST' | 'SKIP_DEFEAT' } | { type: 'MOVE_LANE'; lane: number }
   | { type: 'START' | 'RESTART' | 'HOME' | 'NEXT_LEVEL'; garage: Garage }
   | {type:'SET_PROTOCOL';protocol:Protocol;garage:Garage}
   | { type: 'SELECT_LEVEL'; levelIndex: number; garage: Garage };
@@ -94,7 +97,7 @@ const WEAPON = reward('weapon', '⚡', '火力+1', 'weaponUp');
 export const COMBO_WINDOW_TICKS = 35;
 export const BURST_MAX_ENERGY = 100;
 export const BURST_TICKS = 50;
-export const canActivateBurst = (s: GameState) => canShoot(s.status) && s.bots > 0 && s.playerHp > 0 && s.burstEnergy >= BURST_MAX_ENERGY && s.burstTicks === 0;
+export const canActivateBurst = (s: GameState) => canShoot(s.status) && s.bots > 0 && s.playerHp > 0 && s.burstEnergy >= BURST_MAX_ENERGY && s.burstTicks === 0 && s.finish.resumeTicks===0;
 const gainBurstEnergy = (s: GameState, amount: number) => {
   if(canShoot(s.status) && s.burstTicks === 0)s.burstEnergy = Math.min(BURST_MAX_ENERGY, Number((s.burstEnergy + amount).toFixed(2)));
 };
@@ -225,7 +228,7 @@ export const createInitialState = (garage: Garage, levelIndex = 0, layoutIndex =
   const flow=newFlowV41(normalizeGarage(garage).enemyLessons);
   flow.log=([['武器',bonuses.weapon],['装甲',bonuses.armor],['动力',bonuses.core]] as const).filter(([,level])=>level>0).map(([name,level])=>({time:0,source:'机库改装',title:name+' Lv.'+level}));
   const fresh:GameState = {
-    flow,tactics:newTacticsV40(),report:newReport(),feedback:[],feedbackSequence:0,upgradeFx:null, ops:createOperations(levelIndex,layoutIndex), modules:{arc:0,burn:0,recycle:0}, mechClass: normalizeMechClass(garage.mechClass), garageDamageScale: bonuses.damageScale, garageCoreLevel: bonuses.core, garageArmorLevel: bonuses.armor, status: 'home', resumeStatus: null, levelIndex, layoutIndex, runId: 0, progress: 0, bots: 1, lane: 1, laneMoveTicks: 0, score: 0,
+    finish:newFinalPassV42(),flow,tactics:newTacticsV40(),report:newReport(),feedback:[],feedbackSequence:0,upgradeFx:null, ops:createOperations(levelIndex,layoutIndex), modules:{arc:0,burn:0,recycle:0}, mechClass: normalizeMechClass(garage.mechClass), garageDamageScale: bonuses.damageScale, garageCoreLevel: bonuses.core, garageArmorLevel: bonuses.armor, status: 'home', resumeStatus: null, levelIndex, layoutIndex, runId: 0, progress: 0, bots: 1, lane: 1, laneMoveTicks: 0, score: 0,
     dodgeTicks: 0, dodgeFromLane: 1, dodgeDirection: 1, dodgeSequence: 0, evadeSequence: 0, evadeTicks: 0, queuedLane: null,
     playerHp: bonuses.maxHp, playerMaxHp: bonuses.maxHp, invulnerableTicks: 0, defenseFx:null,
     gate: 0, gateResolved: false, gateCollected: false, gateChoices: createGateChoices(levelIndex, layoutIndex), weaponLevel: Number(bonuses.weapon > 0), armorLevel, armorPoints: bonuses.armorPoints, coreLevel: 0,
@@ -357,10 +360,10 @@ export const commanderFor = (s:GameState,index:number) => {
 const recordImpact=(s:GameState,damage:number,target:Target,index:number,tier:number,lane:number)=>{
  s.report.dealt+=damage;if(target==='boss')s.report.bossDamage+=damage;
  const h=target==='hazard'?getLevel(s.levelIndex).hazards[index]:null;
- const killed=target==='hazard'?s.hazardHps[index]===0:target==='boss'?s.battleHp===0:target==='part'?s.ops.parts[index]?.hp===0:false;
+ const killed=target==='hazard'?s.hazardHps[index]===0:target==='boss'?s.battleHp===0:target==='part'?s.ops.parts[index]?.hp===0:target==='threat'?s.threats.find(t=>t.id===index)?.hp===0:target==='objective'?s.ops.mission.hp===0:target==='event'?s.ops.event.hp===0:false;
  if(target==='hazard'||target==='boss'||target==='threat'){const key=target==='boss'?'boss:0':target+':'+index;const previous=s.hostileReactions?.[key];if(!previous||previous.cooldown<=0)s.hostileReactions={...s.hostileReactions,[key]:{ticks:6,cooldown:14}};}
  const kind:CombatFeedback['kind']=killed&&target==='boss'?'boss':killed&&(h?.eliteRole||target==='part')?'elite':h&&hazardArmorFor(s,index)>0?'armor':s.mechClass==='heavy'||tier>=4?'heavy':'hit';
- s.feedback=[...s.feedback,{id:++s.feedbackSequence,coreStyle:s.burstTicks>0?s.mechClass:undefined,pulseCore:s.burstTicks>0&&s.mechClass==='pulse',boss:target==='boss'||target==='part',x:targetX(s,target,index,lane),y:targetY(s,target,index),ticks:kind==='boss'?12:kind==='elite'?8:4,kind}].slice(-12);
+ s.feedback=[...s.feedback,{id:++s.feedbackSequence,destroyed:killed,coreStyle:s.burstTicks>0?s.mechClass:undefined,pulseCore:s.burstTicks>0&&s.mechClass==='pulse',boss:target==='boss'||target==='part',x:targetX(s,target,index,lane),y:targetY(s,target,index),ticks:kind==='boss'?12:kind==='elite'?8:4,kind}].slice(-12);
  if(s.mechClass==='pulse'&&s.burstTicks<=0){const lane=targetLane(s,target,index);if(s.report.focusLane>=0&&s.report.focusLane!==lane){s.report.focus=0;s.report.focusReady=false;}s.report.focusLane=lane;s.report.focus++;if(s.report.focus>=6){s.report.focus=0;s.report.focusReady=true;}}
 };
 const damageTarget = (s: GameState, target: Target, index: number, raw: number, tier: number, lane: number, precise = false, chain = false, origin:ContributionV41='direct'): number => {
@@ -435,6 +438,12 @@ const damageTarget = (s: GameState, target: Target, index: number, raw: number, 
   }
   return damage;
 };
+const detonateCapturedV42=(s:GameState,shot:PendingShot,anchor:{x:number;y:number})=>{
+ if(shot.splashDone||shot.attackStyle!=='heavy')return;
+ s.coreDetonations=[...s.coreDetonations,{id:shot.id,x:anchor.x,y:anchor.y,ticks:6}].slice(-6);
+ const nearby=targetsInLane(s,shot.lane).filter(t=>Math.abs(t.y-anchor.y)<=(shot.burst?coreSkill('heavy').splash:4)).slice(0,shot.burst?4:2);
+ for(const other of nearby)damageTarget(s,other.target,other.index,shot.damage*(shot.burst?.5:.3)*(shot.burst&&other.target==='boss'?coreSkill('heavy').bossDamage/coreSkill('heavy').damage*(shot.bossSweepScale??1):1),shot.weaponLevel,shot.lane,true,false,shot.burst?'burst':'direct');
+};
 const flightTicks = (originY: number, destinationY: number) => Math.max(2, Math.min(8, Math.ceil(Math.abs(originY - destinationY) / 7)));
 
 export const bossAttackLabel = (s: GameState) => ({ ...SPECIAL_LABELS, cannon: '轨道炮击', burst: '蜂刺连射', rush: s.levelIndex === 2 ? '盾阵冲撞' : '重锤突袭', sweep: '帝皇横扫', mortar: '熔岩封路', swarm: '蜂群出击', bunker: '重盾封锁', storm: '风暴巡航', crossfire: '星核交叉炮' })[s.bossAttack];
@@ -502,16 +511,17 @@ const relocateBoss = (s: GameState) => {
 };
 const sourceAlive = (s: GameState, a: EnemyAttack) => a.source === 'hazard' ? (s.hazardHps[a.sourceId] ?? 0) > 0 : (s.threats.find(t => t.id === a.sourceId)?.hp ?? 0) > 0;
 const queueEnemyAttack = (s: GameState, source: EnemyAttack['source'], sourceId: number, kind: EnemyAttack['kind'], lane: number, fromLane: number, fromY: number, lanes = [lane]) => {
-  const key = source + ':' + sourceId; if (s.enemyAttackSources.includes(key)) return;
-  s.enemyAttackSources.push(key);
+  const key=source+':'+sourceId;if(s.enemyAttackSources.includes(key))return false;
   const profile=kind in ELITE_ATTACKS?ELITE_ATTACKS[kind as ElitePattern]:null;
-  if(source==='hazard'&&getLevel(s.levelIndex).hazards[sourceId]?.elite)s.roadCooldowns[sourceId]=profile?.rearm??60;
-  const first=source==='hazard'&&!!LESSONS_V41[kind]&&!s.flow.lessons.includes(kind);
+  const first=source==='hazard'&&!!LESSONS_V41[kind]&&!s.flow.lessons.includes(kind),introductory=first||s.flow.introSources.includes(key);
+  const warning=(profile?.warning??(kind==='sniper-shot'||kind==='bombard'?18:kind==='charge'?10:12))+(introductory?8:0);
+  const damage=profile?.damage??(kind==='sniper-shot'?13:kind==='bombard'?12:kind==='charge'?8:kind==='drone-burst'?7:kind==='shockwave'?12:14);
+  const proposals:EnemyAttack[]=lanes.map((targetLane,slot)=>({id:s.enemyAttackSequence+slot+1,source,sourceId,kind,lane:targetLane,fromLane,fromY,fromX:source==='hazard'?roadEnemyX(s,sourceId):laneXAt(fromLane,fromY),phase:'warning',ticks:warning+(kind==='royal-salvo'?slot*5:0),duration:warning+(kind==='royal-salvo'?slot*5:0),damage:damage*(introductory?.8:1)*(source==='hazard'&&commanderFor(s,sourceId)>=0?1.25:1),shotsRemaining:profile?.shots??(kind==='drone-burst'?2:1)}));
+  if(!safeToQueueV42(s,proposals,s.status==='battle'&&s.bossStep==='warning'?Math.max(0,bossWarningTicks(s)-s.bossStepTicks):0))return false;
+  s.enemyAttackSources.push(key);s.enemyAttackSequence+=proposals.length;s.enemyAttacks.push(...proposals);
   if(first){s.flow.lessons.push(kind);s.flow.introSources.push(key);s.flow.lastLesson=kind;s.flow.introTicks=50;}
-  const introductory=s.flow.introSources.includes(key);
-  const warning = (profile?.warning??(kind === 'sniper-shot' || kind === 'bombard' ? 18 : kind === 'charge' ? 10 : 12))+(introductory?8:0);
-  const damage = profile?.damage??(kind === 'sniper-shot' ? 13 : kind === 'bombard' ? 12 : kind === 'charge' ? 8 : kind === 'drone-burst' ? 7 : kind === 'shockwave' ? 12 : 14);
-  lanes.forEach((targetLane,slot) => s.enemyAttacks.push({ id: ++s.enemyAttackSequence, source, sourceId, kind, lane: targetLane, fromLane, fromY, fromX: source === 'hazard' ? roadEnemyX(s, sourceId) : laneXAt(fromLane, fromY), phase: 'warning', ticks: warning+(kind==='royal-salvo'?slot*5:0), duration: warning+(kind==='royal-salvo'?slot*5:0), damage:damage*(introductory?.8:1)*(source==='hazard'&&commanderFor(s,sourceId)>=0?1.25:1), shotsRemaining: profile?.shots??(kind === 'drone-burst' ? 2 : 1) }));
+  if(source==='hazard'&&getLevel(s.levelIndex).hazards[sourceId]?.elite)s.roadCooldowns[sourceId]=profile?.rearm??60;
+  return true;
 };
 const advanceEnemyAttacks = (s: GameState) => {
   const survivors:EnemyAttack[]=[];
@@ -524,7 +534,7 @@ const advanceEnemyAttacks = (s: GameState) => {
     if (a.phase === 'warning') {
       if (a.source === 'hazard') { a.fromY = roadEnemyY(s, a.sourceId); a.fromLane = roadEnemyLane(s,a.sourceId); a.fromX = roadEnemyX(s, a.sourceId); }
       else { const t = s.threats.find(t => t.id === a.sourceId); if (t) { a.fromY = threatY(t); a.fromLane = t.lane; a.fromX = laneXAt(t.lane, a.fromY); } }
-      a.phase = 'flight'; a.duration = profile?.flight??(a.kind === 'bombard' ? 12 : a.kind === 'drone-burst'||a.kind==='pounce'||a.kind==='charge' ? 8 : 6); a.ticks = a.duration; return true; }
+      a.phase = 'flight'; a.duration = enemyFlightV42(a.kind); a.ticks = a.duration; return true; }
     if(profile?.field){a.phase='field';a.ticks=a.duration=profile.field;hitPlayerLane(s,a.lane,a.damage,a.kind);return true;}
     hitPlayerLane(s, a.lane, a.damage,a.kind);
     if (a.kind === 'pounce') { const bot = s.threats.find(t => t.id === a.sourceId); if (bot) bot.hp = 0; }
@@ -569,8 +579,8 @@ const advanceRoadEnemies = (s: GameState) => {
   // Retaliation waits for a safe slot instead of being dropped under pressure.
   for(const i of visible.filter(i=>s.enemyAttackSources.includes('pursuit-ready:'+i))){
     if(s.enemyAttacks.some(a=>a.source==='hazard'&&a.sourceId===i)||s.lane===protectedLane||new Set([...busy,s.lane]).size>2)continue;
-    s.enemyAttackSources=s.enemyAttackSources.filter(key=>key!=='hazard:'+i&&key!=='pursuit-ready:'+i);
-    queueEnemyAttack(s,'hazard',i,'charge',s.lane,roadEnemyLane(s,i),roadEnemyY(s,i));return;
+    const previousSources=s.enemyAttackSources;s.enemyAttackSources=s.enemyAttackSources.filter(key=>key!=='hazard:'+i);
+    if(queueEnemyAttack(s,'hazard',i,'charge',s.lane,roadEnemyLane(s,i),roadEnemyY(s,i)))s.enemyAttackSources=s.enemyAttackSources.filter(key=>key!=='pursuit-ready:'+i);else s.enemyAttackSources=previousSources;return;
   }
   const pendingElite=visible.some(i=>level.hazards[i].elite&&level.hazards[i].progress-s.progress<=13.5&&level.hazards[i].progress-s.progress>2.5&&!s.enemyAttackSources.includes('hazard:'+i));
   // Give visible elites first use of safe attack slots; patrols fill recovery gaps.
@@ -610,7 +620,7 @@ const advanceBoss = (s: GameState): GameState => {
       continue;
     }
     if (threat.hp > 0 && (threat.kind === 'barrier' || threat.kind === 'minion') && threat.duration - threat.ticks >= 6) {
-      queueEnemyAttack(s, 'threat', threat.id, 'pounce', s.lane, threat.lane, threatY(threat));
+      if(!queueEnemyAttack(s, 'threat', threat.id, 'pounce', s.lane, threat.lane, threatY(threat))&&!s.enemyAttacks.some(a=>a.source==='threat'&&a.sourceId===threat.id))continue;
     }
     if(s.enemyAttacks.some(a=>a.source==='threat'&&a.sourceId===threat.id&&a.kind==='pounce'))continue;
     threat.ticks = Math.max(0, threat.ticks - 1);
@@ -704,10 +714,16 @@ const enterArena = (s: GameState) => {
   s.gateResolved = false; s.gateCollected = false; s.enemyAttackSources = []; s.pendingShots = []; s.burns = []; s.threats = []; s.enemyAttacks = []; s.bossAttackLanes = [];
 };
 
-export function gameReducer(state: GameState, action: Action): GameState {
+function reduceGameV42(state: GameState, action: Action): GameState {
+  if(action.type==='SKIP_DEFEAT')return state.status==='defeat'&&state.defeatTicks>=6?{...state,status:'result',defeatTicks:BOSS_DEFEAT_TICKS}:state;
+  if(action.type==='TICK'&&state.finish.resumeTicks>0&&canMove(state.status)){
+    let next:GameState={...state,finish:{...state.finish,resumeTicks:state.finish.resumeTicks-1},dodgeTicks:Math.max(0,state.dodgeTicks-1),laneMoveTicks:Math.max(0,state.laneMoveTicks-1),ops:{...state.ops,roadDodgeTicks:Math.max(0,state.ops.roadDodgeTicks-1)}};
+    if(state.dodgeTicks===1&&state.queuedLane!==null&&state.queuedLane!==state.lane)next=sidestep(next,state.queuedLane);
+    return next;
+  }
   if(action.type==='ACTIVATE_BURST'){
     if(!canActivateBurst(state))return state;
-    const next={...state,flow:copyFlowV41(state.flow),tactics:copyTacticsV40(state.tactics),report:{...state.report},ops:copyOperations(state.ops),roadImpacts:{...state.roadImpacts},burstEnergy:0,burstTicks:BURST_TICKS,burstSequence:state.burstSequence+1,burstStart:{damage:state.report.dealt,kills:state.kills},jamTicks:0};
+    const next={...state,finish:{...state.finish,baselineDamage:state.flow.contribution.burst,receipt:null},flow:copyFlowV41(state.flow),tactics:copyTacticsV40(state.tactics),report:{...state.report},ops:copyOperations(state.ops),roadImpacts:{...state.roadImpacts},burstEnergy:0,burstTicks:BURST_TICKS,burstSequence:state.burstSequence+1,burstStart:{damage:state.report.dealt,kills:state.kills},jamTicks:0};
     next.tactics.castCleared=0;next.tactics.castBreaks=0;next.tactics.castParries=0;
     if(state.mechClass==='pulse'){
       const ranged=['drone-burst','sniper-shot','bombard','hunter-fan','storm-orb','royal-salvo'];
@@ -784,7 +800,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
   if (!canMove(state.status)) return state;
   if (state.bots <= 0 || state.playerHp <= 0) return fail(state, isBossArena(state) ? 'boss-wipe' : null);
   const level = getLevel(state.levelIndex);
-  const s: GameState = { ...state,flow:{...copyFlowV41(state.flow),introTicks:Math.max(0,state.flow.introTicks-1),defenseCooldown:Math.max(0,state.flow.defenseCooldown-1),guardTicks:Math.max(0,state.flow.guardTicks-1)},tactics:{...copyTacticsV40(state.tactics),elapsed:state.tactics.elapsed+Number(canShoot(state.status)),windowTicks:Math.max(0,state.tactics.windowTicks-1),parryTicks:Math.max(0,state.tactics.parryTicks-1),noteTicks:Math.max(0,state.tactics.noteTicks-1)},hostileReactions:Object.fromEntries(Object.entries(state.hostileReactions??{}).map(([id,r])=>[id,{ticks:Math.max(0,r.ticks-1),cooldown:Math.max(0,r.cooldown-1)}] as const).filter(([,r])=>r.cooldown>0||r.ticks>0)),breatherTicks:Math.max(0,state.breatherTicks-Number(state.status==='running')),roadImpacts:Object.fromEntries(Object.entries(state.roadImpacts).map(([id,v])=>[id,{fracture:Math.max(0,v.fracture-1),stun:Math.max(0,v.stun-1),lock:Math.max(0,v.lock-1)}] as const).filter(([,v])=>v.fracture>0||v.stun>0||v.lock>0)),roadCooldowns:Object.fromEntries(Object.entries(state.roadCooldowns).map(([id,t])=>[id,Math.max(0,t-Number(state.status==='running'))])),report:{...state.report},feedback:state.feedback.filter(e=>e.ticks>1).map(e=>({...e,ticks:e.ticks-1})),upgradeFx:state.upgradeFx&&state.upgradeFx.ticks>1?{...state.upgradeFx,ticks:state.upgradeFx.ticks-1}:null,ops:copyOperations(state.ops), coreDetonations:state.coreDetonations.filter(e=>e.ticks>1).map(e=>({...e,ticks:e.ticks-1})), burstTicks:Math.max(0,state.burstTicks-Number(canShoot(state.status))), comboRewardTicks:Math.max(0,state.comboRewardTicks-1), defenseFx:state.defenseFx&&state.defenseFx.ticks>1?{...state.defenseFx,ticks:state.defenseFx.ticks-1}:null, killEffects: state.killEffects.filter(e => e.ticks > 1).map(e => ({ ...e, ticks: e.ticks - 1 })), comboTicks: Math.max(0, state.comboTicks - 1), medicPulses: [], pendingShots: [], hazardHps: [...state.hazardHps], threats: state.threats.map(t => ({ ...t })), enemyAttacks: state.enemyAttacks.map(a => ({ ...a })), enemyAttackSources: [...state.enemyAttackSources], burns: [], visitedZones: [...state.visitedZones], bossAttackLanes: [...state.bossAttackLanes], laneMoveTicks: Math.max(0, state.laneMoveTicks - 1), bossMoveTicks: Math.max(0, state.bossMoveTicks - Number(canShoot(state.status))), invulnerableTicks: Math.max(0, state.invulnerableTicks - Number(canShoot(state.status))), overloadTicks: Math.max(0, state.overloadTicks - Number(canShoot(state.status))), jamTicks: Math.max(0, state.jamTicks - Number(canShoot(state.status))) };
+  const s: GameState = { ...state,finish:{...state.finish,receipt:state.finish.receipt&&state.finish.receipt.ticks>1?{...state.finish.receipt,ticks:state.finish.receipt.ticks-1}:null},flow:{...copyFlowV41(state.flow),introTicks:Math.max(0,state.flow.introTicks-1),defenseCooldown:Math.max(0,state.flow.defenseCooldown-1),guardTicks:Math.max(0,state.flow.guardTicks-1)},tactics:{...copyTacticsV40(state.tactics),elapsed:state.tactics.elapsed+Number(canShoot(state.status)),windowTicks:Math.max(0,state.tactics.windowTicks-1),parryTicks:Math.max(0,state.tactics.parryTicks-1),noteTicks:Math.max(0,state.tactics.noteTicks-1)},hostileReactions:Object.fromEntries(Object.entries(state.hostileReactions??{}).map(([id,r])=>[id,{ticks:Math.max(0,r.ticks-1),cooldown:Math.max(0,r.cooldown-1)}] as const).filter(([,r])=>r.cooldown>0||r.ticks>0)),breatherTicks:Math.max(0,state.breatherTicks-Number(state.status==='running')),roadImpacts:Object.fromEntries(Object.entries(state.roadImpacts).map(([id,v])=>[id,{fracture:Math.max(0,v.fracture-1),stun:Math.max(0,v.stun-1),lock:Math.max(0,v.lock-1)}] as const).filter(([,v])=>v.fracture>0||v.stun>0||v.lock>0)),roadCooldowns:Object.fromEntries(Object.entries(state.roadCooldowns).map(([id,t])=>[id,Math.max(0,t-Number(state.status==='running'))])),report:{...state.report},feedback:state.feedback.filter(e=>e.ticks>1).map(e=>({...e,ticks:e.ticks-1})),upgradeFx:state.upgradeFx&&state.upgradeFx.ticks>1?{...state.upgradeFx,ticks:state.upgradeFx.ticks-1}:null,ops:copyOperations(state.ops), coreDetonations:state.coreDetonations.filter(e=>e.ticks>1).map(e=>({...e,ticks:e.ticks-1})), burstTicks:Math.max(0,state.burstTicks-Number(canShoot(state.status))), comboRewardTicks:Math.max(0,state.comboRewardTicks-1), defenseFx:state.defenseFx&&state.defenseFx.ticks>1?{...state.defenseFx,ticks:state.defenseFx.ticks-1}:null, killEffects: state.killEffects.filter(e => e.ticks > 1).map(e => ({ ...e, ticks: e.ticks - 1 })), comboTicks: Math.max(0, state.comboTicks - 1), medicPulses: [], pendingShots: [], hazardHps: [...state.hazardHps], threats: state.threats.map(t => ({ ...t })), enemyAttacks: state.enemyAttacks.map(a => ({ ...a })), enemyAttackSources: [...state.enemyAttackSources], burns: [], visitedZones: [...state.visitedZones], bossAttackLanes: [...state.bossAttackLanes], laneMoveTicks: Math.max(0, state.laneMoveTicks - 1), bossMoveTicks: Math.max(0, state.bossMoveTicks - Number(canShoot(state.status))), invulnerableTicks: Math.max(0, state.invulnerableTicks - Number(canShoot(state.status))), overloadTicks: Math.max(0, state.overloadTicks - Number(canShoot(state.status))), jamTicks: Math.max(0, state.jamTicks - Number(canShoot(state.status))) };
   if(canShoot(state.status)){s.ops.roadDodgeTicks=Math.max(0,s.ops.roadDodgeTicks-1);s.ops.perfectCooldown=Math.max(0,s.ops.perfectCooldown-1);s.ops.perfectTicks=Math.max(0,s.ops.perfectTicks-1);s.ops.breakTicks=Math.max(0,s.ops.breakTicks-1);}
   if (s.comboTicks === 0) {s.combo = 0;s.flow.moveGuard=false;}
   s.dodgeTicks=Math.max(0,state.dodgeTicks-1);s.evadeTicks=Math.max(0,state.evadeTicks-1);
@@ -797,12 +813,19 @@ export function gameReducer(state: GameState, action: Action): GameState {
   }
   for (const shot of state.pendingShots) {
     if (shot.ticks > 1) { s.pendingShots.push({ ...shot, ticks: shot.ticks - 1 }); continue; }
-    if (!shot.target) continue;
+    if (!shot.target) {
+      if(shot.blastAnchor)detonateCapturedV42(s,shot,shot.blastAnchor);
+      if(s.bossDefeated)return s;
+      continue;
+    }
+    if(shot.attackStyle==='heavy'&&!targetAlive(s,shot.target,shot.targetIndex)&&laneMatches(s,shot.target,shot.targetIndex,shot.lane)){
+      detonateCapturedV42(s,shot,{x:targetX(s,shot.target,shot.targetIndex,shot.lane),y:targetY(s,shot.target,shot.targetIndex)});if(s.bossDefeated)return s;continue;
+    }
     if (shot.attackStyle === 'blade' && !shot.burst && (s.lane !== shot.lane || 59 - targetY(s, shot.target, shot.targetIndex) > (shot.range??mechSpec('blade').range))) continue;
     const hit = damageTarget(s, shot.target, shot.targetIndex, shot.damage, shot.weaponLevel, shot.lane, shot.burst === true,false,shot.burst?'burst':'direct');
     if (s.status === 'boss-victory') return s;
     if(hit>0&&!shot.splashDone&&shot.attackStyle==='heavy'&&shot.target==='hazard'&&s.hazardHps[shot.targetIndex]>0){
-      const old=s.roadImpacts[shot.targetIndex];if((old?.lock??0)===0&&s.enemyAttacks.some(a=>a.source==='hazard'&&a.sourceId===shot.targetIndex&&a.phase==='warning'))protectComboV41(s,'defense');s.roadImpacts[shot.targetIndex]={fracture:45,stun:old&&old.lock>0?old.stun:5,lock:old&&old.lock>0?old.lock:35};
+      const old=s.roadImpacts[shot.targetIndex];if((old?.lock??0)===0&&s.enemyAttacks.some(a=>a.source==='hazard'&&a.sourceId===shot.targetIndex&&a.phase==='warning'))protectComboV41(s,'defense');if((old?.fracture??0)===0&&(getLevel(s.levelIndex).hazards[shot.targetIndex].armor??0)>0)s.feedback=s.feedback.map(f=>f.id===s.feedbackSequence?{...f,armorBreak:true}:f);s.roadImpacts[shot.targetIndex]={fracture:45,stun:old&&old.lock>0?old.stun:5,lock:old&&old.lock>0?old.lock:35};
     }
     if(hit>0&&!shot.splashDone&&!shot.burst&&shot.attackStyle==='blade'&&(shot.volleyId??shot.id)!==s.report.bladeVolley&&!shot.finisher){
       s.report.bladeVolley=shot.volleyId??shot.id;s.report.bladeCombo=Math.min(3,s.report.bladeCombo+1);if(s.report.bladeCombo>=3)s.report.bladeReady=true;
@@ -839,7 +862,8 @@ export function gameReducer(state: GameState, action: Action): GameState {
     if (!shot.target || targetAlive(s, shot.target, shot.targetIndex) || shot.pierce > 0) return shot;
     // Keep the remaining visual flight after a teammate destroys the target;
     // the bolt becomes harmless and never acquires a new target by itself.
-    return { ...shot, y: targetY(s, shot.target, shot.targetIndex), target: null };
+    const y=targetY(s,shot.target,shot.targetIndex);
+    return { ...shot, y, ...(shot.attackStyle==='heavy'&&!shot.splashDone?{blastAnchor:{x:targetX(s,shot.target,shot.targetIndex,shot.lane),y}}:{}),target: null };
   });
   if(s.tactics.reflection>0&&canShoot(s.status)){
     const reflected=s.tactics.reflection;s.tactics.reflection=0;
@@ -925,4 +949,14 @@ export function gameReducer(state: GameState, action: Action): GameState {
     }
   }
   return s;
+}
+
+export function gameReducer(state:GameState,action:Action):GameState{
+ const next=reduceGameV42(state,action);if(next===state)return state;
+ if(action.type==='RESUME'&&state.status==='paused'&&canMove(next.status))return {...next,finish:{...next.finish,resumeTicks:8}};
+ if(action.type==='TICK'&&canShoot(next.status)){
+  if(state.burstTicks>0&&next.burstTicks===0)next.finish={...next.finish,receipt:{ticks:24,sequence:next.burstSequence,damage:0,kills:Math.max(0,next.kills-(next.burstStart?.kills??next.kills)),utility:next.mechClass==='pulse'?'净化 '+next.tactics.castCleared:next.mechClass==='heavy'?'压制/破拆 '+next.tactics.castBreaks:'格挡 '+next.tactics.castParries,name:coreSkill(next.mechClass).name}};
+  if(next.finish.receipt)next.finish={...next.finish,receipt:{...next.finish.receipt,damage:Math.round(Math.max(0,next.flow.contribution.burst-next.finish.baselineDamage))}};
+ }
+ return next;
 }

@@ -437,7 +437,7 @@ test('queen swarm can be destroyed with same-lane shots or dodged; flight waits 
   const drone=base.threats[0];let s=tick({...base,pendingShots:[incoming(base,{target:'threat',targetIndex:drone.id,lane:drone.lane,damage:999})]});
   assert.equal(s.threats.find(t=>t.id===drone.id).hp,0);assert.equal(s.bossStep,'flight');
   const safe=[0,1,2].find(l=>!base.bossAttackLanes.includes(l));s=sim.gameReducer(s,{type:'MOVE_LANE',lane:safe});
-  for(let i=0;i<32;i++)s=tick(s);assert.equal(s.playerHp,100);assert.equal(s.bossStep,'recovery');
+  for(let i=0;i<32;i++){const lanes=s.enemyAttacks.map(a=>a.lane);if(lanes.includes(s.lane))s=sim.gameReducer(s,{type:'MOVE_LANE',lane:[0,1,2].find(l=>!lanes.includes(l))??s.lane});s=tick(s);}assert.equal(s.playerHp,100);assert.equal(s.bossStep,'recovery');
 });
 test('bastion deploys shootable shields and now alternates with moving walls instead of ramming', () => {
   const s=launch(signature(2,2,3));assert.ok(s.threats.every(t=>t.kind==='barrier'&&t.hp>=22&&t.damage===22));
@@ -497,17 +497,17 @@ test('destroying a charging drone cancels its volley; an already launched projec
   flight=tick({...flight,hazardHps:flight.hazardHps.map(()=>0)});assert.equal(flight.enemyAttacks.length,1);
   for(let i=0;i<13;i++)flight=tick(flight);assert.equal(flight.playerHp,93); assert.equal(flight.enemyAttacks.length,0,'destroyed drone cannot launch its second shot');
 });
-test('roadblock charges a same-lane shockwave that can be dodged or interrupted', () => {
-  const s=supportEnemy('barrier');assert.equal(s.enemyAttacks[0].kind,'shockwave');assert.equal(s.bossStep,'flight');
-  let hit=s;for(let i=0;i<17;i++){hit=tick(hit);assert.equal(hit.playerHp,100);}hit=tick(hit);assert.equal(hit.playerHp,88);assert.equal(hit.enemyAttacks.length,0);
+test('roadblock locks and pursues a lane that can be dodged or interrupted', () => {
+  const s=supportEnemy('barrier');assert.equal(s.enemyAttacks[0].kind,'pounce');assert.equal(s.bossStep,'flight');
+  let hit=s;for(let i=0;i<19;i++){hit=tick(hit);assert.equal(hit.playerHp,100);}hit=tick(hit);assert.equal(hit.playerHp,86);assert.equal(hit.enemyAttacks.length,0);
   let dodge=sim.gameReducer(s,{type:'MOVE_LANE',lane:2});for(let i=0;i<18;i++)dodge=tick(dodge);assert.equal(dodge.playerHp,100);
   const destroyed=tick({...s,pendingShots:[incoming(s,{target:'threat',targetIndex:888,lane:1,damage:999})]});assert.equal(destroyed.enemyAttacks.length,0);
 });
-test('small robot visibly pounces along its own lane, deals one hit and leaves no second contact', () => {
+test('small robot visibly pounces along the locked player lane, deals one hit and leaves no second contact', () => {
   const s=supportEnemy('minion');assert.equal(s.enemyAttacks[0].kind,'pounce');let hit=s;
   for(let i=0;i<12;i++)hit=tick(hit);
   const from=sim.enemyThreatY(hit,hit.threats[0]);assert.equal(hit.enemyAttacks[0].phase,'flight');hit=tick(hit);assert.ok(sim.enemyThreatY(hit,hit.threats[0])>from);
-  for(let i=0;i<5;i++)hit=tick(hit);assert.equal(hit.playerHp,86);assert.equal(hit.threats[0].hp,0);const seq=hit.damageSequence;
+  for(let i=0;i<7;i++)hit=tick(hit);assert.equal(hit.playerHp,86);assert.equal(hit.threats[0].hp,0);const seq=hit.damageSequence;
   for(let i=0;i<8;i++)hit=tick(hit);assert.equal(hit.playerHp,86);assert.equal(hit.damageSequence,seq);
   let dodge=sim.gameReducer(s,{type:'MOVE_LANE',lane:2});for(let i=0;i<18;i++)dodge=tick(dodge);assert.equal(dodge.playerHp,100);
 });
@@ -914,7 +914,7 @@ test('bomber advertises two fixed lanes with one safe gap and cannot release aft
   const interrupted=tick({...s,hazardHps:s.hazardHps.map(()=>0)});assert.equal(interrupted.enemyAttacks.length,0);
   s=sim.gameReducer(s,{type:'MOVE_LANE',lane:safe});
   for(let i=0;i<30;i++)s=tick(s);
-  assert.equal(s.playerHp,100);assert.equal(s.enemyAttacks.length,0);
+  assert.equal(s.playerHp,100);assert.ok(s.enemyAttacks.length===1&&s.enemyAttacks[0].kind==='charge');assert.equal(s.enemyAttacks[0].lane,s.lane);
 });
 
 test('assault swarm moves with its hitbox, deals one contact and cannot collide twice', () => {
@@ -2092,4 +2092,33 @@ test('grounded arena atlases provide distinct stance fire and dodge rows with re
  const meta=JSON.parse(fs.readFileSync(path.resolve(__dirname,'arena-v36.json'),'utf8'));assert.equal(meta.length,4);
  for(const m of meta){assert.ok(m.transparentFraction>.45);assert.equal(m.columns,8);assert.equal(m.frames,m.kind==='emperor'?32:48);assert.ok(m.bytes<1800000);}
  const modules=load('arenaMotionV36');assert.equal(new Set(Object.values(modules.ARENA_ART_V36)).size,3);assert.ok(load('referenceCamera').bossPixels({...battle(),levelIndex:4})>load('referenceCamera').bossPixels(battle()));
+});
+
+test('summon locks player lane, remains destructible through telegraph and cannot retarget a dodging player',()=>{
+ const base={...battle(1),lane:2,bossStep:'flight',bossSalvos:0,threats:[{id:999,kind:'minion',lane:0,fromLane:0,ticks:26,duration:32,hp:20,maxHp:20,damage:14}]},old=JSON.stringify(base);
+ let s=tick(base);assert.equal(s.enemyAttacks[0].lane,2);assert.equal(s.enemyAttacks[0].phase,'warning');assert.equal(JSON.stringify(base),old);
+ const destroyed=tick({...s,pendingShots:[incoming(s,{target:'threat',targetIndex:999,lane:0,damage:99})]});assert.equal(destroyed.threats[0].hp,0);assert.equal(destroyed.enemyAttacks.length,0);
+ const paused=sim.gameReducer(s,{type:'PAUSE'});assert.deepEqual(tick(paused),paused);
+ s=sim.gameReducer(s,{type:'MOVE_LANE',lane:1});for(let i=0;i<12;i++)s=tick(s);assert.equal(s.enemyAttacks[0].phase,'flight');assert.equal(s.enemyAttacks[0].lane,2);
+ const start=sim.enemyThreatX(s,s.threats[0]);for(let i=0;i<4;i++)s=tick(s);assert.ok(sim.enemyThreatX(s,s.threats[0])>start);assert.ok(sim.enemyThreatY(s,s.threats[0])>43);
+ for(let i=0;i<4;i++)s=tick(s);assert.equal(s.playerHp,100);assert.equal(s.threats[0].hp,0);const seq=s.damageSequence;for(let i=0;i<5;i++)s=tick(s);assert.equal(s.damageSequence,seq);
+});
+test('a crossing summon uses its current lane for a real intercept and dies before body impact',()=>{
+ let s={...battle(1),lane:2,bossStep:'flight',bossSalvos:0,threats:[{id:999,kind:'minion',lane:0,fromLane:0,ticks:26,duration:32,hp:20,maxHp:20,damage:14}]};s=tick(s);for(let i=0;i<16;i++)s=tick(s);
+ const lane=sim.enemyThreatLane(s,s.threats[0]);assert.equal(lane,1);
+ const wrong=tick({...s,pendingShots:[incoming(s,{target:'threat',targetIndex:999,lane:0,damage:99})]});assert.equal(wrong.threats[0].hp,20);
+ const killed=tick({...s,pendingShots:[incoming(s,{target:'threat',targetIndex:999,lane,damage:99})]});assert.equal(killed.threats[0].hp,0);assert.equal(killed.playerHp,100);
+});
+test('ordinary road swarm locks another lane and moves its body and collision together',()=>{
+ const {state,index}=roadSpecialist('swarm',0,4.9),own=sim.roadEnemyLane(state,index);let s=tick({...state,lane:(own+2)%3});const target=(own+2)%3;assert.equal(s.enemyAttacks[0].lane,target);
+ for(let i=0;i<10;i++)s=tick(s);assert.equal(s.enemyAttacks[0].phase,'flight');const x=sim.roadEnemyX(s,index);for(let i=0;i<4;i++)s=tick(s);assert.notEqual(sim.roadEnemyX(s,index),x);assert.equal(s.enemyAttacks[0].lane,target);
+ const lane=sim.roadEnemyLane(s,index),killed=tick({...s,pendingShots:[incoming(s,{target:'hazard',targetIndex:index,lane,damage:999})]});assert.ok(killed.hazardHps[index]<=0);assert.equal(killed.enemyAttacks.length,0);
+});
+test('surviving stationary boss node warns before leaving its original lane rather than expiring into invisible damage',()=>{
+ const base={...battle(3),lane:2,bossStep:'flight',bossSalvos:0,threats:[{id:456,kind:'pylon',lane:0,fromLane:0,ticks:12,duration:30,hp:20,maxHp:20,damage:10}]};const s=tick(base);assert.equal(s.enemyAttacks[0].kind,'pounce');assert.equal(s.enemyAttacks[0].lane,2);assert.equal(s.threats[0].ticks,12);assert.equal(s.playerHp,100);
+});
+test('road texture follows distance and predictive movement while pause boss battle and reduced motion stop scrolling',()=>{
+ const {roadOffsetV37:offset}=load('roadMotionV37'),s={...initial(),status:'running',progress:30},step=sim.roadStepFor(s,true);
+ assert.ok(offset(s,.9,step)>offset(s,0,step));assert.equal(offset({...s,status:'paused',resumeStatus:'running'},.9,step),offset(s,0,step));assert.equal(offset({...s,status:'battle'},.9,step),offset({...s,status:'battle'},0,step));assert.equal(offset(s,.9,step,true),0);
+ const art=load('roadMotionV37');assert.equal(art.ROAD_TILES_V37.length,5);for(const url of art.ROAD_TILES_V37)assert.ok(fs.statSync(path.resolve(__dirname,'../../../public'+url)).size<100000);
 });

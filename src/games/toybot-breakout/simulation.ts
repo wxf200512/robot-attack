@@ -1,3 +1,4 @@
+import { pursuitForV37, pursuitPointV37, pursuitLaneV37 } from './pursuitV37';
 import { fixedBossHealth } from './playability';
 import { ELITE_ATTACKS, type ElitePattern } from './frontline';
 import { newReport, type CombatReport, type CombatFeedback } from './experience';
@@ -265,20 +266,23 @@ const fail = (s: GameState, reason: GameState['defeatReason']): GameState => ({ 
 export const bossPartLane=(s:GameState,index:number)=>s.levelIndex===4?index:Math.max(0,Math.min(2,s.battleLane+index-1));
 export const bossPartY=(s:GameState,index:number)=>bossY(s)+(s.levelIndex===4?[0,.5,3]:[0,0,3])[index];
 export const bossPartX=(s:GameState,index:number)=>Math.max(5,Math.min(95,bossX(s)+(index-1)*(s.levelIndex===4?25:15)));
-const targetLane = (s: GameState, target: Target, index: number) => target === 'part' ? bossPartLane(s,index) : target === 'objective' ? s.ops.mission.lane : target === 'event' ? s.ops.event.lane : target === 'boss' ? s.battleLane : target === 'threat' ? s.threats.find(t => t.id === index)?.lane ?? -1 : hazardLaneAt(s.layoutIndex, index, s.progress, s.levelIndex);
+export const roadEnemyLane=(s:GameState,index:number)=>{const a=pursuitForV37(s,'hazard',index);return a?pursuitLaneV37(a,laneXAt):hazardLaneAt(s.layoutIndex,index,s.progress,s.levelIndex);};
+export const enemyThreatLane=(s:GameState,t:BossThreat)=>{const a=pursuitForV37(s,'threat',t.id);return a?pursuitLaneV37(a,laneXAt):t.lane;};
+const targetLane = (s: GameState, target: Target, index: number) => target === 'part' ? bossPartLane(s,index) : target === 'objective' ? s.ops.mission.lane : target === 'event' ? s.ops.event.lane : target === 'boss' ? s.battleLane : target === 'threat' ? ((t)=>t?enemyThreatLane(s,t):-1)(s.threats.find(t=>t.id===index)) : roadEnemyLane(s,index);
 export const roadEnemyY = (s: GameState, index: number) => {
-  const dash = s.enemyAttacks.find(a => a.source === 'hazard' && a.sourceId === index && a.kind === 'charge' && a.phase === 'flight');
+  const dash = pursuitForV37(s,'hazard',index);
   const h = getLevel(s.levelIndex).hazards[index];
   const offset = h.horde ? 0 : h.kind === 'swarm' ? Math.floor((h.slot ?? 0) / 2) * 3 : h.kind === 'sniper' ? 2 : h.kind === 'bomber' ? 4 : h.kind === 'medic' ? 7 : 0;
   const y = hazardY(s.progress, h.progress) - offset * Math.min(1, Math.max(0, (h.progress - s.progress) / 6));
-  return dash ? dash.fromY + (59 - dash.fromY) * (1 - dash.ticks / dash.duration) : h.kind ? Math.max(ROAD_HORIZON[s.levelIndex] + 3, y) : y;
+  return dash ? pursuitPointV37(dash,laneXAt).y : h.kind ? Math.max(ROAD_HORIZON[s.levelIndex] + 3, y) : y;
 };
 export const roadEnemyX = (s: GameState, index: number) => {
+  const dash=pursuitForV37(s,'hazard',index);if(dash)return pursuitPointV37(dash,laneXAt).x;
   const h = getLevel(s.levelIndex).hazards[index], offset = h.horde ? (Math.floor((h.slot??0)%6/2)-1)*3.2 : h.kind === 'swarm' ? ((h.slot ?? 0) % 2 ? 3.8 : -3.8) : h.kind === 'bomber' ? -2 : h.kind === 'medic' ? 2 : 0;
   return laneXAt(targetLane(s, 'hazard', index), roadEnemyY(s, index)) + offset*(h.horde?Math.max(.55,Math.min(1,(roadEnemyY(s,index)-25)/34)):1);
 };
 export const targetY = (s: GameState, target: Target, index: number) => target === 'part' ? bossPartY(s,index) : target==='objective'?fieldY(s,s.ops.mission):target==='event'?fieldY(s,s.ops.event):target === 'boss' ? bossY(s) : target === 'threat' ? enemyThreatY(s, s.threats.find(t => t.id === index) ?? { ticks: 0, duration: 1 } as BossThreat) : roadEnemyY(s, index);
-export const targetX = (s: GameState, target: Target, index: number, lane?:number) => target === 'part'?bossPartX(s,index):target === 'boss'?(s.levelIndex===4&&lane!==undefined?laneXAt(lane,bossY(s)):bossX(s)):target === 'hazard' ? roadEnemyX(s, index) : laneXAt(targetLane(s, target, index), targetY(s, target, index));
+export const targetX = (s: GameState, target: Target, index: number, lane?:number) => target === 'part'?bossPartX(s,index):target === 'boss'?(s.levelIndex===4&&lane!==undefined?laneXAt(lane,bossY(s)):bossX(s)):target === 'threat'?((t)=>t?enemyThreatX(s,t):50)(s.threats.find(t=>t.id===index)):target === 'hazard' ? roadEnemyX(s, index) : laneXAt(targetLane(s, target, index), targetY(s, target, index));
 const targetAlive = (s: GameState, target: Target, index: number) => target === 'part' ? s.status==='battle'&&(s.ops.parts[index]?.hp??0)>0 : target==='objective'?fieldVisible(s,s.ops.mission):target==='event'?fieldVisible(s,s.ops.event):target === 'boss' ? s.encounter === index && s.battleHp > 0 : target === 'threat' ? (s.threats.find(t => t.id === index)?.hp ?? 0) > 0 : (s.hazardHps[index] ?? 0) > 0;
 const laneMatches = (s: GameState, target: Target, index: number, lane: number) => target === 'boss' ? bossDamageLanes(s).includes(lane) : targetLane(s, target, index) === lane;
 const targetsInLane = (s: GameState, lane: number, coreSweep=false) => {
@@ -291,7 +295,7 @@ const targetsInLane = (s: GameState, lane: number, coreSweep=false) => {
   for(const [target,object]of [['objective',s.ops.mission],['event',s.ops.event]] as const)if(fieldVisible(s,object)&&object.lane===lane)targets.push({target,index:0,y:fieldY(s,object),progress:200-fieldY(s,object)});
   if(s.status==='battle')s.ops.parts.forEach((part,index)=>{if(part.hp>0&&bossPartLane(s,index)===lane)targets.push({target:'part',index,y:bossPartY(s,index),progress:200-bossPartY(s,index)});});
   s.threats.forEach(threat => {
-    if (threat.hp > 0 && threat.lane === lane) targets.push({ target: 'threat', index: threat.id, y: enemyThreatY(s, threat), progress: 200 - enemyThreatY(s, threat) });
+    if (threat.hp > 0 && enemyThreatLane(s,threat) === lane) targets.push({ target: 'threat', index: threat.id, y: enemyThreatY(s, threat), progress: 200 - enemyThreatY(s, threat) });
   });
   const boss = level.encounters[s.encounter];
   if (boss && s.status === 'battle' && s.battleHp > 0 && bossDamageLanes(s).includes(lane))
@@ -452,6 +456,7 @@ const queueEnemyAttack = (s: GameState, source: EnemyAttack['source'], sourceId:
   lanes.forEach((targetLane,slot) => s.enemyAttacks.push({ id: ++s.enemyAttackSequence, source, sourceId, kind, lane: targetLane, fromLane, fromY, fromX: source === 'hazard' ? roadEnemyX(s, sourceId) : laneXAt(fromLane, fromY), phase: 'warning', ticks: warning+(kind==='royal-salvo'?slot*5:0), duration: warning+(kind==='royal-salvo'?slot*5:0), damage:damage*(source==='hazard'&&commanderFor(s,sourceId)>=0?1.25:1), shotsRemaining: profile?.shots??(kind === 'drone-burst' ? 2 : 1) }));
 };
 const advanceEnemyAttacks = (s: GameState) => {
+  const survivors:EnemyAttack[]=[];
   s.enemyAttacks = s.enemyAttacks.filter(a => {
     if (!sourceAlive(s, a) && (a.phase === 'warning' || !['drone-burst', 'sniper-shot', 'bombard','heat-mine','hunter-fan','storm-orb','royal-salvo','siege-laser'].includes(a.kind))) return false;
     const profile=a.kind in ELITE_ATTACKS?ELITE_ATTACKS[a.kind as ElitePattern]:null;
@@ -459,24 +464,31 @@ const advanceEnemyAttacks = (s: GameState) => {
     if(a.source==='hazard'&&a.phase==='warning'&&(s.roadImpacts[a.sourceId]?.stun??0)>0)return true;
     if (--a.ticks > 0) return true;
     if (a.phase === 'warning') {
-      if (a.source === 'hazard') { a.fromY = roadEnemyY(s, a.sourceId); a.fromLane = hazardLaneAt(s.layoutIndex, a.sourceId, s.progress, s.levelIndex); a.fromX = roadEnemyX(s, a.sourceId); }
+      if (a.source === 'hazard') { a.fromY = roadEnemyY(s, a.sourceId); a.fromLane = roadEnemyLane(s,a.sourceId); a.fromX = roadEnemyX(s, a.sourceId); }
       else { const t = s.threats.find(t => t.id === a.sourceId); if (t) { a.fromY = threatY(t); a.fromLane = t.lane; a.fromX = laneXAt(t.lane, a.fromY); } }
-      a.phase = 'flight'; a.duration = profile?.flight??(a.kind === 'bombard' ? 12 : a.kind === 'drone-burst' ? 8 : 6); a.ticks = a.duration; return true; }
+      a.phase = 'flight'; a.duration = profile?.flight??(a.kind === 'bombard' ? 12 : a.kind === 'drone-burst'||a.kind==='pounce'||a.kind==='charge' ? 8 : 6); a.ticks = a.duration; return true; }
     if(profile?.field){a.phase='field';a.ticks=a.duration=profile.field;hitPlayerLane(s,a.lane,a.damage);return true;}
     hitPlayerLane(s, a.lane, a.damage);
     if (a.kind === 'pounce') { const bot = s.threats.find(t => t.id === a.sourceId); if (bot) bot.hp = 0; }
     if (a.kind === 'charge') s.hazardHps[a.sourceId] = -1;
     if (--a.shotsRemaining > 0 && sourceAlive(s, a)) {
-      if (a.source === 'hazard') { a.fromY = roadEnemyY(s, a.sourceId); a.fromLane = hazardLaneAt(s.layoutIndex, a.sourceId, s.progress, s.levelIndex); a.fromX = roadEnemyX(s, a.sourceId); }
+      if (a.source === 'hazard') { a.fromY = roadEnemyY(s, a.sourceId); a.fromLane = roadEnemyLane(s,a.sourceId); a.fromX = roadEnemyX(s, a.sourceId); }
       a.ticks = a.duration = 6; return true;
     }
+    if(a.source==='hazard'&&a.kind!=='charge'){const h=getLevel(s.levelIndex).hazards[a.sourceId];if(h?.kind&&!h.elite&&sourceAlive(s,a))survivors.push(a);}
     return false;
   });
+  for(const a of survivors){
+    if(s.enemyAttacks.some(x=>x.source===a.source&&x.sourceId===a.sourceId))continue;
+    const key='pursuit-ready:'+a.sourceId;if(!s.enemyAttackSources.includes(key))s.enemyAttackSources.push(key);
+  }
 };
 export const enemyThreatY = (s: GameState, threat: BossThreat) => {
-  const dash = s.enemyAttacks.find(a => a.source === 'threat' && a.sourceId === threat.id && a.kind === 'pounce' && a.phase === 'flight');
-  return dash ? dash.fromY + (59 - dash.fromY) * (1 - dash.ticks / dash.duration) : threatY(threat);
+  const windup=s.enemyAttacks.find(a=>a.source==='threat'&&a.sourceId===threat.id&&a.kind==='pounce'&&a.phase==='warning');if(windup)return windup.fromY;
+  const dash = pursuitForV37(s,'threat',threat.id);
+  return dash ? pursuitPointV37(dash,laneXAt).y : threatY(threat);
 };
+export const enemyThreatX=(s:GameState,t:BossThreat)=>{const windup=s.enemyAttacks.find(a=>a.source==='threat'&&a.sourceId===t.id&&a.kind==='pounce'&&a.phase==='warning');if(windup)return windup.fromX??laneXAt(windup.fromLane,windup.fromY);const a=pursuitForV37(s,'threat',t.id);return a?pursuitPointV37(a,laneXAt).x:laneXAt(t.lane,enemyThreatY(s,t));};
 const advanceRoadEnemies = (s: GameState) => {
   const level = getLevel(s.levelIndex); s.roadTicks++; s.medicPulses = [];
   const visible = level.hazards.flatMap((h, i) => s.hazardHps[i] > 0 && s.progress >= h.progress - 14 && s.progress < h.progress ? [i] : []);
@@ -495,6 +507,12 @@ const advanceRoadEnemies = (s: GameState) => {
   const gate = s.gateChoices[s.gate]?.[0], mark = level.gateMarks[s.gate];
   const protectedLane = gate?.polarity === 'reward' && !s.gateResolved && Math.abs(mark - s.progress) < 7 ? gate.lane : -1;
   if (s.enemyAttacks.length >= 2||s.breatherTicks>0) return;
+  // Retaliation waits for a safe slot instead of being dropped under pressure.
+  for(const i of visible.filter(i=>s.enemyAttackSources.includes('pursuit-ready:'+i))){
+    if(s.enemyAttacks.some(a=>a.source==='hazard'&&a.sourceId===i)||s.lane===protectedLane||new Set([...busy,s.lane]).size>2)continue;
+    s.enemyAttackSources=s.enemyAttackSources.filter(key=>key!=='hazard:'+i&&key!=='pursuit-ready:'+i);
+    queueEnemyAttack(s,'hazard',i,'charge',s.lane,roadEnemyLane(s,i),roadEnemyY(s,i));return;
+  }
   const pendingElite=visible.some(i=>level.hazards[i].elite&&level.hazards[i].progress-s.progress<=13.5&&level.hazards[i].progress-s.progress>2.5&&!s.enemyAttackSources.includes('hazard:'+i));
   // Give visible elites first use of safe attack slots; patrols fill recovery gaps.
   for (const i of [...visible].sort((a,b)=>Number(!!level.hazards[b].elite)-Number(!!level.hazards[a].elite))) {
@@ -502,11 +520,11 @@ const advanceRoadEnemies = (s: GameState) => {
     if(pendingElite&&!h.elite)continue;
     const until = h.progress - s.progress;
     if(h.elite&&!s.enemyAttacks.some(a=>a.source==='hazard'&&a.sourceId===i)&&(s.roadCooldowns[i]??0)===0)s.enemyAttackSources=s.enemyAttackSources.filter(key=>key!=='hazard:'+i);
-    if (kind === 'medic' || s.enemyAttackSources.includes('hazard:' + i) || until > (h.elite?13.5:kind === 'swarm' ? 5 : 10) || until <= (h.elite?2.5:4)) continue;
+    if (s.enemyAttackSources.includes('hazard:' + i) || until > (h.elite?13.5:kind === 'swarm' ? 5 : 10) || until <= (h.elite?2.5:4)) continue;
     const ownLane = targetLane(s, 'hazard', i);
-    const attack: EnemyAttack['kind'] = h.pattern??(kind === 'swarm' ? 'charge' : kind === 'sniper' ? 'sniper-shot' : kind === 'bomber' ? 'bombard' : 'drone-burst');
+    const attack: EnemyAttack['kind'] = h.pattern??(kind === 'swarm'||kind==='medic' ? 'charge' : kind === 'sniper' ? 'sniper-shot' : kind === 'bomber' ? 'bombard' : 'drone-burst');
     const fan=attack==='hunter-fan'||attack==='royal-salvo';
-    const lanes = fan?[ownLane,[...busy,0,1,2].find(l=>l!==ownLane&&l!==protectedLane)??(ownLane+1)%3]:kind === 'bomber'&&!h.pattern ? [ownLane, (ownLane + 1) % 3] : [kind === 'swarm'||h.pattern ? ownLane : s.lane];
+    const lanes = fan?[ownLane,[...busy,0,1,2].find(l=>l!==ownLane&&l!==protectedLane)??(ownLane+1)%3]:kind === 'bomber'&&!h.pattern ? [ownLane, (ownLane + 1) % 3] : [h.pattern?ownLane:s.lane];
     if (lanes.includes(protectedLane) || new Set([...busy, ...lanes]).size > 2 || s.enemyAttacks.length + lanes.length > 2) continue;
     queueEnemyAttack(s, 'hazard', i, attack, lanes[0], ownLane, roadEnemyY(s, i), lanes);
     break;
@@ -517,6 +535,9 @@ const advanceBoss = (s: GameState): GameState => {
   advanceEnemyAttacks(s);
   for (const threat of [...s.threats]) {
     if (threat.hp === 0) continue;
+    const pursuit=s.enemyAttacks.find(a=>a.source==='threat'&&a.sourceId===threat.id&&a.kind==='pounce');
+    if(pursuit)continue; // A surviving unit is resolved by its body strike, never a second expiry hit.
+    if(threat.hp>0&&['tether','pylon','orb','seal','wall'].includes(threat.kind)&&threat.ticks<=12){queueEnemyAttack(s,'threat',threat.id,'pounce',s.lane,threat.lane,threatY(threat));continue;}
     if (['egg','tether','pylon','orb','seal','field'].includes(threat.kind)) {
       if (threat.kind === 'field' && threat.linkId && !s.threats.some(t=>t.id===threat.linkId&&t.hp>0)) { threat.hp=0; continue; }
       threat.ticks=Math.max(0,threat.ticks-1);
@@ -530,8 +551,9 @@ const advanceBoss = (s: GameState): GameState => {
       continue;
     }
     if (threat.hp > 0 && (threat.kind === 'barrier' || threat.kind === 'minion') && threat.duration - threat.ticks >= 6) {
-      queueEnemyAttack(s, 'threat', threat.id, threat.kind === 'barrier' ? 'shockwave' : 'pounce', threat.lane, threat.lane, threatY(threat));
+      queueEnemyAttack(s, 'threat', threat.id, 'pounce', s.lane, threat.lane, threatY(threat));
     }
+    if(s.enemyAttacks.some(a=>a.source==='threat'&&a.sourceId===threat.id&&a.kind==='pounce'))continue;
     threat.ticks = Math.max(0, threat.ticks - 1);
     if (threat.ticks === 0) {
       if (threat.kind === 'lava' && (threat.lingerTicks ?? 0) > 0) {

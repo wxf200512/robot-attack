@@ -1,3 +1,6 @@
+import { RoadWorldV37 } from './RoadWorldV37';
+import { ROAD_TILES_V37 } from './roadMotionV37';
+import './roadWorldV37.css';
 import { ARENA_ART_V36, EMPEROR_ART_V36 } from './arenaMotionV36';
 import { BossMountedParts } from './OperationsLayer';
 import './arenaV36.css';
@@ -59,7 +62,7 @@ import { useNavigate } from 'react-router-dom';
 import { MAP_ART, BOSS_ART, BOSS_DEFEAT_ART, GATE_ART, THREAT_ART, UI_HANGAR_ART, UI_RESULT_CRESTS, UI_MENU_ART, UI_MENU_ICONS, BLADE_SLASH_ART, BOSS_OBJECTIVE_ART } from './art';
 import { hazardArmorFor } from './simulation';
 import { getLevel, LEVELS, hazardLaneAt } from './level';
-import { createInitialState, bossHealthFor, effectiveWeapon, bossPhase, bossY, gateEffectDetail, LANE_CENTERS, STEP_MS, RUN_SPEED, laneXAt, targetY, gateGroundY, GATE_CONTACT_Y, isActiveStatus, canMove, canShoot, isBossArena, bossEnrage, bossX, rushProgress, isRush, attackIntervalFor, bossAttackLabel, enemyThreatY, playerFormation, bossGuarded, roadEnemyY, roadEnemyX, targetX as targetWorldX } from './simulation';
+import { createInitialState, bossHealthFor, effectiveWeapon, bossPhase, bossY, gateEffectDetail, LANE_CENTERS, STEP_MS, RUN_SPEED, laneXAt, targetY, gateGroundY, GATE_CONTACT_Y, isActiveStatus, canMove, canShoot, isBossArena, bossEnrage, bossX, rushProgress, isRush, attackIntervalFor, bossAttackLabel, enemyThreatX, enemyThreatY, playerFormation, bossGuarded, roadEnemyY, roadEnemyX, targetX as targetWorldX } from './simulation';
 import { purchaseUpgrade, readGarage, saveGarage, toggleUpgrade, upgradeCost, UPGRADES, moduleLevel, garageStats, previewUpgrade, equipAllUpgrades, MODULE_MAX_LEVEL, canEnterLevel, recordLevelCompletion, type Garage, type UpgradeId } from './progression';
 
 import './playability.css';
@@ -201,7 +204,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
     return()=>{document.removeEventListener('visibilitychange',visibility);window.removeEventListener('blur',suspend);window.removeEventListener('pagehide',suspend);};
   },[game.status]);
   const warmRoadAssets=game.status==='running';
-  useEffect(()=>{void preloadImages([...(game.levelIndex===4?[EMPEROR_ART_V36]:[]),ARENA_ART_V36[game.mechClass],...(game.mechClass==='blade'?[BLADE_ATTACK_V35]:[]),CORE_FX_V34[game.mechClass],RUN_ART[game.mechClass],MOTION_ART[game.mechClass],MATERIAL_ART,PROP_ART,PORTRAIT_ART,REFERENCE_LOGO],'high');},[game.mechClass,game.levelIndex]);
+  useEffect(()=>{void preloadImages([ROAD_TILES_V37[game.levelIndex],...(game.levelIndex===4?[EMPEROR_ART_V36]:[]),ARENA_ART_V36[game.mechClass],...(game.mechClass==='blade'?[BLADE_ATTACK_V35]:[]),CORE_FX_V34[game.mechClass],RUN_ART[game.mechClass],MOTION_ART[game.mechClass],MATERIAL_ART,PROP_ART,PORTRAIT_ART,REFERENCE_LOGO],'high');},[game.mechClass,game.levelIndex]);
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages(Object.values(DEFENSE_ART));},[game.status]);
   useEffect(()=>{if(game.status==='home')void preloadImages([UI_MENU_ICONS,UI_MENU_ART.hangar,ART_V19,FUSION_ART_V19].filter(Boolean),'low');},[game.status]);
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages([CHAPTER_FILMS[game.levelIndex],RELAY_ART]);},[game.status,game.levelIndex]);
@@ -835,7 +838,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
         >
           <div className={`toybot-world ${arena ? 'in-arena' : ''}`}>
           <img className="toybot-scene-background" src={MAP_ART[game.levelIndex]} alt="" aria-hidden="true" draggable={false} />
-          <div className="toybot-sun" />
+          <RoadWorldV37 level={game.levelIndex}/><div className="toybot-sun" />
           <div className="toybot-cloud" />
           <div className="toybot-cloud c2" />
           <div className="toybot-hills" />
@@ -885,7 +888,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
               const y = attack.fromY + (59 - attack.fromY) * progress;
               const angle = Math.atan2((LANE_CENTERS[attack.lane] - fromX) * .56, Math.max(1, 59 - attack.fromY)) * -180 / Math.PI;
               return <React.Fragment key={attack.id}>
-                {attack.phase!=='field'&&<div className={'toybot-enemy-target attack-' + attack.kind + (attack.phase === 'flight' ? ' is-live' : '')} style={{ left: LANE_CENTERS[attack.lane] + '%', '--warning-fill': (1 - attack.ticks / attack.duration) * 100 + '%' } as React.CSSProperties} role="img" aria-label={attack.kind in ELITE_ATTACKS?ELITE_ATTACKS[attack.kind as ElitePattern].name+'，离开标记轨道':attack.kind === 'sniper-shot' ? '狙击锁定，离开标记轨道' : attack.kind === 'bombard' ? '双列轰炸，前往空白轨道' : attack.kind === 'charge' ? '突击蜂蓄力冲锋，击破或换道' : attack.kind === 'drone-burst' ? '无人机锁定轨道，准备连射' : attack.kind === 'shockwave' ? '路障电磁冲击波，离开该轨道' : '小机器人准备扑击，击毁或换道'} />}
+                {attack.phase!=='field'&&<div className={'toybot-enemy-target attack-' + attack.kind + (attack.phase === 'flight' ? ' is-live' : '')} style={{ left: LANE_CENTERS[attack.lane] + '%', '--warning-fill': (1 - attack.ticks / attack.duration) * 100 + '%' } as React.CSSProperties} role="img" aria-label={attack.kind in ELITE_ATTACKS?ELITE_ATTACKS[attack.kind as ElitePattern].name+'，离开标记轨道':attack.kind === 'sniper-shot' ? '狙击锁定，离开标记轨道' : attack.kind === 'bombard' ? '双列轰炸，前往空白轨道' : attack.kind === 'charge' ? '敌人锁定突袭，击破或换道' : attack.kind === 'drone-burst' ? '无人机锁定轨道，准备连射' : attack.kind === 'shockwave' ? '路障电磁冲击波，离开该轨道' : '小机器人准备扑击，击毁或换道'} />}
                 {attack.phase === 'warning' && <span data-world-y={attack.fromY} className="toybot-enemy-charge" style={{ left: fromX + '%', top: attack.fromY + '%', zIndex: Math.round((attack.fromY + 5) * 10) }} aria-hidden="true">{attack.kind === 'drone-burst' || attack.kind === 'sniper-shot' ? '⌖' : attack.kind === 'bombard' ? '◎' : attack.kind === 'shockwave' ? 'ϟ' : '»'}</span>}
                 {attack.phase === 'flight' && ['drone-burst', 'sniper-shot', 'bombard','heat-mine','hunter-fan','storm-orb','royal-salvo'].includes(attack.kind) && <div data-motion="enemy-bolt" data-motion-id={attack.id} className={'toybot-enemy-bolt bolt-' + attack.kind + (attack.ticks <= 1 ? ' at-contact' : '')} style={{ left: x + '%', top: y + '%', rotate: angle + 'deg', zIndex: Math.round((y + 5) * 10) + 4, backgroundImage: 'url(' + THREAT_ART + ')' }} aria-hidden="true" />}
                 {attack.phase==='field'&&<div className={'toybot-road-field kind-'+attack.kind} style={{left:LANE_CENTERS[attack.lane]+'%'}} role="img" aria-label={attack.kind==='heat-mine'?'熔焰地面，换道避开持续灼烧':'导电球场，换道避开干扰'}><span/><b>{attack.kind==='heat-mine'?'灼烧':'导电'}</b><i style={{width:attack.ticks/attack.duration*100+'%'}}/></div>}
@@ -948,15 +951,15 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
                 const kind=threat.kind as keyof typeof OBJECTIVE_NAMES;
                 const cell={egg:1,tether:2,pylon:3,wall:4,orb:5,seal:6,field:7}[kind];
                 if(kind==='field') return <div key={threat.id} className={`toybot-skill-field sector-${game.levelIndex}`} style={{left:LANE_CENTERS[threat.lane]+'%'}} role="img" aria-label={OBJECTIVE_NAMES.field}><span style={{backgroundImage:`url(${BOSS_OBJECTIVE_ART})`}} /></div>;
-                return <div key={threat.id} data-motion="threat" data-motion-id={threat.id} className={'toybot-skill-object kind-'+kind} style={{left:laneXAt(threat.lane,y)+'%',top:y+'%',zIndex:Math.round((y+8)*10)}} role="img" aria-label={OBJECTIVE_NAMES[kind]}>
+                return <div key={threat.id} data-motion="threat" data-motion-id={threat.id} className={'toybot-skill-object kind-'+kind} style={{left:enemyThreatX(game,threat)+'%',top:y+'%',zIndex:Math.round((y+8)*10)}} role="img" aria-label={OBJECTIVE_NAMES[kind]}>
                   <span className="toybot-skill-object-art" style={{backgroundImage:`url(${BOSS_OBJECTIVE_ART})`,backgroundPosition:(cell%4*100/3)+'% '+(cell>=4?100:0)+'%'}} />
                   {threat.maxHp>0&&<span className="toybot-threat-hp"><i style={{width:threat.hp/threat.maxHp*100+'%'}} /></span>}
                   <i className="toybot-skill-countdown" style={{scale:`${threat.ticks/threat.duration} 1`}} />
                   <small>{kind==='egg'?'孵化':kind==='tether'?'汲能':kind==='pylon'?'护盾':kind==='orb'?'击破断电':kind==='seal'?'王权符印':'盾墙'}</small>
                 </div>;
               }
-              const fromX = laneXAt(threat.fromLane, threat.originY ?? 43), toX = LANE_CENTERS[threat.lane];
-              const x = threat.kind === 'shell' ? fromX + (toX - fromX) * progress : laneXAt(threat.lane, y);
+              const fromX = laneXAt(threat.fromLane, threat.originY ?? 43), toX = LANE_CENTERS[game.enemyAttacks.find(a=>a.source==='threat'&&a.sourceId===threat.id&&a.kind==='pounce')?.lane??threat.lane];
+              const x = threat.kind === 'shell' ? fromX + (toX - fromX) * progress : enemyThreatX(game,threat);
               const row = threat.kind === 'shell' || threat.kind === 'lava' ? 0 : threat.kind === 'barrier' ? 1 : 2;
               if (threat.kind === 'beam') return <div key={threat.id} className={"toybot-storm-beam " + (threat.ticks <= 2 ? 'is-firing' : '')} style={{ left: toX + '%', zIndex: 700 }} role="img" aria-label="风暴能量束，离开紫色轨道" />;
               return <React.Fragment key={threat.id}>

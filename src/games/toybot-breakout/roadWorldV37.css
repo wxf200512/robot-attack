@@ -1,0 +1,8 @@
+.toybot-page .reference-v29 .toybot-road-world-v37{position:absolute;left:0;right:0;top:29%;bottom:0;z-index:1;pointer-events:none;overflow:hidden;clip-path:polygon(46% 0,54% 0,127% 100%,-27% 100%);mask-image:linear-gradient(transparent,#000 20%,#000);contain:paint;opacity:1}
+.toybot-page .reference-v29 .toybot-road-surface-v37{position:absolute;inset:0;background-repeat:repeat-y;background-size:100% 256px;background-position:50% var(--road-scroll-v37,0px);transform:perspective(600px) rotateX(52deg) scaleX(1.2);transform-origin:50% 0;backface-visibility:hidden;will-change:background-position}
+.toybot-page .reference-v29 .is-arena .toybot-road-surface-v37,.toybot-page .reference-v29 .is-paused .toybot-road-surface-v37{will-change:auto}
+
+.road-divider-v37{position:absolute;inset:0;background:#b9d7e680;clip-path:polygon(48.7% 0,49% 0,32.2% 100%,31.9% 100%)}
+.road-divider-v37.right{clip-path:polygon(51% 0,51.3% 0,68.1% 100%,67.8% 100%)}
+
+.toybot-page .reference-v29 .toybot-reference-lanes{display:none}

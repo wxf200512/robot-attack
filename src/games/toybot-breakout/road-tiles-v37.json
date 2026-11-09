@@ -1,0 +1,32 @@
+[
+  {
+    "level": 0,
+    "width": 256,
+    "height": 256,
+    "bytes": 12318
+  },
+  {
+    "level": 1,
+    "width": 256,
+    "height": 256,
+    "bytes": 4998
+  },
+  {
+    "level": 2,
+    "width": 256,
+    "height": 256,
+    "bytes": 7324
+  },
+  {
+    "level": 3,
+    "width": 256,
+    "height": 256,
+    "bytes": 5344
+  },
+  {
+    "level": 4,
+    "width": 256,
+    "height": 256,
+    "bytes": 6088
+  }
+]

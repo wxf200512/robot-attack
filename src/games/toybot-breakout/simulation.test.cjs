@@ -240,9 +240,9 @@ test('gate art threshold and simulation share exact contact point; passing is on
 });
 test('emperor combines seals, judgement and crossfire without generic support summons', () => {
   let s = { ...battle(4), battleTime: 0, bossStage: 2, bossCycle: 1, battleHp: 10000, battleMaxHp: 10000, armorPoints: 1000, fireCooldown: 1000 };
-  const lanes = new Set([s.battleLane]), kinds = new Set();
-  for (let i = 0; i < 400; i++) { s = tick(s); s.threats.forEach(t => kinds.add(t.kind)); lanes.add(s.battleLane); }
-  assert.ok(kinds.has('seal')&&kinds.has('field')&&kinds.has('shell'));assert.ok(!kinds.has('barrier')&&!kinds.has('minion'));assert.ok(lanes.size>1);
+  const lanes = new Set([sim.bossX(s)]), kinds = new Set();
+  for (let i = 0; i < 400; i++) { s = tick(s); s.threats.forEach(t => kinds.add(t.kind)); lanes.add(sim.bossX(s)); }
+  assert.ok(kinds.has('seal')&&kinds.has('field')&&kinds.has('shell'));assert.ok(!kinds.has('barrier')&&!kinds.has('minion'));assert.equal(lanes.size,1);assert.equal(s.bossMoveTicks,0);
 });
 test('summoned blockers take real same-lane hits by stable id and intercept shots ahead of boss', () => {
   const minion = { id: 70, kind: 'minion', lane: 0, ticks: 20, duration: 42, hp: 5, maxHp: 5, damage: 1, fromLane: 0 };
@@ -1413,7 +1413,7 @@ test('boss parts are distinct lane targets, interrupt attacks and permanently di
  const wrong=tick({...base,pendingShots:[incoming(base,{target:'part',targetIndex:0,lane:1,damage:100})]});assert.equal(wrong.ops.parts[0].hp,base.ops.parts[0].hp);
  const broken=tick({...base,bossStep:'warning',bossStepTicks:0,pendingShots:[incoming(base,{target:'part',targetIndex:0,lane:0,damage:1000})]});assert.equal(broken.ops.parts[0].hp,0);assert.equal(broken.ops.broken,1);assert.equal(broken.bossStep,'recovery');assert.equal(broken.bossSalvos,0);assert.equal(base.ops.parts[0].hp>0,true);
  assert.equal(tick({...broken,pendingShots:[incoming(base,{target:'part',targetIndex:0,lane:0,damage:1000})]}).ops.broken,1);
- const shield=tick({...base,threats:[{id:3,kind:'pylon',lane:1,ticks:20,duration:20,hp:5,maxHp:5,damage:1,fromLane:1}],pendingShots:[incoming(base,{target:'part',targetIndex:1,lane:1,damage:1000})]});assert.equal(sim.bossGuarded(shield),false);
+ const shield=tick({...base,threats:[{id:3,kind:'pylon',lane:1,ticks:20,duration:20,hp:5,maxHp:5,damage:1,fromLane:1}],pendingShots:[incoming(base,{target:'part',targetIndex:1,lane:sim.bossPartLane(base,1),damage:1000})]});assert.equal(sim.bossGuarded(shield),false);
  const engine={...base,ops:{...base.ops,parts:base.ops.parts.map(p=>p.kind==='engine'?{...p,hp:0}:p)}};assert.ok(operations.partBroken(engine,'engine'));
 });
 test('mission outcomes alter the appropriate boss setup, and storm completion removes further jams',()=>{
@@ -1859,7 +1859,7 @@ test('independent motion atlas runs sixteen frames and never runs in any boss ph
  const frames=new Set(Array.from({length:128},(_,i)=>art.artPose({...s,roadTicks:i/10}).frame));
  assert.equal(frames.size,16);assert.equal(art.artPose(s).row,0);
  for(const status of ['boss-intro','battle','boss-shift','boss-victory']){
-  const p=art.artPose({...s,status,fireCooldown:0});assert.equal(p.row,1);assert.equal(p.sheet,'motion');
+  const p=art.artPose({...s,status,fireCooldown:0});assert.equal(p.row,0);assert.equal(p.sheet,'arena');
  }
  const advanced=art.artPose({...s,weaponLevel:2});assert.equal(advanced.row,4);
 });
@@ -1868,7 +1868,7 @@ test('V28 anticipation precedes launch and recovery reaches final frame without 
  assert.ok(art.artPose({...s,fireCooldown:1}).frame<3);
  assert.equal(art.artPose({...s,fireCooldown:interval}).frame,3);
  assert.equal(art.artPose({...s,fireCooldown:interval-3},.9).frame,6);assert.equal(art.artPose({...s,fireCooldown:interval-5},.1).frame,7);
- const dodge=art.artPose({...s,dodgeTicks:sim.DODGE_TICKS},0);assert.equal(dodge.row%4,3);assert.equal(dodge.frame,0);
+ const dodge=art.artPose({...s,dodgeTicks:sim.DODGE_TICKS},0);assert.equal(dodge.row%3,2);assert.equal(dodge.sheet,'arena');assert.equal(dodge.frame,0);
  assert.equal(JSON.stringify(s),before);
 });
 test('V28 reduced motion has no procedural lean or recoil and pause preserves sampled pose',()=>{
@@ -1925,7 +1925,7 @@ test('reference art contains real RGBA atlases, compact gameplay backgrounds and
  for(let i=1;i<=5;i++){const jpg=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/map-'+i+'-v29.jpg'));assert.equal(jpg[0],255);assert.equal(jpg[1],216);assert.ok(jpg.length<350000);}
 });
 
-test('reference core activation retains the chunky upgraded body and eight-frame action family',()=>{const art=load('visualArt');for(const mechClass of ['pulse','heavy','blade']){const s={...initial(),status:'running',mechClass,burstTicks:50,weaponLevel:0};assert.equal(art.artPose(s).row,4);assert.equal(art.artPose({...s,status:'battle',fireCooldown:0}).row,5);}});
+test('reference core activation retains the chunky upgraded body and eight-frame action family',()=>{const art=load('visualArt');for(const mechClass of ['pulse','heavy','blade']){const s={...initial(),status:'running',mechClass,burstTicks:50,weaponLevel:0};assert.equal(art.artPose(s).row,4);assert.equal(art.artPose({...s,status:'battle',fireCooldown:0}).row,3);assert.equal(art.artPose({...s,status:'battle',fireCooldown:0}).sheet,'arena');}});
 
 test('untargeted reference tracers remain visible between volleys without changing cadence or dealing damage',()=>{let s={...quietRoad(0),mechClass:'pulse',bots:1,fireCooldown:0,gate:levels.getLevel(0).gateMarks.length};s.hazardHps=s.hazardHps.map(()=>-1);s=tick(s);assert.ok(s.pendingShots.length&&s.pendingShots.every(p=>!p.target&&p.duration>sim.attackIntervalFor(s)),JSON.stringify({shots:s.pendingShots,status:s.status,fire:s.fireCooldown,mech:s.mechClass}));assert.equal(s.fireCooldown,sim.attackIntervalFor(s));for(let i=1;i<16;i++)s=tick(s);assert.equal(s.report.dealt,0);assert.equal(s.report.shots,Math.ceil(16/sim.attackIntervalFor(s)));assert.ok(s.hazardHps.every(h=>h===-1));});
 test('each mech uses an independent motion module with class-correct attack phases',()=>{
@@ -1944,7 +1944,7 @@ test('blade contact follows melee flight and its longer finisher rather than gun
 });
 test('independent animation modules remain presentation-only and freeze for reduced motion',()=>{
  const sample=load('animationModules').sampleMechMotion;
- for(const mechClass of ['pulse','heavy','blade']){const s={...battle(),mechClass,dodgeTicks:3},before=JSON.stringify(s);for(const alpha of [0,.2,.5,.9]){const p=sample(s,alpha);assert.ok(p.frame>=0&&p.frame<8);assert.equal(p.row%4,3);}const stopped=sample(s,.5,0,true);assert.equal(stopped.frame,0);assert.equal(stopped.recoil,0);assert.equal(JSON.stringify(s),before);}
+ for(const mechClass of ['pulse','heavy','blade']){const s={...battle(),mechClass,dodgeTicks:3},before=JSON.stringify(s);for(const alpha of [0,.2,.5,.9]){const p=sample(s,alpha);assert.ok(p.frame>=0&&p.frame<8);assert.equal(p.row%3,2);assert.equal(p.sheet,'arena');}const stopped=sample(s,.5,0,true);assert.equal(stopped.frame,0);assert.equal(stopped.recoil,0);assert.equal(JSON.stringify(s),before);}
 });
 test('independent sprite atlases preserve transparency and calibrated action cells',()=>{
  const meta=JSON.parse(fs.readFileSync(path.resolve(__dirname,'motion-registration-v30.json'),'utf8').replace(/^\uFEFF/,''));const hashes=new Set();
@@ -2064,4 +2064,32 @@ test('blade strike traverses sixteen exclusive poses without changing combat sta
 test('blade slash art is a transparent separate sixteen-frame clip for each equipment tier',()=>{
  const m=JSON.parse(fs.readFileSync(path.resolve(__dirname,'blade-motion-v35.json'),'utf8'));assert.equal(m.framesPerTier,16);assert.equal(m.frames,32);assert.ok(m.transparentFraction>.5);
  const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/mech-blade-attack-v35.png'));assert.equal(png.readUInt32BE(16),1024);assert.equal(png.readUInt32BE(20),512);assert.equal(png[25],6);
+});
+
+test('boss arena guards are planted independent of every road stride and paused status',()=>{
+ const sample=load('animationModules').sampleMechMotion;
+ for(const mechClass of ['pulse','heavy','blade'])for(const status of ['boss-intro','battle','boss-shift','boss-victory']){
+  const s={...battle(),mechClass,status,fireCooldown:0},old=JSON.stringify(s);
+  for(const roadTicks of [0,1,13,173]){const p=sample({...s,roadTicks},.5);assert.equal(p.sheet,'arena');assert.equal(p.frame,0);assert.equal(p.row%3,0);assert.equal(p.recoil,0);}
+  assert.deepEqual(sample(s,.2),sample({...s,status:'paused',resumeStatus:status},.2));assert.equal(JSON.stringify(s),old);
+ }
+});
+test('mounted parts follow boss body translation instead of staying on roadway',()=>{
+ const base={...battle(),battleLane:1,bossMoveTicks:0};
+ for(const battleLane of [0,1,2]){const moved={...base,battleLane};for(let i=0;i<3;i++){
+  assert.ok(Math.abs(sim.targetX(moved,'part',i)-sim.bossX(moved))<=25);assert.equal(sim.targetY(moved,'part',i)-sim.bossY(moved),[0,0,3][i]);assert.equal(sim.bossPartLane(moved,i),Math.max(0,Math.min(2,battleLane+i-1)));
+ }}
+ const camera=load('referenceCamera'),shot=incoming(base,{target:'part',targetIndex:1});const p=camera.cameraFlight({x:50,y:sim.targetY(base,'part',1),angle:0,progress:1},shot);assert.equal(p.y,camera.bossScreenY(sim.targetY(base,'part',1)));
+});
+test('final colossus can be hit in all three lanes and receives each impact at its corresponding body region',()=>{
+ const base={...battle(4),fireCooldown:1000,bossMoveTicks:0},xs=[];
+ assert.deepEqual(sim.bossDamageLanes(base),[0,1,2]);assert.equal(sim.bossX({...base,battleLane:0}),50);assert.equal(sim.bossX({...base,battleLane:2}),50);
+ for(const lane of [0,1,2]){const n=tick({...base,pendingShots:[incoming(base,{lane,damage:10})]});assert.ok(n.battleHp<base.battleHp);xs.push(n.feedback.at(-1).x);}
+ assert.ok(xs[0]<xs[1]&&xs[1]<xs[2]);
+ const ordinary={...battle(0),battleLane:1};assert.deepEqual(sim.bossDamageLanes(ordinary),[1]);assert.equal(tick({...ordinary,pendingShots:[incoming(ordinary,{lane:0})]}).report.dealt,0);
+});
+test('grounded arena atlases provide distinct stance fire and dodge rows with real transparency',()=>{
+ const meta=JSON.parse(fs.readFileSync(path.resolve(__dirname,'arena-v36.json'),'utf8'));assert.equal(meta.length,4);
+ for(const m of meta){assert.ok(m.transparentFraction>.45);assert.equal(m.columns,8);assert.equal(m.frames,m.kind==='emperor'?32:48);assert.ok(m.bytes<1800000);}
+ const modules=load('arenaMotionV36');assert.equal(new Set(Object.values(modules.ARENA_ART_V36)).size,3);assert.ok(load('referenceCamera').bossPixels({...battle(),levelIndex:4})>load('referenceCamera').bossPixels(battle()));
 });

@@ -12,6 +12,6 @@ export const actorPixels=(count:number,width:number)=>count<=1?68:count<=4?Math.
 export function projectedMuzzleX(shot:PendingShot){const o=shot.origins[0],base=formationFor(shot.count,shot.lane)[o.index];return o.x+(shot.count<=4&&base?(base.x-LANE_CENTERS[shot.lane])*.6:0);}
 export function cameraFlight(p:{x:number;y:number;angle:number;progress:number},shot:PendingShot){
  const spread=projectedMuzzleX(shot)-shot.origins[0].x;
- return {x:p.x+spread*(1-p.progress),y:worldScreenY(p.y)-(shot.target==='boss'?12*p.progress:0),angle:Math.atan(Math.tan(p.angle*Math.PI/180)/1.7)*180/Math.PI};
+ return {x:p.x+spread*(1-p.progress),y:worldScreenY(p.y)-(shot.target==='boss'||shot.target==='part'?12*p.progress:0),angle:Math.atan(Math.tan(p.angle*Math.PI/180)/1.7)*180/Math.PI};
 }
-export const bossPixels=(s:GameState)=>[238,218,236,218,236][s.levelIndex];
+export const bossPixels=(s:GameState)=>[238,218,236,218,330][s.levelIndex];

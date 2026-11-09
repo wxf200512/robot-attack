@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { GameState } from './simulation';
-import { gateGroundY, laneXAt, LANE_CENTERS, bossY } from './simulation';
+import { gateGroundY, laneXAt, LANE_CENTERS } from './simulation';
 import type { Garage } from './progression';
 import { ART_V19, FUSION_ART_V19, FUSIONS, PROTOCOLS, MISSION_NAMES, MISSION_REWARDS, fieldVisible, fieldY, prepMark, eligibleFusion, type Fusion, type Protocol } from './operations';
 export function OperationSprite({cell,className=''}:{cell:number;className?:string}){return <span className={'ops-art '+className} style={{backgroundImage:`url(${ART_V19})`,backgroundPosition:`${cell%3*50}% ${Math.floor(cell/3)*50}%`}} aria-hidden="true"/>;}
@@ -13,7 +13,7 @@ export default function OperationsLayer({game:s}:{game:GameState}){
   {fieldVisible(s,o.event)&&<div data-motion="cargo" className="ops-field-object cargo-object" style={placed(o.event.lane,fieldY(s,o.event))} role="img" aria-label={`风险救援：击破运输锁，获得模块和零件。耐久 ${o.event.hp}/${o.event.maxHp}`}><OperationSprite cell={4}/><b>救援补给</b><i><span style={{width:o.event.hp/o.event.maxHp*100+'%'}}/></i></div>}
   {o.eventWarning>0&&<div className="ops-risk-warning" style={{left:LANE_CENTERS[o.eventLane]+'%'}} role="img" aria-label="运输护卫即将攻击本轨道"><span>危险</span></div>}
   {s.status==='running'&&o.prep==='pending'&&s.progress>=prepMark(s)-6&&(['维修','重调','蓄能'] as const).map((name,lane)=><div key={name} data-motion="prep" data-motion-id={lane} className={'ops-prep-door'+(s.lane===lane?' is-selected':'')} style={placed(lane,prepY)} role="img" aria-label={`${lane+1}轨整备：${name}，穿过领取`}><OperationSprite cell={[5,1,3][lane]}/><b>{name}</b><small>{[o.protocol==='scarcity'?'生命+18':'生命+35',Math.max(...Object.values(s.modules))>=3?'满级→40分':'最高模块+1','强化齐射+2'][lane]}</small></div>)}
-  {s.status==='battle'&&o.parts.map((part,index)=>part.hp>0&&<div key={part.kind} data-motion="part" data-motion-id={index} className={'ops-boss-part part-'+part.kind} style={placed(part.lane,bossY(s)+4)} role="img" aria-label={`${part.name} 可破坏部件，耐久 ${part.hp}/${part.maxHp}`}><OperationSprite cell={index+6}/><b>{part.name}</b><i><span style={{width:part.hp/part.maxHp*100+'%'}}/></i></div>)}
+
   {(s.status==='running'||s.status==='battle')&&o.perfectTicks>0&&<div className="ops-perfect-flare" style={{left:LANE_CENTERS[s.lane]+'%',top:'59%',opacity:o.perfectTicks/8}}><OperationSprite cell={0}/></div>}
  </>;
 }
@@ -28,4 +28,9 @@ export function OperationsHud({game:s}:{game:GameState}){
 export function ChallengePicker({game,garage,onSelect}:{game:GameState;garage:Garage;onSelect:(protocol:Protocol)=>void}){
  if(!garage.completedLevels[game.levelIndex])return <div className="ops-challenge-locked">通关本区后解锁挑战协议</div>;
  return <details className="ops-challenge-picker"><summary><OperationSprite cell={2}/><span>挑战协议 · {PROTOCOLS[game.ops.protocol].name}</span><b>⌄</b></summary><div role="group" aria-label="选择挑战协议">{(Object.keys(PROTOCOLS) as Protocol[]).map(key=><button key={key} type="button" aria-pressed={game.ops.protocol===key} onClick={()=>onSelect(key)}><strong>{PROTOCOLS[key].name}</strong><small>{PROTOCOLS[key].detail}</small>{garage.challengeClears.includes(game.levelIndex+':'+key)&&<em><OperationSprite cell={2}/>已获徽章</em>}</button>)}</div></details>;
+}
+
+export function BossMountedParts({game:s}:{game:GameState}){
+ if(!s.ops.parts.length)return null;
+ return <div className="boss-mounted-parts" aria-label="首领机体可破坏部件">{s.ops.parts.map((part,index)=><div key={part.kind} className={'boss-mounted-part mount-'+index+(part.hp<=0?' is-broken':'')} style={{left:(s.levelIndex===4?[18,50,75]:[28,50,72])[index]+'%',top:(s.levelIndex===4?[50,53,63]:[50,50,62])[index]+'%'}} role="img" aria-label={part.name+(part.hp<=0?' 已击破':` 可破坏部件，耐久 ${part.hp}/${part.maxHp}`)}><span className="boss-mount-bracket"/><small>{part.hp<=0?'已破坏':part.name}</small>{part.hp>0&&<i><span style={{width:part.hp/part.maxHp*100+'%'}}/></i>}</div>)}</div>;
 }

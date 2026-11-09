@@ -1,3 +1,4 @@
+import { ARENA_ART_V36, EMPEROR_ART_V36 } from './arenaMotionV36';
 import { BLADE_ATTACK_V35 } from './bladeMotionV35';
 import { coreFlightV34 } from './signatureV34';
 import { pulseImpactV33 } from './pulseVfxV33';
@@ -29,7 +30,7 @@ export function poseSample(s:GameState,alpha:number){
 }
 export function projectileSample(s:GameState,shot:PendingShot,alpha:number,predicted?:GameState){
  const progress=clamp01(1-(shot.ticks-clamp01(alpha))/Math.max(1,shot.duration)),origin=shot.origins[0],v=predicted??visualState(s,alpha);
- const endY=shot.target?targetY(v,shot.target,shot.targetIndex):shot.y,capturedLane=shot.target==='hazard'?hazardLaneAt(s.layoutIndex,shot.targetIndex,v.progress,s.levelIndex):shot.target==='boss'?s.battleLane:shot.lane,endX=shot.target?(capturedLane!==shot.lane?laneXAt(shot.lane,endY):shot.target==='hazard'?hazardVisualX(v,shot.targetIndex):targetX(v,shot.target,shot.targetIndex)):shot.targetIndex>=0||shot.burst?laneXAt(shot.lane,endY):50;
+ const endY=shot.target?targetY(v,shot.target,shot.targetIndex):shot.y,capturedLane=shot.target==='hazard'?hazardLaneAt(s.layoutIndex,shot.targetIndex,v.progress,s.levelIndex):shot.target==='boss'?s.battleLane:shot.lane,endX=shot.target?(capturedLane!==shot.lane?laneXAt(shot.lane,endY):shot.target==='hazard'?hazardVisualX(v,shot.targetIndex):targetX(v,shot.target,shot.targetIndex,shot.lane)):shot.targetIndex>=0||shot.burst?laneXAt(shot.lane,endY):50;
  return {progress,x:origin.x+(endX-origin.x)*progress,y:origin.y+(endY-origin.y)*progress-(shot.burst&&shot.attackStyle==='heavy'?Math.sin(progress*Math.PI)*Math.min(5,Math.max(0,origin.y-endY)*.2):0),angle:Math.atan2((endX-origin.x)*.56,Math.max(1,origin.y-endY))*180/Math.PI};
 }
 function paintHostile(body:HTMLElement,p:ReturnType<typeof bossMotionV31>,image:string,rows:number){body.style.backgroundImage=`url(${image})`;body.style.backgroundSize=`800% ${rows*100}%`;body.style.backgroundPosition=atlasCell(p.frame,p.row,8,rows);body.style.translate=`0 ${p.bob}px`;body.style.rotate=p.lean+'deg';body.style.setProperty('--hostile-flash',String(1+p.flash));body.dataset.hostileAction=p.action;body.dataset.hostileProfile=p.profile;}
@@ -56,7 +57,7 @@ export function paintMotion(root:HTMLElement,s:GameState,alpha:number,entries:Mo
   if(kind==='robot'){
    const p=formation[id];if(p)place(node,squadScreenX(p.x,formation[0]?.x??50,s.bots),p.y);
    const art=artPose(s,t,id,reduced),body=node.querySelector<HTMLElement>('.toybot-v28-body');
-   if(body){body.style.backgroundImage=`url(${art.sheet==='blade'?BLADE_ATTACK_V35:(art.sheet==='run'?RUN_ART:MOTION_ART)[s.mechClass]})`;body.style.backgroundSize=art.sheet==='run'||art.sheet==='blade'?'800% 400%':'800% 800%';body.style.backgroundPosition=art.sheet==='run'?atlasCell(art.frame%8,(art.row>=4?2:0)+Math.floor(art.frame/8),8,4):atlasCell(art.frame,art.row,8,art.sheet==='blade'?4:8);body.dataset.mechAction=art.action;body.style.rotate=art.lean+'deg';body.style.translate='0 '+art.recoil+'px';}
+   if(body){body.style.backgroundImage=`url(${art.sheet==='arena'?ARENA_ART_V36[s.mechClass]:art.sheet==='blade'?BLADE_ATTACK_V35:(art.sheet==='run'?RUN_ART:MOTION_ART)[s.mechClass]})`;body.style.backgroundSize=art.sheet==='arena'?'800% 600%':art.sheet==='run'||art.sheet==='blade'?'800% 400%':'800% 800%';body.style.backgroundPosition=art.sheet==='run'?atlasCell(art.frame%8,(art.row>=4?2:0)+Math.floor(art.frame/8),8,4):atlasCell(art.frame,art.row,8,art.sheet==='arena'?6:art.sheet==='blade'?4:8);body.dataset.mechAction=art.action;body.style.scale=isBossArena(s)?'1':'var(--art-mirror,1) 1';body.style.rotate=art.lean+'deg';body.style.translate='0 '+art.recoil+'px';}
 
    const dust=node.querySelector<HTMLElement>('.toybot-v28-footdust');if(dust){dust.style.opacity=String(reduced||isBossArena(s)?0:Math.max(0,Math.sin((s.roadTicks+t+id*.8)*Math.PI/3.2))*.28);dust.style.translate=(art.frame<4?'-20%':'0')+' 0';}
 
@@ -84,17 +85,17 @@ export function paintMotion(root:HTMLElement,s:GameState,alpha:number,entries:Mo
    node.style.transform=`translate(-50%,-50%) rotate(${p.angle}deg) scale(${1-p.progress*(shot.target ? .35 : .78)})`;
    node.style.opacity=String(shot.target?1:1-p.progress);
   }else if(kind==='slash'){
-   const shot=shots.get(id);if(shot?.target){const y=targetY(v,shot.target,shot.targetIndex),x=targetX(v,shot.target,shot.targetIndex)+(shot.origins[0].x-LANE_CENTERS[shot.lane])*.22;place(node,x,y);if(shot.target==='boss')node.style.top=bossScreenY(y)+'%';node.style.backgroundPositionX=Math.min(3,Math.floor((shot.duration-shot.ticks+t)*4/shot.duration))*100/3+'%';}
+   const shot=shots.get(id);if(shot?.target){const y=targetY(v,shot.target,shot.targetIndex),x=targetX(v,shot.target,shot.targetIndex,shot.lane)+(shot.origins[0].x-LANE_CENTERS[shot.lane])*.22;place(node,x,y);if(shot.target==='boss'||shot.target==='part')node.style.top=bossScreenY(y)+'%';node.style.backgroundPositionX=Math.min(3,Math.floor((shot.duration-shot.ticks+t)*4/shot.duration))*100/3+'%';}
   }else if(kind==='enemy-bolt'){
    const a=attacks.get(id);if(a){const p=clamp01(1-(a.ticks-t)/a.duration),from=a.fromX??laneXAt(a.fromLane,a.fromY);place(node,from+(LANE_CENTERS[a.lane]-from)*p,a.fromY+(59-a.fromY)*p);}
   }else if(kind==='boss'){
    place(node,isBossArena(s)?bossX(v):50,bossY(v));node.style.top=bossScreenY(isBossArena(s)?bossY(v):40)+'%';
    const body=node.querySelector<HTMLElement>('.robot-boss-sprite');
-   if(body?.classList.contains('hostile-v31-body')){const p=bossMotionV31(s,t,reduced);paintHostile(body,p,BOSS_MOTION_V31[s.levelIndex],8);body.style.opacity=String(p.action==='destroyed'?Math.max(0,1-(s.bossPhaseTicks+t-8)/8):1);}
+   if(body?.classList.contains('hostile-v31-body')){const p=bossMotionV31(s,t,reduced);paintHostile(body,s.levelIndex===4?{...p,row:p.row%4,lean:0,bob:reduced?0:Math.sin((s.battleTime+t)*.12)*.35}:p,s.levelIndex===4?EMPEROR_ART_V36:BOSS_MOTION_V31[s.levelIndex],s.levelIndex===4?4:8);body.style.opacity=String(p.action==='destroyed'?Math.max(0,1-(s.bossPhaseTicks+t-8)/8):1);}
    else if(body&&body.style.backgroundImage.includes(FURNACE_ART)){const f=bossArtFrame(s);body.style.backgroundPosition=atlasCell(f%4,Math.floor(f/4),4,2);}
    else if(body&&body.style.backgroundImage.includes(BOSS_EVOLUTION_ART)){body.style.backgroundPositionX=bossArtFrame(s)*100/7+'%';body.style.translate=reduced?'0 0':`0 ${Math.sin((s.battleTime+t)*.35)*.65}px`;}
 
-   if(isBossArena(s))node.style.setProperty('--boss-scale',String(1.12*(1+Math.max(0,(bossY(v)-(s.mechClass==='blade'?51:40))/(59-(s.mechClass==='blade'?51:40)))*.25)));
+   if(isBossArena(s))node.style.setProperty('--boss-scale',String(s.levelIndex===4?1.02:1.12*(1+Math.max(0,(bossY(v)-(s.mechClass==='blade'?51:40))/(59-(s.mechClass==='blade'?51:40)))*.25)));
   }else if(kind==='gate'){
    const mark=getLevel(s.levelIndex).gateMarks[s.gate],option=s.gateChoices[s.gate]?.[id];if(mark!==undefined&&option){const y=gateGroundY(v.progress,mark);place(node,laneXAt(option.lane,y-5),y);node.style.setProperty('--gate-scale',String(.85+clamp01((v.progress-mark+12)/14)*.3));}
   }else if(kind==='threat'){
@@ -102,7 +103,7 @@ export function paintMotion(root:HTMLElement,s:GameState,alpha:number,entries:Mo
   }else if(kind==='mission'||kind==='cargo'){
    const o=kind==='mission'?s.ops.mission:s.ops.event,y=fieldY(v,o);place(node,laneXAt(o.lane,y),y);
   }else if(kind==='prep'){const y=gateGroundY(v.progress,prepMark(s));place(node,laneXAt(id,y),y);}
-  else if(kind==='part'){const p=s.ops.parts[id];if(p){const y=bossY(v)+4;place(node,laneXAt(p.lane,y),y);}}
+
  }
 }
 

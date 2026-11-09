@@ -1,3 +1,6 @@
+import { ARENA_ART_V36, EMPEROR_ART_V36 } from './arenaMotionV36';
+import { BossMountedParts } from './OperationsLayer';
+import './arenaV36.css';
 import { BLADE_ATTACK_V35 } from './bladeMotionV35';
 import { CORE_FX_V34, coreMuzzlesV34, signatureShotV34 } from './signatureV34';
 import './signatureV34.css';
@@ -198,7 +201,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
     return()=>{document.removeEventListener('visibilitychange',visibility);window.removeEventListener('blur',suspend);window.removeEventListener('pagehide',suspend);};
   },[game.status]);
   const warmRoadAssets=game.status==='running';
-  useEffect(()=>{void preloadImages([...(game.mechClass==='blade'?[BLADE_ATTACK_V35]:[]),CORE_FX_V34[game.mechClass],RUN_ART[game.mechClass],MOTION_ART[game.mechClass],MATERIAL_ART,PROP_ART,PORTRAIT_ART,REFERENCE_LOGO],'high');},[game.mechClass]);
+  useEffect(()=>{void preloadImages([...(game.levelIndex===4?[EMPEROR_ART_V36]:[]),ARENA_ART_V36[game.mechClass],...(game.mechClass==='blade'?[BLADE_ATTACK_V35]:[]),CORE_FX_V34[game.mechClass],RUN_ART[game.mechClass],MOTION_ART[game.mechClass],MATERIAL_ART,PROP_ART,PORTRAIT_ART,REFERENCE_LOGO],'high');},[game.mechClass,game.levelIndex]);
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages(Object.values(DEFENSE_ART));},[game.status]);
   useEffect(()=>{if(game.status==='home')void preloadImages([UI_MENU_ICONS,UI_MENU_ART.hangar,ART_V19,FUSION_ART_V19].filter(Boolean),'low');},[game.status]);
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages([CHAPTER_FILMS[game.levelIndex],RELAY_ART]);},[game.status,game.levelIndex]);
@@ -901,14 +904,14 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
                     if (!volley.target || game.lane !== volley.lane) return null;
                     const y = targetY(game, volley.target, volley.targetIndex);
                     const tier = Math.min(3, volley.weaponLevel + Math.min(1, game.armorLevel) + Math.min(1, visualCore));
-                    return <div key={origin.index} data-motion="slash" data-motion-id={volley.id} className={'toybot-melee-slash'+(volley.finisher?' is-finisher':'')+(volley.burst?' is-core-burst-slash':'')+(volley.burn?' has-burn-module':'')+(volley.arc?' has-arc-module':'')} style={{ left: (targetWorldX(game, volley.target, volley.targetIndex) + (origin.x - LANE_CENTERS[volley.lane]) * .22) + '%', top: y + '%', backgroundImage: 'url(' + BLADE_SLASH_ART + ')', backgroundPosition: ((volley.duration - volley.ticks) * 100 / 3) + '% ' + (tier * 100 / 3) + '%', zIndex: Math.round((y + 7) * 10) + 7 }} aria-hidden="true" />;
+                    return <div key={origin.index} data-motion="slash" data-motion-id={volley.id} className={'toybot-melee-slash'+(volley.finisher?' is-finisher':'')+(volley.burst?' is-core-burst-slash':'')+(volley.burn?' has-burn-module':'')+(volley.arc?' has-arc-module':'')} style={{ left: (targetWorldX(game, volley.target, volley.targetIndex,volley.lane) + (origin.x - LANE_CENTERS[volley.lane]) * .22) + '%', top: y + '%', backgroundImage: 'url(' + BLADE_SLASH_ART + ')', backgroundPosition: ((volley.duration - volley.ticks) * 100 / 3) + '% ' + (tier * 100 / 3) + '%', zIndex: Math.round((y + 7) * 10) + 7 }} aria-hidden="true" />;
                   }
                   const tier = volley.charged || volley.weaponLevel >= 4 ? 'weapon-ultimate' : volley.weaponLevel >= 3 ? 'weapon-heavy weapon-overdrive' : volley.weaponLevel >= 2 ? 'weapon-heavy' : volley.weaponLevel > 0 ? 'weapon-powered' : '';
                   const flightProgress = (volley.duration - volley.ticks) / volley.duration;
                   // Origins are captured when firing, so changing lanes or losing
                   // a squad member cannot teleport projectiles already in flight.
                   const destinationY = volley.target ? targetY(game, volley.target, volley.targetIndex) : volley.y;
-                  const targetX = volley.target ? targetWorldX(game, volley.target, volley.targetIndex) : volley.targetIndex >= 0 || volley.burst ? laneXAt(volley.lane, destinationY) : 50;
+                  const targetX = volley.target ? targetWorldX(game, volley.target, volley.targetIndex,volley.lane) : volley.targetIndex >= 0 || volley.burst ? laneXAt(volley.lane, destinationY) : 50;
                   const angle = Math.atan2((targetX - origin.x) * .56, Math.max(1, origin.y - destinationY)) * 180 / Math.PI;
                   const depth = Math.round((origin.y + (destinationY - origin.y) * flightProgress + 5) * 10) + 2;
                   const lift = volley.muzzle||volley.burst&&!volley.splashDone ? size : '0px';
@@ -969,8 +972,8 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
             ))}
             {showEncounter && (
               <>
-                <div data-motion="boss" className={`toybot-obstacle boss ${displayStatus === 'boss-victory' ? 'is-destroyed' : arena ? `fighting phase-${phase}` : 'phase-shield'} ${enrage > 0 ? 'is-enraged' : ''} ${game.bossStep === 'rush' ? 'is-rushing' : ''} ${game.bossMoveTicks > 0 ? 'is-relocating' : ''}`} style={{ left: bossX(game) + '%', top: `${bossTop}%`, width: `${bossPixels(game) * (rushVisual && game.bossAttack === 'sweep' ? 1.35 : 1)}px`, '--boss-scale': bossScale, zIndex: displayStatus==='running'?300:Math.round((bossTop + 7) * 10) } as React.CSSProperties}>
-                  <div className="robot-boss-sprite hostile-v31-body" style={{backgroundImage:`url(${BOSS_MOTION_V31[game.levelIndex]})`,backgroundSize:'800% 800%',backgroundPosition:'0% 0%'}} aria-hidden="true"/>
+                <div data-motion="boss" className={`toybot-obstacle boss ${game.levelIndex===4?'is-final-colossus':''} ${displayStatus === 'boss-victory' ? 'is-destroyed' : arena ? `fighting phase-${phase}` : 'phase-shield'} ${enrage > 0 ? 'is-enraged' : ''} ${game.bossStep === 'rush' ? 'is-rushing' : ''} ${game.bossMoveTicks > 0 ? 'is-relocating' : ''}`} style={{ left: bossX(game) + '%', top: `${bossTop}%`, width: `${bossPixels(game) * (rushVisual && game.bossAttack === 'sweep' ? 1.35 : 1)}px`, '--boss-scale': bossScale, zIndex: displayStatus==='running'?300:Math.round((bossTop + 7) * 10) } as React.CSSProperties}>
+                  <div className="robot-boss-sprite hostile-v31-body" style={{backgroundImage:`url(${game.levelIndex===4?EMPEROR_ART_V36:BOSS_MOTION_V31[game.levelIndex]})`,backgroundSize:game.levelIndex===4?'800% 400%':'800% 800%',backgroundPosition:'0% 0%'}}><BossMountedParts game={game}/></div>
                   {bossGuarded(game)&&<span className="boss-linked-shield"><small>击破连接节点</small></span>}
                   {game.status === 'battle' && phase === 'weak' && <span className="toybot-boss-weakpoint" aria-label="弱点暴露" />}
                 </div>

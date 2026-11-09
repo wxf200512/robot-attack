@@ -1,0 +1,13 @@
+.toybot-page .toybot-shell.reference-v29 .is-arena .toybot-robot,.toybot-page .toybot-shell.reference-v29 .is-arena .toybot-v28-mech{animation:none!important;transition:none!important}
+.toybot-page .toybot-shell.reference-v29 .is-arena .toybot-v28-body{animation:none!important;transition:none!important}
+.boss-mounted-parts{position:absolute;inset:0;pointer-events:none}
+.boss-mounted-part{position:absolute;width:34px;height:30px;transform:translate(-50%,-50%);filter:none}
+.boss-mount-bracket{position:absolute;inset:0;border:1px solid #ffcc7888;border-radius:6px;background:#ffbd2b0d}
+.boss-mounted-part small{position:absolute;left:50%;top:100%;transform:translateX(-50%);font-size:6px;line-height:10px;white-space:nowrap;color:#fff0bc;background:#13232dd9;padding:0 3px;border-radius:2px}
+.boss-mounted-part i{position:absolute;left:2px;right:2px;bottom:-3px;height:2px;background:#251f1b}
+.boss-mounted-part i span{display:block;height:100%;background:#ffd078}
+.boss-mounted-part.is-broken .boss-mount-bracket{background:#1c212bad;border-color:#3a3a3a;box-shadow:inset 0 0 7px #000}
+.boss-mounted-part.is-broken small{color:#9bacb6;font-size:5px}
+.toybot-page .reference-v29 .is-final-colossus{max-width:94%;--boss-scale:1.02;animation:none!important}
+.toybot-page .reference-v29 .is-final-colossus .robot-boss-sprite{aspect-ratio:1;filter:drop-shadow(0 8px 4px #14243988)}
+.is-final-colossus .boss-mounted-part{width:46px;height:36px}

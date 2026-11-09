@@ -1,0 +1,42 @@
+[
+  {
+    "kind": "pulse",
+    "frames": 48,
+    "columns": 8,
+    "rows": 6,
+    "width": 1024,
+    "height": 768,
+    "transparentFraction": 0.5845146179199219,
+    "bytes": 873537
+  },
+  {
+    "kind": "heavy",
+    "frames": 48,
+    "columns": 8,
+    "rows": 6,
+    "width": 1024,
+    "height": 768,
+    "transparentFraction": 0.5853106180826823,
+    "bytes": 906372
+  },
+  {
+    "kind": "blade",
+    "frames": 48,
+    "columns": 8,
+    "rows": 6,
+    "width": 1024,
+    "height": 768,
+    "transparentFraction": 0.5890541076660156,
+    "bytes": 849717
+  },
+  {
+    "kind": "emperor",
+    "frames": 32,
+    "columns": 8,
+    "rows": 4,
+    "width": 1536,
+    "height": 768,
+    "transparentFraction": 0.5609266493055556,
+    "bytes": 1108874
+  }
+]

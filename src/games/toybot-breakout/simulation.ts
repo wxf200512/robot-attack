@@ -1,3 +1,4 @@
+import { newFlowV41, copyFlowV41, enemyLeadV41, enemyVisibleV41, pressureV41, protectComboV41, usefulGatesV41, recordUpgradeV41, recordContributionV41, damageAdviceV41, LESSONS_V41, type FlowV41, type ContributionV41 } from './flowV41';
 import { newTacticsV40, copyTacticsV40, canTrialV40, SECTOR_MECHS, type TacticsV40, type Trial } from './tacticsV40';
 import { findSortieV39, canEnterSortieV39, sortieCountV39, type SortieSpec } from './sortiesV39';
 import { pursuitForV37, pursuitPointV37, pursuitLaneV37 } from './pursuitV37';
@@ -48,6 +49,7 @@ export type EnemyAttack = { id: number; source: 'hazard' | 'threat'; sourceId: n
 export type KillEffect = { id: number; kind: EnemyKind; lane: number; x: number; y: number; ticks: number; combo: number };
 type Burn = { target: Target; index: number; lane: number; ticks: number; damage: number };
 export type GameState = {
+  flow:FlowV41;
   tactics:TacticsV40;
   sortie?:SortieSpec & {firstClear:boolean};
   report:CombatReport; feedback:CombatFeedback[]; feedbackSequence:number; upgradeFx:{id:number;ticks:number;title:string;positive:boolean}|null;
@@ -126,7 +128,8 @@ export const createGateChoices = (levelIndex: number, layoutIndex: number, rando
 };
 export const gateChoicesFor = (s:GameState):GateOption[] => {
  const options=s.gateChoices[s.gate]??[],fusion=eligibleFusion(s.modules);
- return !s.gateResolved&&s.gate>=3&&!s.ops.fusion&&fusion&&options.length===1&&options[0]?.polarity==='reward'?[{...options[0],id:'fusion-'+fusion,effect:'fuse',title:FUSIONS[fusion].name,icon:'✧',detail:FUSIONS[fusion].detail}]:options;
+ if(s.flow.preparedGate===s.gate)return options;
+ return !s.gateResolved&&s.gate>=3&&!s.ops.fusion&&fusion&&options.length===1&&!(['fieldRepair','repair'].includes(options[0]?.effect)&&s.playerHp<s.playerMaxHp*.65)&&options[0]?.polarity==='reward'?[{...options[0],id:'fusion-'+fusion,effect:'fuse',title:FUSIONS[fusion].name,icon:'✧',detail:FUSIONS[fusion].detail}]:options;
 };
 export const volleyCountFor = (bots: number) => Math.max(0, Math.min(11, bots));
 export const hazardMaxHpFor=(s:GameState,index:number)=>Math.ceil(Math.ceil((getLevel(s.levelIndex).hazards[index]?.hp??0)*(s.ops.protocol==='elite'?1.4:1))*(s.tactics.riskIds.includes(index)?1.5:1));
@@ -152,9 +155,9 @@ export const playerFormation = (s: GameState): ShotOrigin[] => {
   return formationFor(s.bots, s.lane).map(o => ({ ...o, x: o.x + offset }));
 };
 export const bossGuarded = (s: GameState) => !partBroken(s,'shield')&&s.threats.some(t => t.hp > 0 && (t.kind === 'pylon' || t.kind === 'seal'));
-const hitPlayerLane = (s: GameState, lane: number, damage: number) => {
-  if (playerLaneFor(s) === lane) applySquadHit(s, damage*(s.ops.protocol==='overdrive'&&isBossArena(s)?1.2:1)*(s.ops.mission.status==='done'&&s.levelIndex===3&&isBossArena(s)?.85:1));
-  else if ((s.dodgeTicks > 0 && lane === s.dodgeFromLane)||(s.ops.roadDodgeTicks>0&&lane===s.ops.roadFromLane)) { if(s.evadeTicks===0){gainBurstEnergy(s,8);if(s.ops.perfectCooldown===0&&(s.status==='running'?s.ops.roadDodgeTicks<=1:s.dodgeTicks<=2)){s.ops.perfectTicks=8;s.ops.perfectCooldown=30;s.ops.perfects++;s.ops.counterShots=s.mechClass==='pulse'?3:1;if(s.ops.fusion==='ion')gainBurstEnergy(s,10);}}s.evadeSequence++; s.evadeTicks = 6; }
+const hitPlayerLane = (s: GameState, lane: number, damage: number, kind=s.status==='battle'?'boss':'hostile') => {
+  if (playerLaneFor(s) === lane) applySquadHit(s, damage*(s.ops.protocol==='overdrive'&&isBossArena(s)?1.2:1)*(s.ops.mission.status==='done'&&s.levelIndex===3&&isBossArena(s)?.85:1),'hostile',kind);
+  else if ((s.dodgeTicks > 0 && lane === s.dodgeFromLane)||(s.ops.roadDodgeTicks>0&&lane===s.ops.roadFromLane)) { if(s.evadeTicks===0){protectComboV41(s,'defense');gainBurstEnergy(s,8);if(s.ops.perfectCooldown===0&&(s.status==='running'?s.ops.roadDodgeTicks<=1:s.dodgeTicks<=2)){s.ops.perfectTicks=8;s.ops.perfectCooldown=30;s.ops.perfects++;s.ops.counterShots=s.mechClass==='pulse'?3:1;if(s.ops.fusion==='ion')gainBurstEnergy(s,10);}}s.evadeSequence++; s.evadeTicks = 6; }
 };
 export const isBossArena = (state: GameState) => {
   const status = state.status === 'paused' ? state.resumeStatus : state.status;
@@ -208,13 +211,21 @@ export const gateGroundY = (progress: number, mark: number) => 43 + Math.max(0, 
 export const GATE_CONTACT_Y = 64;
 export const gateEffectDetail = (_state: GameState, option: GateOption) => option.effect==='riskyWeapon'?'火力提升2级，下一批最多6名敌人耐久+50%，可绕开':option.effect==='fieldRepair'?'恢复30生命，不增加机甲':option.effect==='fuse' ? '融合装备 · '+(eligibleFusion(_state.modules)?FUSIONS[eligibleFusion(_state.modules)!].detail:'收集两类模块') : option.effect in MODULES ? MODULES[option.effect as RunModule].detail+' · 最高3级' : option.effect === 'charge' ? '下一轮齐射强化'
   : option.effect === 'overload' ? '8秒伤害提升50%' : option.effect === 'jam' ? '6秒武器降一级，结束后恢复' : option.detail;
+const prepareSupplyV41=(s:GameState)=>{
+ const mark=getLevel(s.levelIndex).gateMarks[s.gate];
+ if(mark===undefined||s.gateResolved||s.flow.preparedGate===s.gate||s.progress<mark-12)return;
+ s.gateChoices=s.gateChoices.map((row,i)=>i===s.gate?usefulGatesV41(s,row):row);
+ const displayed=gateChoicesFor(s);s.gateChoices=s.gateChoices.map((row,i)=>i===s.gate?displayed:row);s.flow.preparedGate=s.gate;
+};
 export const createInitialState = (garage: Garage, levelIndex = 0, layoutIndex = Math.floor(Math.random() * 3)): GameState => {
   levelIndex = canEnterLevel(garage,levelIndex) ? levelIndex : normalizeGarage(garage).unlockedLevel;
   const level = getLevel(levelIndex);
   const bonuses = garageStats(garage);
   const armorLevel = Number(bonuses.armor > 0);
-  return {
-    tactics:newTacticsV40(),report:newReport(),feedback:[],feedbackSequence:0,upgradeFx:null, ops:createOperations(levelIndex,layoutIndex), modules:{arc:0,burn:0,recycle:0}, mechClass: normalizeMechClass(garage.mechClass), garageDamageScale: bonuses.damageScale, garageCoreLevel: bonuses.core, garageArmorLevel: bonuses.armor, status: 'home', resumeStatus: null, levelIndex, layoutIndex, runId: 0, progress: 0, bots: 1, lane: 1, laneMoveTicks: 0, score: 0,
+  const flow=newFlowV41(normalizeGarage(garage).enemyLessons);
+  flow.log=([['武器',bonuses.weapon],['装甲',bonuses.armor],['动力',bonuses.core]] as const).filter(([,level])=>level>0).map(([name,level])=>({time:0,source:'机库改装',title:name+' Lv.'+level}));
+  const fresh:GameState = {
+    flow,tactics:newTacticsV40(),report:newReport(),feedback:[],feedbackSequence:0,upgradeFx:null, ops:createOperations(levelIndex,layoutIndex), modules:{arc:0,burn:0,recycle:0}, mechClass: normalizeMechClass(garage.mechClass), garageDamageScale: bonuses.damageScale, garageCoreLevel: bonuses.core, garageArmorLevel: bonuses.armor, status: 'home', resumeStatus: null, levelIndex, layoutIndex, runId: 0, progress: 0, bots: 1, lane: 1, laneMoveTicks: 0, score: 0,
     dodgeTicks: 0, dodgeFromLane: 1, dodgeDirection: 1, dodgeSequence: 0, evadeSequence: 0, evadeTicks: 0, queuedLane: null,
     playerHp: bonuses.maxHp, playerMaxHp: bonuses.maxHp, invulnerableTicks: 0, defenseFx:null,
     gate: 0, gateResolved: false, gateCollected: false, gateChoices: createGateChoices(levelIndex, layoutIndex), weaponLevel: Number(bonuses.weapon > 0), armorLevel, armorPoints: bonuses.armorPoints, coreLevel: 0,
@@ -231,9 +242,10 @@ export const createInitialState = (garage: Garage, levelIndex = 0, layoutIndex =
     kills: 0, combo: 0, bestCombo: 0, comboTicks: 0, killSequence: 0, killEffects: [], roadTicks: 0, medicPulses: [],
     burstEnergy: 0, burstTicks: 0, burstSequence: 0, comboHeal: 0, comboRewardTicks: 0, coreDetonations:[],
   };
+  prepareSupplyV41(fresh);return fresh;
 };
 export const applyGateEffect = (state: GameState, option: GateOption): GameState => {
-  const next = { ...state,tactics:copyTacticsV40(state.tactics),hazardHps:[...state.hazardHps], ops:copyOperations(state.ops), modules:{...state.modules} };
+  const next = { ...state,flow:copyFlowV41(state.flow),tactics:copyTacticsV40(state.tactics),hazardHps:[...state.hazardHps], ops:copyOperations(state.ops), modules:{...state.modules} };
   switch (option.effect) {
     case 'fieldRepair': next.playerHp=Math.min(next.playerMaxHp,next.playerHp+(next.ops.protocol==='scarcity'?15:30));break;
     case 'riskyWeapon': {
@@ -262,15 +274,16 @@ export const applyGateEffect = (state: GameState, option: GateOption): GameState
     case 'coreDown': next.coreLevel = Math.max(0, next.coreLevel - 1); next.bots = Math.max(0, next.bots - option.amount); break;
     case 'scoreDown': next.score = Math.max(0, next.score - option.amount); break;
   }
+  recordUpgradeV41(next,'补给门',option.title);
   next.upgradeFx={id:(state.upgradeFx?.id??0)+1,ticks:12,title:option.title,positive:option.polarity==='reward'};
   if (next.bots < state.bots) { next.damageSequence++; next.damageLoss = state.bots - next.bots; next.damageLane = state.lane; next.damageKind = 'squad'; next.damageAbsorbed = 0; }
   return next;
 };
-export const applySquadHit = (state: GameState, damage: number, source:'collision'|'hostile'='hostile'): number => {
+export const applySquadHit = (state: GameState, damage: number, source:'collision'|'hostile'='hostile',kind=source==='collision'?'collision':'hostile'): number => {
   if(damage>0&&source==='collision'&&state.playerHp>0)state.tactics.collisions++;
   if(damage>0&&source==='hostile'&&state.tactics.parryTicks>0&&state.playerHp>0){
     if(state.invulnerableTicks>0)return 0;
-    state.invulnerableTicks=3;state.tactics.parries++;state.tactics.castParries++;state.tactics.reflection=Math.min(90,state.tactics.reflection+30);state.report.blocked+=damage;
+    state.invulnerableTicks=3;state.tactics.parries++;state.tactics.castParries++;protectComboV41(state,'defense');state.tactics.reflection=Math.min(90,state.tactics.reflection+30);state.report.blocked+=damage;
     state.defenseFx={kind:'shield',exhausted:false,ticks:6,id:++state.damageSequence};state.damageLane=playerLaneFor(state);state.damageLoss=0;state.damageAbsorbed=damage;state.damageKind='shield';state.tactics.note='疾刃格挡 · 反击就绪';state.tactics.noteTicks=15;return 0;
   }
   if (damage <= 0 || state.invulnerableTicks > 0 || state.playerHp <= 0) return 0;
@@ -279,6 +292,7 @@ export const applySquadHit = (state: GameState, damage: number, source:'collisio
   const absorbed = Math.min(state.armorPoints * 4, damage); state.armorPoints -= Math.ceil(absorbed / 4);
   state.defenseFx=absorbed>0?{kind:'armor',exhausted:state.armorPoints===0,ticks:DEFENSE_VFX_TICKS,id:state.damageSequence}:null;
   const loss = Number(Math.min(state.playerHp, damage - absorbed).toFixed(2)); state.playerHp = Number((state.playerHp - loss).toFixed(2));
+  if(loss>0)state.flow.lastHit={...damageAdviceV41(kind,state.levelIndex),loss,time:state.tactics.elapsed};
   state.report.taken+=loss;state.report.blocked+=absorbed;if(source==='collision')state.report.collisions+=loss;else state.report.hostile+=loss;
   state.damageLoss = loss; state.damageAbsorbed = absorbed; state.damageKind = loss > 0 ? 'health' : 'armor';
   if (state.playerHp <= 0) state.bots = 0;
@@ -300,7 +314,8 @@ export const roadEnemyY = (s: GameState, index: number) => {
   const dash = pursuitForV37(s,'hazard',index);
   const h = getLevel(s.levelIndex).hazards[index];
   const offset = h.horde ? 0 : h.kind === 'swarm' ? Math.floor((h.slot ?? 0) / 2) * 3 : h.kind === 'sniper' ? 2 : h.kind === 'bomber' ? 4 : h.kind === 'medic' ? 7 : 0;
-  const y = hazardY(s.progress, h.progress) - offset * Math.min(1, Math.max(0, (h.progress - s.progress) / 6));
+  const lead=enemyLeadV41(h);
+  const y = (39+Math.max(0,Math.min(1,(s.progress-h.progress+lead)/lead))*19) - offset * Math.min(1, Math.max(0, (h.progress - s.progress) / 6));
   return dash ? pursuitPointV37(dash,laneXAt).y : h.kind ? Math.max(ROAD_HORIZON[s.levelIndex] + 3, y) : y;
 };
 export const roadEnemyX = (s: GameState, index: number) => {
@@ -310,13 +325,13 @@ export const roadEnemyX = (s: GameState, index: number) => {
 };
 export const targetY = (s: GameState, target: Target, index: number) => target === 'part' ? bossPartY(s,index) : target==='objective'?fieldY(s,s.ops.mission):target==='event'?fieldY(s,s.ops.event):target === 'boss' ? bossY(s) : target === 'threat' ? enemyThreatY(s, s.threats.find(t => t.id === index) ?? { ticks: 0, duration: 1 } as BossThreat) : roadEnemyY(s, index);
 export const targetX = (s: GameState, target: Target, index: number, lane?:number) => target === 'part'?bossPartX(s,index):target === 'boss'?(s.levelIndex===4&&lane!==undefined?laneXAt(lane,bossY(s)):bossX(s)):target === 'threat'?((t)=>t?enemyThreatX(s,t):50)(s.threats.find(t=>t.id===index)):target === 'hazard' ? roadEnemyX(s, index) : laneXAt(targetLane(s, target, index), targetY(s, target, index));
-const targetAlive = (s: GameState, target: Target, index: number) => target === 'part' ? s.status==='battle'&&(s.ops.parts[index]?.hp??0)>0 : target==='objective'?fieldVisible(s,s.ops.mission):target==='event'?fieldVisible(s,s.ops.event):target === 'boss' ? s.encounter === index && s.battleHp > 0 : target === 'threat' ? (s.threats.find(t => t.id === index)?.hp ?? 0) > 0 : (s.hazardHps[index] ?? 0) > 0;
+const targetAlive = (s: GameState, target: Target, index: number) => target === 'part' ? s.status==='battle'&&(s.ops.parts[index]?.hp??0)>0 : target==='objective'?fieldVisible(s,s.ops.mission):target==='event'?fieldVisible(s,s.ops.event):target === 'boss' ? s.encounter === index && s.battleHp > 0 : target === 'threat' ? (s.threats.find(t => t.id === index)?.hp ?? 0) > 0 : (s.hazardHps[index] ?? 0) > 0 && enemyVisibleV41(s,getLevel(s.levelIndex).hazards[index]);
 const laneMatches = (s: GameState, target: Target, index: number, lane: number) => target === 'boss' ? bossDamageLanes(s).includes(lane) : targetLane(s, target, index) === lane;
 const targetsInLane = (s: GameState, lane: number, coreSweep=false) => {
   const level = getLevel(s.levelIndex);
   const targets: { target: Target; index: number; y: number; progress: number }[] = [];
   if (s.status === 'running') level.hazards.forEach((h, index) => {
-    if (s.hazardHps[index] > 0 && s.progress >= h.progress - 14 && s.progress < h.progress && targetLane(s, 'hazard', index) === lane)
+    if (s.hazardHps[index] > 0 && enemyVisibleV41(s,h) && targetLane(s, 'hazard', index) === lane)
       targets.push({ target: 'hazard', index, y: roadEnemyY(s, index), progress: 200 - roadEnemyY(s, index) });
   });
   for(const [target,object]of [['objective',s.ops.mission],['event',s.ops.event]] as const)if(fieldVisible(s,object)&&object.lane===lane)targets.push({target,index:0,y:fieldY(s,object),progress:200-fieldY(s,object)});
@@ -348,7 +363,7 @@ const recordImpact=(s:GameState,damage:number,target:Target,index:number,tier:nu
  s.feedback=[...s.feedback,{id:++s.feedbackSequence,coreStyle:s.burstTicks>0?s.mechClass:undefined,pulseCore:s.burstTicks>0&&s.mechClass==='pulse',boss:target==='boss'||target==='part',x:targetX(s,target,index,lane),y:targetY(s,target,index),ticks:kind==='boss'?12:kind==='elite'?8:4,kind}].slice(-12);
  if(s.mechClass==='pulse'&&s.burstTicks<=0){const lane=targetLane(s,target,index);if(s.report.focusLane>=0&&s.report.focusLane!==lane){s.report.focus=0;s.report.focusReady=false;}s.report.focusLane=lane;s.report.focus++;if(s.report.focus>=6){s.report.focus=0;s.report.focusReady=true;}}
 };
-const damageTarget = (s: GameState, target: Target, index: number, raw: number, tier: number, lane: number, precise = false, chain = false): number => {
+const damageTarget = (s: GameState, target: Target, index: number, raw: number, tier: number, lane: number, precise = false, chain = false, origin:ContributionV41='direct'): number => {
   if (!targetAlive(s, target, index) || !laneMatches(s, target, index, lane)) return 0;
   const level = getLevel(s.levelIndex);
   if(target==='objective'||target==='event'||target==='part'){
@@ -360,14 +375,15 @@ const damageTarget = (s: GameState, target: Target, index: number, raw: number, 
         s.ops.parts[index].brokenAt=s.battleTime;
         s.ops.broken++;s.ops.breakTicks=18;if(s.burstTicks>0&&s.mechClass==='heavy'){s.tactics.skillBreaks++;s.tactics.castBreaks++;}s.score+=45;gainBurstEnergy(s,12);
         s.threats=s.threats.filter(t=>s.ops.parts[index].kind==='cannon'?!['shell','beam','lava'].includes(t.kind):s.ops.parts[index].kind==='shield'?!['pylon','seal','wall'].includes(t.kind):t.kind!=='minion');
-        s.enemyAttacks=[];s.bossSalvos=0;s.bossStep='recovery';s.bossStepTicks=0;s.bossAttackLanes=[];
+        if(s.enemyAttacks.length||s.bossStep==='warning')protectComboV41(s,'defense');s.enemyAttacks=[];s.bossSalvos=0;s.bossStep='recovery';s.bossStepTicks=0;s.bossAttackLanes=[];
       }else{
         const field=target==='objective'?s.ops.mission:s.ops.event;field.status='done';s.score+=target==='objective'?100:75;s.ops.bonusParts+=target==='objective'?1:2;
         if(target==='objective'){if(s.levelIndex===1)s.bots=Math.min(11,s.bots+1);if(s.levelIndex===3)s.jamTicks=0;if(s.levelIndex===4)gainBurstEnergy(s,25);}
-        else {const key=(['arc','burn','recycle'] as const).find(k=>s.modules[k]===0)??'recycle';s.modules={...s.modules,[key]:Math.min(3,s.modules[key]+1)};s.ops.eventWarning=0;}
+        else {const key=(['arc','burn','recycle'] as const).find(k=>s.modules[k]===0)??'recycle';s.modules={...s.modules,[key]:Math.min(3,s.modules[key]+1)};s.ops.eventWarning=0;recordUpgradeV41(s,'支线装置',MODULES[key].name+'+1');}
+        if(target==='objective')recordUpgradeV41(s,'区域任务','任务支援已接通');
       }
     }
-    return damage;
+    recordContributionV41(s,damage,origin);return damage;
   }
   const armor = target === 'hazard' && !(s.burstTicks>0&&s.mechClass==='heavy') ? hazardArmorFor(s,index) : 0;
   const multiplier = target === 'boss' ? (bossGuarded(s) ? .12 : s.status !== 'battle' || bossPhase(s) === 'shield' ? .25 : bossPhase(s) === 'weak' ? (s.tactics.windowTicks>0?1.65:s.ops.breakTicks>0?1.5:1.35) : 1) : 1;
@@ -377,11 +393,13 @@ const damageTarget = (s: GameState, target: Target, index: number, raw: number, 
   const scaled=raw * multiplier * (target==='hazard'&&guardSourceFor(s,index)>=0?.65:1) / s.garageDamageScale;
   const damage = Math.min(hp, Number(Math.max(1, (precise?scaled:Math.round(scaled)) * s.garageDamageScale - armor).toFixed(2)));
   if (target === 'hazard') s.hazardHps[index] = Number((hp - damage).toFixed(2)); else if (threat) threat.hp = Number((hp - damage).toFixed(2)); else s.battleHp = Number((hp - damage).toFixed(2));
+  recordContributionV41(s,damage,chain?'chain':origin);
   recordImpact(s,damage,target,index,tier,lane);s.impactSequence++; s.impactDamage = damage; s.impactWeaponLevel = tier; s.impactTarget = target; s.impactLane = lane; s.impactY = targetY(s, target, index); s.impactX = targetX(s, target, index,lane);
   if (target === 'hazard' && s.hazardHps[index] === 0) {
     const h = level.hazards[index], kind = h.kind ?? 'drone';
     if(h.elite){s.report.elites++;s.breatherTicks=25;s.score+=100+s.levelIndex*20;gainBurstEnergy(s,30);s.playerHp=Math.min(s.playerMaxHp,s.playerHp+8);s.ops.bonusParts++;}
     if(chain)s.tactics.chainKills++;
+    s.flow.moveGuard=true;
     s.kills++; if(s.ops.fusion==='furnace'&&s.kills%6===0)s.chargedVolleys=Math.min(3,s.chargedVolleys+1);s.combo = s.comboTicks > 0 ? s.combo + 1 : 1; s.comboTicks = COMBO_WINDOW_TICKS; s.bestCombo = Math.max(s.bestCombo, s.combo);
     gainBurstEnergy(s, 12 + s.modules.recycle*3 + (s.combo % 3 === 0 ? 8 : 0));
     const points = kind === 'swarm' ? 15 : kind === 'medic' ? 60 : kind === 'drone' ? 45 : 55;
@@ -394,17 +412,17 @@ const damageTarget = (s: GameState, target: Target, index: number, raw: number, 
       s.tactics.chainTriggers++;
       gainBurstEnergy(s,15);
       s.coreDetonations=[...s.coreDetonations,{kind:'energy' as const,id:++s.shotSequence,x:roadEnemyX(s,index),y:roadEnemyY(s,index),ticks:6}].slice(-6);
-      level.hazards.flatMap((other,i)=>i!==index&&s.hazardHps[i]>0&&s.progress>=other.progress-14&&s.progress<other.progress&&Math.abs(other.progress-h.progress)<=4&&targetLane(s,'hazard',i)===lane?[i]:[]).slice(0,6).forEach(i=>damageTarget(s,'hazard',i,4+s.levelIndex,tier,lane,true,true));
+      level.hazards.flatMap((other,i)=>i!==index&&s.hazardHps[i]>0&&enemyVisibleV41(s,other)&&Math.abs(other.progress-h.progress)<=4&&targetLane(s,'hazard',i)===lane?[i]:[]).slice(0,6).forEach(i=>damageTarget(s,'hazard',i,4+s.levelIndex,tier,lane,true,true));
     }
     if(h.eliteRole==='guard'){
       s.tactics.guardBreaks++;s.tactics.note='护卫击破 · 链路瘫痪';s.tactics.noteTicks=18;
-      level.hazards.forEach((other,i)=>{if(i!==index&&s.hazardHps[i]>0&&s.progress>=other.progress-14&&s.progress<other.progress&&Math.abs(other.progress-h.progress)<=4&&targetLane(s,'hazard',i)===lane){s.roadImpacts[i]={fracture:30,stun:8,lock:12};s.enemyAttacks=s.enemyAttacks.filter(a=>!(a.source==='hazard'&&a.sourceId===i&&a.phase==='warning'));}});
+      level.hazards.forEach((other,i)=>{if(i!==index&&s.hazardHps[i]>0&&enemyVisibleV41(s,other)&&Math.abs(other.progress-h.progress)<=4&&targetLane(s,'hazard',i)===lane){s.roadImpacts[i]={fracture:30,stun:8,lock:12};s.enemyAttacks=s.enemyAttacks.filter(a=>!(a.source==='hazard'&&a.sourceId===i&&a.phase==='warning'));}});
     }
     if(h.eliteRole==='commander')s.enemyAttacks=s.enemyAttacks.filter(a=>a.source!=='hazard'||a.phase!=='warning'||!((h.encounterId?level.hazards[a.sourceId]?.encounterId===h.encounterId:level.hazards[a.sourceId]?.wave===h.wave)&&targetLane(s,'hazard',a.sourceId)===lane));
     if (kind === 'bomber') {s.tactics.chainTriggers++;
       s.coreDetonations=[...s.coreDetonations,{kind:'energy' as const,id:++s.shotSequence,x:roadEnemyX(s,index),y:roadEnemyY(s,index),ticks:6}].slice(-6);
       level.hazards.forEach((other, i) => {
-      if (i !== index && s.hazardHps[i] > 0 && s.progress >= other.progress - 14 && s.progress < other.progress && Math.abs(other.progress - h.progress) <= 6 && targetLane(s, 'hazard', i) === lane)
+      if (i !== index && s.hazardHps[i] > 0 && enemyVisibleV41(s,other) && Math.abs(other.progress - h.progress) <= 6 && targetLane(s, 'hazard', i) === lane)
         damageTarget(s, 'hazard', i, 6 + tier * 2, tier, lane,true,true);
     });}
   }
@@ -488,24 +506,27 @@ const queueEnemyAttack = (s: GameState, source: EnemyAttack['source'], sourceId:
   s.enemyAttackSources.push(key);
   const profile=kind in ELITE_ATTACKS?ELITE_ATTACKS[kind as ElitePattern]:null;
   if(source==='hazard'&&getLevel(s.levelIndex).hazards[sourceId]?.elite)s.roadCooldowns[sourceId]=profile?.rearm??60;
-  const warning = profile?.warning??(kind === 'sniper-shot' || kind === 'bombard' ? 18 : kind === 'charge' ? 10 : 12);
+  const first=source==='hazard'&&!!LESSONS_V41[kind]&&!s.flow.lessons.includes(kind);
+  if(first){s.flow.lessons.push(kind);s.flow.introSources.push(key);s.flow.lastLesson=kind;s.flow.introTicks=50;}
+  const introductory=s.flow.introSources.includes(key);
+  const warning = (profile?.warning??(kind === 'sniper-shot' || kind === 'bombard' ? 18 : kind === 'charge' ? 10 : 12))+(introductory?8:0);
   const damage = profile?.damage??(kind === 'sniper-shot' ? 13 : kind === 'bombard' ? 12 : kind === 'charge' ? 8 : kind === 'drone-burst' ? 7 : kind === 'shockwave' ? 12 : 14);
-  lanes.forEach((targetLane,slot) => s.enemyAttacks.push({ id: ++s.enemyAttackSequence, source, sourceId, kind, lane: targetLane, fromLane, fromY, fromX: source === 'hazard' ? roadEnemyX(s, sourceId) : laneXAt(fromLane, fromY), phase: 'warning', ticks: warning+(kind==='royal-salvo'?slot*5:0), duration: warning+(kind==='royal-salvo'?slot*5:0), damage:damage*(source==='hazard'&&commanderFor(s,sourceId)>=0?1.25:1), shotsRemaining: profile?.shots??(kind === 'drone-burst' ? 2 : 1) }));
+  lanes.forEach((targetLane,slot) => s.enemyAttacks.push({ id: ++s.enemyAttackSequence, source, sourceId, kind, lane: targetLane, fromLane, fromY, fromX: source === 'hazard' ? roadEnemyX(s, sourceId) : laneXAt(fromLane, fromY), phase: 'warning', ticks: warning+(kind==='royal-salvo'?slot*5:0), duration: warning+(kind==='royal-salvo'?slot*5:0), damage:damage*(introductory?.8:1)*(source==='hazard'&&commanderFor(s,sourceId)>=0?1.25:1), shotsRemaining: profile?.shots??(kind === 'drone-burst' ? 2 : 1) }));
 };
 const advanceEnemyAttacks = (s: GameState) => {
   const survivors:EnemyAttack[]=[];
   s.enemyAttacks = s.enemyAttacks.filter(a => {
     if (!sourceAlive(s, a) && (a.phase === 'warning' || !['drone-burst', 'sniper-shot', 'bombard','heat-mine','hunter-fan','storm-orb','royal-salvo','siege-laser'].includes(a.kind))) return false;
     const profile=a.kind in ELITE_ATTACKS?ELITE_ATTACKS[a.kind as ElitePattern]:null;
-    if(a.phase==='field'){a.ticks--;if(a.ticks%8===0){const before=s.playerHp;hitPlayerLane(s,a.lane,a.damage);if(a.kind==='storm-orb'&&s.playerHp<before)s.jamTicks=Math.max(s.jamTicks,18);}return a.ticks>0;}
+    if(a.phase==='field'){a.ticks--;if(a.ticks%8===0){const before=s.playerHp;hitPlayerLane(s,a.lane,a.damage,a.kind);if(a.kind==='storm-orb'&&s.playerHp<before)s.jamTicks=Math.max(s.jamTicks,18);}return a.ticks>0;}
     if(a.source==='hazard'&&a.phase==='warning'&&(s.roadImpacts[a.sourceId]?.stun??0)>0)return true;
     if (--a.ticks > 0) return true;
     if (a.phase === 'warning') {
       if (a.source === 'hazard') { a.fromY = roadEnemyY(s, a.sourceId); a.fromLane = roadEnemyLane(s,a.sourceId); a.fromX = roadEnemyX(s, a.sourceId); }
       else { const t = s.threats.find(t => t.id === a.sourceId); if (t) { a.fromY = threatY(t); a.fromLane = t.lane; a.fromX = laneXAt(t.lane, a.fromY); } }
       a.phase = 'flight'; a.duration = profile?.flight??(a.kind === 'bombard' ? 12 : a.kind === 'drone-burst'||a.kind==='pounce'||a.kind==='charge' ? 8 : 6); a.ticks = a.duration; return true; }
-    if(profile?.field){a.phase='field';a.ticks=a.duration=profile.field;hitPlayerLane(s,a.lane,a.damage);return true;}
-    hitPlayerLane(s, a.lane, a.damage);
+    if(profile?.field){a.phase='field';a.ticks=a.duration=profile.field;hitPlayerLane(s,a.lane,a.damage,a.kind);return true;}
+    hitPlayerLane(s, a.lane, a.damage,a.kind);
     if (a.kind === 'pounce') { const bot = s.threats.find(t => t.id === a.sourceId); if (bot) bot.hp = 0; }
     if (a.kind === 'charge') s.hazardHps[a.sourceId] = -1;
     if (--a.shotsRemaining > 0 && sourceAlive(s, a)) {
@@ -528,7 +549,7 @@ export const enemyThreatY = (s: GameState, threat: BossThreat) => {
 export const enemyThreatX=(s:GameState,t:BossThreat)=>{const windup=s.enemyAttacks.find(a=>a.source==='threat'&&a.sourceId===t.id&&a.kind==='pounce'&&a.phase==='warning');if(windup)return windup.fromX??laneXAt(windup.fromLane,windup.fromY);const a=pursuitForV37(s,'threat',t.id);return a?pursuitPointV37(a,laneXAt).x:laneXAt(t.lane,enemyThreatY(s,t));};
 const advanceRoadEnemies = (s: GameState) => {
   const level = getLevel(s.levelIndex); s.roadTicks++; s.medicPulses = [];
-  const visible = level.hazards.flatMap((h, i) => s.hazardHps[i] > 0 && s.progress >= h.progress - 14 && s.progress < h.progress ? [i] : []);
+  const visible = level.hazards.flatMap((h, i) => s.hazardHps[i] > 0 && enemyVisibleV41(s,h) ? [i] : []);
   if (s.roadTicks % 14 === 0) visible.filter(i => level.hazards[i].kind === 'medic').forEach(i => {
     const lane = targetLane(s, 'hazard', i), mark = level.hazards[i].progress;
     const ally = visible.filter(j => j !== i && targetLane(s, 'hazard', j) === lane && Math.abs(level.hazards[j].progress - mark) <= 6 && s.hazardHps[j] < hazardMaxHpFor(s,j))
@@ -543,7 +564,8 @@ const advanceRoadEnemies = (s: GameState) => {
   visible.filter(i => level.hazards[i].progress - s.progress < RUN_SPEED*65+1.5).forEach(i => busy.add(hazardLaneAt(s.layoutIndex, i, level.hazards[i].progress, s.levelIndex)));
   const gate = s.gateChoices[s.gate]?.[0], mark = level.gateMarks[s.gate];
   const protectedLane = gate?.polarity === 'reward' && !s.gateResolved && Math.abs(mark - s.progress) < 7 ? gate.lane : -1;
-  if (s.enemyAttacks.length >= 2||s.breatherTicks>0) return;
+  const limit=pressureV41(s)==='build'||s.flow.introTicks>0?1:2;
+  if (s.enemyAttacks.length >= limit||s.breatherTicks>0) return;
   // Retaliation waits for a safe slot instead of being dropped under pressure.
   for(const i of visible.filter(i=>s.enemyAttackSources.includes('pursuit-ready:'+i))){
     if(s.enemyAttacks.some(a=>a.source==='hazard'&&a.sourceId===i)||s.lane===protectedLane||new Set([...busy,s.lane]).size>2)continue;
@@ -562,7 +584,7 @@ const advanceRoadEnemies = (s: GameState) => {
     const attack: EnemyAttack['kind'] = h.pattern??(kind === 'swarm'||kind==='medic' ? 'charge' : kind === 'sniper' ? 'sniper-shot' : kind === 'bomber' ? 'bombard' : 'drone-burst');
     const fan=attack==='hunter-fan'||attack==='royal-salvo';
     const lanes = fan?[ownLane,[...busy,0,1,2].find(l=>l!==ownLane&&l!==protectedLane)??(ownLane+1)%3]:kind === 'bomber'&&!h.pattern ? [ownLane, (ownLane + 1) % 3] : [h.pattern?ownLane:s.lane];
-    if (lanes.includes(protectedLane) || new Set([...busy, ...lanes]).size > 2 || s.enemyAttacks.length + lanes.length > 2) continue;
+    if (lanes.includes(protectedLane) || new Set([...busy, ...lanes]).size > 2 || s.enemyAttacks.length + lanes.length > 2||limit===1&&s.enemyAttacks.length>0) continue;
     queueEnemyAttack(s, 'hazard', i, attack, lanes[0], ownLane, roadEnemyY(s, i), lanes);
     break;
   }
@@ -666,6 +688,7 @@ const advanceOperations=(s:GameState,previousProgress:number)=>{
   const contact=prepMark(s)-1.5;
   if(s.ops.prep==='pending'&&previousProgress<contact&&s.progress>=contact){
     s.ops.prep=(['repair','retune','amplify'] as const)[s.lane];
+    recordUpgradeV41(s,'首领前整备',s.ops.prep==='repair'?'紧急维修':s.ops.prep==='retune'?'模块调谐':'强化齐射与能量+20');
     if(s.ops.prep==='repair')s.playerHp=Math.min(s.playerMaxHp,s.playerHp+(s.ops.protocol==='scarcity'?18:35));
     if(s.ops.prep==='retune'){const strongest=(Object.keys(s.modules) as RunModule[]).sort((a,b)=>s.modules[b]-s.modules[a])[0];if(s.modules[strongest]>=3)s.score+=40;else s.modules={...s.modules,[strongest]:s.modules[strongest]+1};}
     if(s.ops.prep==='amplify'){s.chargedVolleys=Math.min(3,s.chargedVolleys+2);gainBurstEnergy(s,20);}
@@ -684,7 +707,7 @@ const enterArena = (s: GameState) => {
 export function gameReducer(state: GameState, action: Action): GameState {
   if(action.type==='ACTIVATE_BURST'){
     if(!canActivateBurst(state))return state;
-    const next={...state,tactics:copyTacticsV40(state.tactics),report:{...state.report},ops:copyOperations(state.ops),roadImpacts:{...state.roadImpacts},burstEnergy:0,burstTicks:BURST_TICKS,burstSequence:state.burstSequence+1,burstStart:{damage:state.report.dealt,kills:state.kills},jamTicks:0};
+    const next={...state,flow:copyFlowV41(state.flow),tactics:copyTacticsV40(state.tactics),report:{...state.report},ops:copyOperations(state.ops),roadImpacts:{...state.roadImpacts},burstEnergy:0,burstTicks:BURST_TICKS,burstSequence:state.burstSequence+1,burstStart:{damage:state.report.dealt,kills:state.kills},jamTicks:0};
     next.tactics.castCleared=0;next.tactics.castBreaks=0;next.tactics.castParries=0;
     if(state.mechClass==='pulse'){
       const ranged=['drone-burst','sniper-shot','bombard','hunter-fan','storm-orb','royal-salvo'];
@@ -693,7 +716,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
       next.tactics.castCleared=state.enemyAttacks.length-next.enemyAttacks.length+state.threats.length-next.threats.length;next.tactics.skillCleared+=next.tactics.castCleared;
       next.tactics.note='贯流净化 · 清除弹幕 '+(state.enemyAttacks.length-next.enemyAttacks.length+state.threats.length-next.threats.length);
     }else if(state.mechClass==='heavy'){
-      getLevel(state.levelIndex).hazards.forEach((h,i)=>{if(state.hazardHps[i]>0&&state.progress>=h.progress-14&&state.progress<h.progress){next.roadImpacts[i]={fracture:40,stun:10,lock:15};next.tactics.skillBreaks++;next.tactics.castBreaks++;}});
+      getLevel(state.levelIndex).hazards.forEach((h,i)=>{if(state.hazardHps[i]>0&&enemyVisibleV41(state,h)){next.roadImpacts[i]={fracture:40,stun:10,lock:15};next.tactics.skillBreaks++;next.tactics.castBreaks++;}});
       next.enemyAttacks=state.enemyAttacks.filter(a=>!(a.source==='hazard'&&a.phase==='warning'&&next.roadImpacts[a.sourceId]));
       next.tactics.note='震荡破甲 · 部件伤害×2';
     }else{next.tactics.parryTicks=10;next.invulnerableTicks=0;next.tactics.note='疾刃格挡 · 1秒反击架势';}
@@ -711,12 +734,13 @@ export function gameReducer(state: GameState, action: Action): GameState {
       return queuedLane===state.queuedLane?state:{...state,queuedLane};
     }
     if(lane===state.lane)return state;
+    const moveState={...state,flow:copyFlowV41(state.flow)};protectComboV41(moveState,'move');
     if(isBossArena(state)) {
       // One side-step at a time; repeated pointer/key events cannot extend or
       // refresh an evasive window. A two-lane command buffers its second step.
-      return sidestep(state,lane);
+      return sidestep(moveState,lane);
     }
-    return {...state,report:{...state.report,focus:0},lane,laneMoveTicks:1,ops:{...state.ops,...(state.ops.roadDodgeTicks===0?{roadDodgeTicks:3,roadFromLane:state.lane}:{})}};
+    return {...moveState,report:{...state.report,focus:0},lane,laneMoveTicks:1,ops:{...state.ops,...(state.ops.roadDodgeTicks===0?{roadDodgeTicks:3,roadFromLane:state.lane}:{})}};
   }
   if (action.type === 'PAUSE') return isActiveStatus(state.status) ? { ...state, status: 'paused', resumeStatus: state.status } : state;
   if (action.type === 'RESUME') return state.status === 'paused' ? { ...state, status: state.resumeStatus ?? 'running', resumeStatus: null } : state;
@@ -726,7 +750,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
     const key=action.type==='START_SORTIE'?action.key:state.sortie!.key,spec=findSortieV39(key);
     if(!spec||!canEnterSortieV39(action.garage,key)||action.type==='START_SORTIE'&&state.status!=='home'&&state.status!=='result')return state;
     const fresh=createInitialState(action.garage,spec.level,spec.slot);
-    return {...fresh,status:'running',runId:state.runId+1,progress:spec.start,gate:getLevel(spec.level).gateMarks.findIndex(m=>m-1.5>spec.start),hazardHps:fresh.hazardHps.map((hp,i)=>getLevel(spec.level).hazards[i].progress<spec.start?-1:hp),burstEnergy:50,sortie:{...spec,firstClear:!(action.garage.sortieClears??[]).includes(key)}};
+    const started:GameState={...fresh,status:'running',runId:state.runId+1,progress:spec.start,gate:getLevel(spec.level).gateMarks.findIndex(m=>m-1.5>spec.start),hazardHps:fresh.hazardHps.map((hp,i)=>getLevel(spec.level).hazards[i].progress<spec.start?-1:hp),burstEnergy:50,sortie:{...spec,firstClear:!(action.garage.sortieClears??[]).includes(key)}};prepareSupplyV41(started);return started;
   }
   if ('garage' in action) {
     let campaign = normalizeGarage(action.garage);
@@ -760,14 +784,14 @@ export function gameReducer(state: GameState, action: Action): GameState {
   if (!canMove(state.status)) return state;
   if (state.bots <= 0 || state.playerHp <= 0) return fail(state, isBossArena(state) ? 'boss-wipe' : null);
   const level = getLevel(state.levelIndex);
-  const s: GameState = { ...state,tactics:{...copyTacticsV40(state.tactics),elapsed:state.tactics.elapsed+Number(canShoot(state.status)),windowTicks:Math.max(0,state.tactics.windowTicks-1),parryTicks:Math.max(0,state.tactics.parryTicks-1),noteTicks:Math.max(0,state.tactics.noteTicks-1)},hostileReactions:Object.fromEntries(Object.entries(state.hostileReactions??{}).map(([id,r])=>[id,{ticks:Math.max(0,r.ticks-1),cooldown:Math.max(0,r.cooldown-1)}] as const).filter(([,r])=>r.cooldown>0||r.ticks>0)),breatherTicks:Math.max(0,state.breatherTicks-Number(state.status==='running')),roadImpacts:Object.fromEntries(Object.entries(state.roadImpacts).map(([id,v])=>[id,{fracture:Math.max(0,v.fracture-1),stun:Math.max(0,v.stun-1),lock:Math.max(0,v.lock-1)}] as const).filter(([,v])=>v.fracture>0||v.stun>0||v.lock>0)),roadCooldowns:Object.fromEntries(Object.entries(state.roadCooldowns).map(([id,t])=>[id,Math.max(0,t-Number(state.status==='running'))])),report:{...state.report},feedback:state.feedback.filter(e=>e.ticks>1).map(e=>({...e,ticks:e.ticks-1})),upgradeFx:state.upgradeFx&&state.upgradeFx.ticks>1?{...state.upgradeFx,ticks:state.upgradeFx.ticks-1}:null,ops:copyOperations(state.ops), coreDetonations:state.coreDetonations.filter(e=>e.ticks>1).map(e=>({...e,ticks:e.ticks-1})), burstTicks:Math.max(0,state.burstTicks-Number(canShoot(state.status))), comboRewardTicks:Math.max(0,state.comboRewardTicks-1), defenseFx:state.defenseFx&&state.defenseFx.ticks>1?{...state.defenseFx,ticks:state.defenseFx.ticks-1}:null, killEffects: state.killEffects.filter(e => e.ticks > 1).map(e => ({ ...e, ticks: e.ticks - 1 })), comboTicks: Math.max(0, state.comboTicks - 1), medicPulses: [], pendingShots: [], hazardHps: [...state.hazardHps], threats: state.threats.map(t => ({ ...t })), enemyAttacks: state.enemyAttacks.map(a => ({ ...a })), enemyAttackSources: [...state.enemyAttackSources], burns: [], visitedZones: [...state.visitedZones], bossAttackLanes: [...state.bossAttackLanes], laneMoveTicks: Math.max(0, state.laneMoveTicks - 1), bossMoveTicks: Math.max(0, state.bossMoveTicks - Number(canShoot(state.status))), invulnerableTicks: Math.max(0, state.invulnerableTicks - Number(canShoot(state.status))), overloadTicks: Math.max(0, state.overloadTicks - Number(canShoot(state.status))), jamTicks: Math.max(0, state.jamTicks - Number(canShoot(state.status))) };
+  const s: GameState = { ...state,flow:{...copyFlowV41(state.flow),introTicks:Math.max(0,state.flow.introTicks-1),defenseCooldown:Math.max(0,state.flow.defenseCooldown-1),guardTicks:Math.max(0,state.flow.guardTicks-1)},tactics:{...copyTacticsV40(state.tactics),elapsed:state.tactics.elapsed+Number(canShoot(state.status)),windowTicks:Math.max(0,state.tactics.windowTicks-1),parryTicks:Math.max(0,state.tactics.parryTicks-1),noteTicks:Math.max(0,state.tactics.noteTicks-1)},hostileReactions:Object.fromEntries(Object.entries(state.hostileReactions??{}).map(([id,r])=>[id,{ticks:Math.max(0,r.ticks-1),cooldown:Math.max(0,r.cooldown-1)}] as const).filter(([,r])=>r.cooldown>0||r.ticks>0)),breatherTicks:Math.max(0,state.breatherTicks-Number(state.status==='running')),roadImpacts:Object.fromEntries(Object.entries(state.roadImpacts).map(([id,v])=>[id,{fracture:Math.max(0,v.fracture-1),stun:Math.max(0,v.stun-1),lock:Math.max(0,v.lock-1)}] as const).filter(([,v])=>v.fracture>0||v.stun>0||v.lock>0)),roadCooldowns:Object.fromEntries(Object.entries(state.roadCooldowns).map(([id,t])=>[id,Math.max(0,t-Number(state.status==='running'))])),report:{...state.report},feedback:state.feedback.filter(e=>e.ticks>1).map(e=>({...e,ticks:e.ticks-1})),upgradeFx:state.upgradeFx&&state.upgradeFx.ticks>1?{...state.upgradeFx,ticks:state.upgradeFx.ticks-1}:null,ops:copyOperations(state.ops), coreDetonations:state.coreDetonations.filter(e=>e.ticks>1).map(e=>({...e,ticks:e.ticks-1})), burstTicks:Math.max(0,state.burstTicks-Number(canShoot(state.status))), comboRewardTicks:Math.max(0,state.comboRewardTicks-1), defenseFx:state.defenseFx&&state.defenseFx.ticks>1?{...state.defenseFx,ticks:state.defenseFx.ticks-1}:null, killEffects: state.killEffects.filter(e => e.ticks > 1).map(e => ({ ...e, ticks: e.ticks - 1 })), comboTicks: Math.max(0, state.comboTicks - 1), medicPulses: [], pendingShots: [], hazardHps: [...state.hazardHps], threats: state.threats.map(t => ({ ...t })), enemyAttacks: state.enemyAttacks.map(a => ({ ...a })), enemyAttackSources: [...state.enemyAttackSources], burns: [], visitedZones: [...state.visitedZones], bossAttackLanes: [...state.bossAttackLanes], laneMoveTicks: Math.max(0, state.laneMoveTicks - 1), bossMoveTicks: Math.max(0, state.bossMoveTicks - Number(canShoot(state.status))), invulnerableTicks: Math.max(0, state.invulnerableTicks - Number(canShoot(state.status))), overloadTicks: Math.max(0, state.overloadTicks - Number(canShoot(state.status))), jamTicks: Math.max(0, state.jamTicks - Number(canShoot(state.status))) };
   if(canShoot(state.status)){s.ops.roadDodgeTicks=Math.max(0,s.ops.roadDodgeTicks-1);s.ops.perfectCooldown=Math.max(0,s.ops.perfectCooldown-1);s.ops.perfectTicks=Math.max(0,s.ops.perfectTicks-1);s.ops.breakTicks=Math.max(0,s.ops.breakTicks-1);}
-  if (s.comboTicks === 0) s.combo = 0;
+  if (s.comboTicks === 0) {s.combo = 0;s.flow.moveGuard=false;}
   s.dodgeTicks=Math.max(0,state.dodgeTicks-1);s.evadeTicks=Math.max(0,state.evadeTicks-1);
   if(state.dodgeTicks===1&&s.queuedLane!==null&&s.queuedLane!==s.lane)Object.assign(s,sidestep(s,s.queuedLane));
   for (const burn of state.burns) {
     if (!targetAlive(s, burn.target, burn.index) || !laneMatches(s, burn.target, burn.index, burn.lane)) continue;
-    if (burn.ticks % 5 === 0) damageTarget(s, burn.target, burn.index, burn.damage, 3, burn.lane);
+    if (burn.ticks % 5 === 0) damageTarget(s, burn.target, burn.index, burn.damage, 3, burn.lane,false,false,'burn');
     if (s.status === 'boss-victory') return s;
     if (burn.ticks > 1 && targetAlive(s, burn.target, burn.index)) s.burns.push({ ...burn, ticks: burn.ticks - 1 });
   }
@@ -775,10 +799,10 @@ export function gameReducer(state: GameState, action: Action): GameState {
     if (shot.ticks > 1) { s.pendingShots.push({ ...shot, ticks: shot.ticks - 1 }); continue; }
     if (!shot.target) continue;
     if (shot.attackStyle === 'blade' && !shot.burst && (s.lane !== shot.lane || 59 - targetY(s, shot.target, shot.targetIndex) > (shot.range??mechSpec('blade').range))) continue;
-    const hit = damageTarget(s, shot.target, shot.targetIndex, shot.damage, shot.weaponLevel, shot.lane, shot.burst === true);
+    const hit = damageTarget(s, shot.target, shot.targetIndex, shot.damage, shot.weaponLevel, shot.lane, shot.burst === true,false,shot.burst?'burst':'direct');
     if (s.status === 'boss-victory') return s;
     if(hit>0&&!shot.splashDone&&shot.attackStyle==='heavy'&&shot.target==='hazard'&&s.hazardHps[shot.targetIndex]>0){
-      const old=s.roadImpacts[shot.targetIndex];s.roadImpacts[shot.targetIndex]={fracture:45,stun:old&&old.lock>0?old.stun:5,lock:old&&old.lock>0?old.lock:35};
+      const old=s.roadImpacts[shot.targetIndex];if((old?.lock??0)===0&&s.enemyAttacks.some(a=>a.source==='hazard'&&a.sourceId===shot.targetIndex&&a.phase==='warning'))protectComboV41(s,'defense');s.roadImpacts[shot.targetIndex]={fracture:45,stun:old&&old.lock>0?old.stun:5,lock:old&&old.lock>0?old.lock:35};
     }
     if(hit>0&&!shot.splashDone&&!shot.burst&&shot.attackStyle==='blade'&&(shot.volleyId??shot.id)!==s.report.bladeVolley&&!shot.finisher){
       s.report.bladeVolley=shot.volleyId??shot.id;s.report.bladeCombo=Math.min(3,s.report.bladeCombo+1);if(s.report.bladeCombo>=3)s.report.bladeReady=true;
@@ -787,7 +811,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
       const y=targetY(s,shot.target,shot.targetIndex);
       s.coreDetonations=[...s.coreDetonations,{id:shot.id,x:targetX(s,shot.target,shot.targetIndex),y,ticks:6}].slice(-6);
       const nearby=targetsInLane(s,shot.lane).filter(t=>!(t.target===shot.target&&t.index===shot.targetIndex)&&Math.abs(t.y-y)<=(shot.burst?coreSkill('heavy').splash:4)).slice(0,shot.burst?4:2);
-      for(const other of nearby){damageTarget(s,other.target,other.index,shot.damage*(shot.burst?.5:.3)*(other.target==='boss'?coreSkill('heavy').bossDamage/coreSkill('heavy').damage*(shot.bossSweepScale??1):1),shot.weaponLevel,shot.lane,true);if(s.battleHp===0&&s.bossDefeated)return s;}
+      for(const other of nearby){damageTarget(s,other.target,other.index,shot.damage*(shot.burst?.5:.3)*(other.target==='boss'?coreSkill('heavy').bossDamage/coreSkill('heavy').damage*(shot.bossSweepScale??1):1),shot.weaponLevel,shot.lane,true,false,shot.burst?'burst':'direct');if(s.battleHp===0&&s.bossDefeated)return s;}
     }
     if (hit > 0 && (shot.weaponLevel === 3 || (shot.burn??0)>0) && targetAlive(s, shot.target, shot.targetIndex)) {
       const existing = s.burns.find(b => b.target === shot.target && b.index === shot.targetIndex);
@@ -797,7 +821,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
     if(hit>0&&(shot.arc??0)>0&&!shot.splashDone){
       const y=targetY(s,shot.target,shot.targetIndex);
       const allies=targetsInLane(s,shot.lane).filter(t=>t.target!=='boss'&&!(t.target===shot.target&&t.index===shot.targetIndex)&&Math.abs(t.y-y)<=6).slice(0,(shot.arc??0)+(shot.fusion==='stormfire'?1:0));
-      for(const other of allies){s.coreDetonations=[...s.coreDetonations,{kind:'arc' as const,id:++s.shotSequence,x:targetX(s,other.target,other.index),y:other.y,ticks:6}].slice(-6);damageTarget(s,other.target,other.index,shot.damage*.35,shot.weaponLevel,shot.lane,true);if(s.battleHp===0&&s.bossDefeated)return s;}
+      for(const other of allies){s.coreDetonations=[...s.coreDetonations,{kind:'arc' as const,id:++s.shotSequence,x:targetX(s,other.target,other.index),y:other.y,ticks:6}].slice(-6);damageTarget(s,other.target,other.index,shot.damage*.35,shot.weaponLevel,shot.lane,true,false,'arc');if(s.battleHp===0&&s.bossDefeated)return s;}
     }
     // A piercing bolt can continue after another bolt destroyed its first target,
     // but never after that target has moved to a different lane.
@@ -820,7 +844,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
   if(s.tactics.reflection>0&&canShoot(s.status)){
     const reflected=s.tactics.reflection;s.tactics.reflection=0;
     const aim=s.status==='battle'?{target:'boss' as const,index:s.encounter,lane:s.battleLane}:targetsInLane(s,s.lane).filter(t=>t.target==='hazard'||t.target==='threat').map(t=>({...t,lane:s.lane}))[0];
-    if(aim&&damageTarget(s,aim.target,aim.index,reflected,s.weaponLevel,aim.lane,true)>0){s.tactics.note='疾刃格挡 · 反击命中';s.tactics.noteTicks=15;}
+    if(aim&&damageTarget(s,aim.target,aim.index,reflected,s.weaponLevel,aim.lane,true,false,'counter')>0){s.tactics.note='疾刃格挡 · 反击命中';s.tactics.noteTicks=15;}
     if(s.bossDefeated)return s;
   }
   if (s.status === 'boss-intro' || s.status === 'boss-shift') {
@@ -837,6 +861,8 @@ export function gameReducer(state: GameState, action: Action): GameState {
       s.tactics.windowTicks=Math.min(22,bossRecoveryTicks(s));s.tactics.windows++;gainBurstEnergy(s,10);s.tactics.note='规避成功 · 首领易伤 +65%';s.tactics.noteTicks=18;
     }
   } else if (s.status === 'running') {
+    const stage=s.progress<43?0:s.progress<62?1:2;
+    if(s.tactics.chainKills-state.tactics.chainKills>=3&&!s.flow.relievedStages.includes(stage)){s.breatherTicks=Math.max(12,s.breatherTicks);s.flow.relievedStages.push(stage);}
     advanceEnemyAttacks(s);
     if (s.playerHp <= 0) return fail(s, null);
     s.progress = Math.min(100, s.progress + roadStepFor(s));
@@ -848,6 +874,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
     });
     const mark = level.gateMarks[s.gate];
     if (mark !== undefined) {
+      prepareSupplyV41(s);
       if (!s.gateResolved && gateGroundY(s.progress, mark) >= GATE_CONTACT_Y) {
         const options=gateChoicesFor(s),option=options.find(o=>o.lane===s.lane);s.gateResolved = true;
         s.gateChoices=s.gateChoices.map((row,i)=>i===s.gate?(option?[option]:row):row);
@@ -859,7 +886,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
     if (s.bots <= 0) return fail(s, null);
     level.hazards.forEach((h, index) => {
       if (s.hazardHps[index] <= 0 || s.progress < h.progress) return;
-      if (s.lane === hazardLaneAt(s.layoutIndex, index, s.progress, s.levelIndex)) applySquadHit(s, h.horde ? 6 : h.armor ? 20 : 14,'collision');
+      if (s.lane === hazardLaneAt(s.layoutIndex, index, s.progress, s.levelIndex)) applySquadHit(s, h.horde ? 6 : h.armor ? 20 : 14,'collision',h.eliteRole==='guard'?'guard':'collision');
       else if(!h.horde) s.score += 25;
       s.hazardHps[index] = -1;
     });

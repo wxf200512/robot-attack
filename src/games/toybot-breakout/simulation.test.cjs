@@ -971,7 +971,7 @@ test('mixed road pressure is bounded to two attack lanes and safely cleans up on
 
 test('enemy formation uses distinct horizontal muzzles and matched aiming positions without changing lanes', () => {
   const s={...initial(4),status:'running',progress:46},spec=levels.getLevel(4);
-  const group=spec.hazards.map((h,i)=>({h,i})).filter(e=>e.h.kind==='swarm'&&e.h.wave===1&&s.progress>=e.h.progress-14&&s.progress<e.h.progress);
+  const group=spec.hazards.map((h,i)=>({h,i})).filter(e=>e.h.kind==='swarm'&&e.h.wave===1&&load('flowV41').enemyVisibleV41(s,e.h));
   assert.equal(new Set(group.map(e=>[sim.roadEnemyX(s,e.i),sim.roadEnemyY(s,e.i)].join(':'))).size,group.length);
   for(const {i}of group) {
     assert.equal(sim.targetX(s,'hazard',i),sim.roadEnemyX(s,i));assert.equal(sim.targetY(s,'hazard',i),sim.roadEnemyY(s,i));
@@ -2267,4 +2267,91 @@ test('V40 per-cast utility counters reset without erasing run totals or modifyin
 test('V40 risk max health composes elite rounding and invulnerability does not hide a trial collision',()=>{
  const base={...initial(2),status:'running',progress:15};base.ops.protocol='elite';base.hazardHps=base.hazardHps.map(hp=>Math.ceil(hp*1.4));const n=sim.applyGateEffect(base,{effect:'riskyWeapon',title:'火力',polarity:'reward'});for(const i of n.tactics.riskIds)assert.ok(n.hazardHps[i]<=sim.hazardMaxHpFor(n,i));
  const s={...initial(),invulnerableTicks:5};sim.applySquadHit(s,10,'collision');assert.equal(s.playerHp,100);assert.equal(s.tactics.collisions,1);
+});
+
+// V41: paced encounters, useful locked supplies and readable combat decisions.
+const flow41=load('flowV41');
+test('V41 rear horde ranks appear in staggered batches, never take invisible hits and share their aim coordinates',()=>{
+ const level=levels.getLevel(0),rear=level.hazards.findIndex(h=>h.horde&&h.wave===0&&h.slot===12),h=level.hazards[rear];
+ const s={...initial(),status:'running',progress:h.progress-12,fireCooldown:1000,hazardHps:initial().hazardHps.map((_,i)=>i===rear?3:-1)};
+ assert.equal(flow41.enemyLeadV41(h),10);assert.equal(flow41.enemyVisibleV41(s,h),false);
+ const miss=tick({...s,pendingShots:[incoming(s,{target:'hazard',targetIndex:rear,lane:sim.roadEnemyLane(s,rear),damage:10})]});assert.equal(miss.hazardHps[rear],3);assert.equal(miss.report.dealt,0);
+ const visible={...s,progress:h.progress-9};assert.equal(flow41.enemyVisibleV41(visible,h),true);assert.ok(sim.roadEnemyY(visible,rear)>=sim.ROAD_HORIZON[0]+3&&sim.roadEnemyY(visible,rear)<48);assert.equal(sim.targetY(visible,'hazard',rear),sim.roadEnemyY(visible,rear));
+});
+test('V41 pressure changes between build surge and recover and real chains give one bounded breather per stage',()=>{
+ for(const [progress,phase]of [[10,'scout'],[20,'build'],[35,'surge'],[46,'build'],[55,'surge'],[64,'build'],[75,'surge'],[90,'recover']])assert.equal(flow41.pressureV41({...initial(),progress}),phase);
+ const {ids,state}=eliteScene(),a=ids[0];const s={...state,hazardHps:state.hazardHps.map((_,i)=>ids.includes(i)?1:-1),pendingShots:[incoming(state,{target:'hazard',targetIndex:a,lane:state.lane,damage:100})]};
+ const n=tick(s);assert.ok(n.tactics.chainKills>=3);assert.ok(n.breatherTicks>0);assert.deepEqual(n.flow.relievedStages,[0]);assert.equal(s.flow.relievedStages.length,0);assert.equal(tick(sim.gameReducer(n,{type:'PAUSE'})).breatherTicks,n.breatherTicks);
+});
+test('V41 capped or emergency supplies become useful without erasing penalties or producing duplicate alternatives',()=>{
+ const o=(effect,lane=0)=>({id:effect,polarity:'reward',effect,title:effect,icon:'x',amount:1,lane});
+ const s={...initial(),weaponLevel:4,shieldCharges:0,playerHp:100};let rows=flow41.usefulGatesV41(s,[o('fieldRepair'),o('weaponUp',2)]);assert.equal(new Set(rows.map(o=>o.effect)).size,2);assert.ok(rows.every(o=>!['fieldRepair','weaponUp'].includes(o.effect)));assert.deepEqual(rows.map(o=>o.lane),[0,2]);
+ rows=flow41.usefulGatesV41({...s,playerHp:20},[o('scoreUp')]);assert.equal(rows[0].effect,'fieldRepair');
+ const penalty={...o('weaponDown'),polarity:'penalty'};assert.equal(flow41.usefulGatesV41(s,[penalty])[0],penalty);
+ assert.equal(flow41.usefulGatesV41({...s,bots:1},[o('repair')])[0].effect,'repair','full health still benefits from squad recruitment');
+});
+test('V41 visible supply options lock before contact and cannot flip when health or equipment changes',()=>{
+ const base=initial(),level=levels.getLevel(0),s={...base,status:'running',gate:1,progress:4,weaponLevel:4,fireCooldown:1000,hazardHps:base.hazardHps.map(()=>-1)};
+ const n=tick(s);assert.equal(n.flow.preparedGate,1);assert.ok(n.gateChoices[1].every(o=>!['weaponUp','riskyWeapon'].includes(o.effect)));const choices=JSON.stringify(n.gateChoices[1]);const changed=tick({...n,weaponLevel:0,playerHp:10});assert.equal(JSON.stringify(changed.gateChoices[1]),choices);assert.equal(n.gateResolved,false);
+ const collect={...changed,progress:level.gateMarks[1]-1.51,lane:changed.gateChoices[1][0].lane};const result=tick(collect);assert.equal(result.gateCollected,true);assert.equal(result.flow.log.filter(x=>x.source==='补给门').length,1);assert.equal(tick(result).flow.log.filter(x=>x.source==='补给门').length,1);
+});
+test('V41 movement protects an existing combo once per real kill and empty lane spam never farms it',()=>{
+ const s={...initial(),status:'running',combo:5,comboTicks:3};s.flow.moveGuard=true;
+ const old=JSON.stringify(s),n=sim.gameReducer(s,{type:'MOVE_LANE',lane:2});assert.equal(JSON.stringify(s),old);assert.equal(n.combo,5);assert.equal(n.comboTicks,12);assert.equal(n.flow.moveGuard,false);
+ const again=sim.gameReducer({...n,comboTicks:2},{type:'MOVE_LANE',lane:0});assert.equal(again.comboTicks,2);assert.equal(again.kills,s.kills);assert.equal(again.score,s.score);assert.equal(again.burstEnergy,s.burstEnergy);
+ const empty=sim.gameReducer({...s,combo:0,comboTicks:0},{type:'MOVE_LANE',lane:2});assert.equal(empty.combo,0);assert.equal(empty.comboTicks,0);
+});
+test('V41 successful dodge and parry preserve combo with a cooldown and never increment its kill count',()=>{
+ const base={...battle(),lane:0,dodgeFromLane:1,dodgeTicks:2,combo:7,comboTicks:3,threats:[{id:99,kind:'shell',lane:1,ticks:1,duration:8,hp:-1,maxHp:0,damage:12,fromLane:1}]};
+ const n=tick(base);assert.equal(n.combo,7);assert.equal(n.comboTicks,35);assert.equal(n.flow.defenseSaves,1);assert.equal(n.kills,0);assert.equal(n.score,base.score+5);
+ const again=tick({...n,comboTicks:3,evadeTicks:0,dodgeTicks:2,threats:base.threats});assert.equal(again.flow.defenseSaves,1);assert.equal(again.comboTicks,2);
+ const parry={...battle(),combo:4,comboTicks:2};parry.tactics.parryTicks=10;sim.applySquadHit(parry,10);assert.equal(parry.comboTicks,35);assert.equal(parry.flow.defenseSaves,1);
+});
+test('V41 new specialist gets one isolated extended telegraph; learned attacks keep normal timing',()=>{
+ const {state,index}=roadSpecialist('sniper');const fresh={...state,flow:flow41.newFlowV41()};const n=tick(fresh);const warning=n.enemyAttacks.find(a=>a.sourceId===index);assert.ok(warning);assert.equal(warning.duration,26);assert.equal(warning.damage,13*.8);assert.ok(n.flow.lessons.includes('sniper-shot'));assert.equal(n.flow.lastLesson,'sniper-shot');assert.equal(fresh.flow.lessons.length,0);
+ const experienced=tick({...state,flow:flow41.newFlowV41(flow41.LESSON_KEYS_V41)});assert.equal(experienced.enemyAttacks.find(a=>a.sourceId===index).duration,18);assert.equal(experienced.flow.introTicks,0);
+ const paused=sim.gameReducer(n,{type:'PAUSE'});assert.equal(tick(paused).flow.introTicks,n.flow.introTicks);
+});
+test('V41 lesson saves migrate veterans, preserve explicit new progress and filter unknown keys',()=>{
+ assert.equal(progression.normalizeGarage({wins:2}).enemyLessons.length,flow41.LESSON_KEYS_V41.length);
+ assert.deepEqual(progression.normalizeGarage({wins:2,enemyLessons:[]}).enemyLessons,[]);
+ assert.deepEqual(progression.normalizeGarage({enemyLessons:['charge','charge','bad',42]}).enemyLessons,['charge']);assert.deepEqual(progression.normalizeGarage({}).enemyLessons,[]);
+});
+test('V41 exact drag thresholds terminate, sensitivity scales movement and reversal works at road edges',()=>{
+ const input=load('interaction'),start={anchorX:100,lane:1,moved:false},threshold=390*.1725*.5;
+ assert.equal(input.advanceDrag(start,100+threshold,390).lane,2);
+ assert.equal(input.advanceDrag(start,128,390,.75).lane,1);assert.equal(input.advanceDrag(start,128,390,1.35).lane,2);
+ const edge=input.advanceDrag(start,600,390),reverse=input.advanceDrag(edge,550,390);assert.equal(edge.lane,2);assert.ok(reverse.lane<2);
+ assert.equal(input.advanceDrag({...start,lane:0},100+threshold*2+.01,390).lane,2);
+ assert.deepEqual(input.advanceDrag(start,130,390,NaN),input.advanceDrag(start,130,390));
+});
+test('V41 sensitivity persists independently and old settings keep their original serialized shape',()=>{
+ const settings=load('settings');assert.equal(settings.normalizeSettings({}).dragSensitivity,undefined);assert.equal(settings.normalizeSettings({dragSensitivity:99}).dragSensitivity,1.6);assert.equal(settings.normalizeSettings({dragSensitivity:NaN}).dragSensitivity,1);
+ const before=global.window;let saved='';try{global.window={localStorage:{getItem:()=>saved,setItem:(_,v)=>saved=v}};settings.saveSettings({muted:true,quality:'auto',volume:.5,dragSensitivity:1.35});assert.equal(settings.readSettings().dragSensitivity,1.35);}finally{global.window=before;}
+});
+test('V41 damage contributions count real direct, burn, chain and burst hits without adding extra damage',()=>{
+ const s={...battle(),battleHp:1000,battleMaxHp:1000,pendingShots:[incoming(battle(),{damage:10})]};const normal=tick(s);assert.equal(normal.flow.contribution.direct,normal.report.dealt);
+ const b=tick({...s,burstTicks:20,pendingShots:[{...s.pendingShots[0],burst:true}]});assert.equal(b.flow.contribution.burst,b.report.dealt);assert.equal(b.flow.contribution.direct,0);
+ const burn=tick({...s,pendingShots:[],burns:[{target:'boss',index:0,lane:s.battleLane,damage:5,ticks:5}]});assert.equal(burn.flow.contribution.burn,burn.report.dealt);assert.ok(burn.flow.contribution.burn>0);
+ const {ids,state}=eliteScene(),a=ids[0],chain=tick({...state,hazardHps:state.hazardHps.map((_,i)=>ids.includes(i)?1:-1),pendingShots:[incoming(state,{target:'hazard',targetIndex:a,lane:state.lane,damage:100})]});assert.ok(chain.flow.contribution.chain>0);assert.ok(Math.abs(Object.values(chain.flow.contribution).reduce((a,b)=>a+b,0)-chain.report.dealt)<.01);
+ assert.equal(s.flow.contribution.direct,0);assert.ok(flow41.strongestContributionV41(normal).damage>0);
+});
+test('V41 recent damage provides a matching practical retry hint without attributing shield absorption to lost health',()=>{
+ const s={...battle(),armorPoints:0,shieldCharges:0};sim.applySquadHit(s,20,'hostile','siege-laser');assert.match(s.flow.lastHit.label,/重轨/);assert.match(load('experience').runDebrief(s).tip,/提前换轨/);
+ const old=s.flow.lastHit;s.invulnerableTicks=0;s.shieldCharges=1;sim.applySquadHit(s,10,'hostile','bombard');assert.equal(s.flow.lastHit,old);
+ assert.notEqual(flow41.damageAdviceV41('boss',0).tip,flow41.damageAdviceV41('boss',4).tip);
+ const retry=sim.gameReducer({...s,status:'result'},{type:'RESTART',garage});assert.equal(retry.flow.lastHit,null);assert.equal(retry.flow.defenseSaves,0);assert.equal(retry.flow.log.length,0);
+});
+
+test('V41 emergency repair stays visible instead of being consumed by an optional fusion offer',()=>{
+ const s={...initial(),status:'running',gate:4,playerHp:20,modules:{arc:1,burn:1,recycle:0}};const repair={id:'emergency',effect:'fieldRepair',title:'维修+30',amount:1,lane:1,polarity:'reward'};s.gateChoices=s.gateChoices.map((row,i)=>i===4?[repair]:row);assert.equal(sim.gateChoicesFor(s)[0].effect,'fieldRepair');assert.equal(sim.gateChoicesFor({...s,playerHp:100})[0].effect,'fuse');
+});
+test('V41 build history is bounded and cloned; extra contribution excludes ordinary direct damage',()=>{
+ const s=initial();for(let i=0;i<40;i++)flow41.recordUpgradeV41(s,'补给门','强化'+i);assert.equal(s.flow.log.length,28);const copy=flow41.copyFlowV41(s.flow);copy.log.push({time:0,source:'测试',title:'测试'});copy.contribution.direct=99;assert.equal(s.flow.log.length,28);assert.equal(s.flow.contribution.direct,0);s.flow.contribution.direct=100;s.flow.contribution.arc=35;assert.equal(flow41.strongestContributionV41(s,true).name,'电弧跳击');
+});
+
+test('V41 supplies also freeze fusion eligibility, so collecting a module cannot swap a visible door',()=>{
+ const base=initial(),s={...base,status:'running',gate:4,progress:52,modules:{arc:1,burn:0,recycle:0},fireCooldown:1000,hazardHps:base.hazardHps.map(()=>-1)};s.gateChoices=s.gateChoices.map((row,i)=>i===4?[{id:'fixed',effect:'weaponUp',title:'火力+1',polarity:'reward',lane:0,amount:1}]:row);
+ const locked=tick(s),changed={...locked,modules:{arc:1,burn:1,recycle:0}};assert.equal(sim.gateChoicesFor(changed)[0].effect,'weaponUp');assert.equal(JSON.stringify(sim.gateChoicesFor(changed)),JSON.stringify(sim.gateChoicesFor(locked)));
+ const ready=tick({...s,modules:{arc:1,burn:1,recycle:0}});assert.equal(sim.gateChoicesFor(ready)[0].effect,'fuse');
 });

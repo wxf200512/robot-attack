@@ -1,7 +1,8 @@
+import { LESSON_KEYS_V41 } from './flowV41';
 import { mechSpec, normalizeMechClass, type MechClass } from './mechs';
 export type UpgradeId = 'weapon' | 'armor' | 'core';
 export type Garage = {
-  trialClears?:string[];trialBadge?:string;sortieClears?:string[];challengeClears:string[];version: 2; completedLevels: boolean[]; tutorialCompleted: boolean; mechClass: MechClass; parts: number; runs: number; wins: number; bestScore: number;
+  enemyLessons?:string[];trialClears?:string[];trialBadge?:string;sortieClears?:string[];challengeClears:string[];version: 2; completedLevels: boolean[]; tutorialCompleted: boolean; mechClass: MechClass; parts: number; runs: number; wins: number; bestScore: number;
   levels: Record<UpgradeId, number>;
   coreLevel: number; unlockedLevel: number;
   unlocked: Record<UpgradeId, boolean>; equipped: Record<UpgradeId, boolean>;
@@ -34,7 +35,8 @@ export const normalizeGarage = (value: unknown): Garage => {
   const sortieClears=validSorties.filter(key=>key.endsWith(':0')||validSorties.includes(key[0]+':0'));
   const trialClears=Array.isArray(p.trialClears)?[...new Set(p.trialClears.filter(x=>typeof x==='string'&&/^[0-4]:(clean|speed|signature)$/.test(x)&&completedLevels[Number(x[0])]))]:[];
   const trialBadge=typeof p.trialBadge==='string'&&trialClears.includes(p.trialBadge)?p.trialBadge:undefined;
-  return { trialClears,...(trialBadge?{trialBadge}:{}),sortieClears,challengeClears:Array.isArray(p.challengeClears)?[...new Set(p.challengeClears.filter(x=>typeof x==='string'&&/^[0-4]:(elite|scarcity|overdrive)$/.test(x)&&completedLevels[Number(x[0])]))]:[],version: 2, completedLevels, tutorialCompleted: typeof p.tutorialCompleted === 'boolean' ? p.tutorialCompleted : integer(p.wins) > 0, mechClass: normalizeMechClass(p.mechClass), parts: integer(p.parts), runs: integer(p.runs), wins: integer(p.wins), bestScore: integer(p.bestScore), levels, coreLevel: levels.core,
+  const enemyLessons=Array.isArray(p.enemyLessons)?[...new Set(p.enemyLessons.filter(k=>typeof k==='string'&&LESSON_KEYS_V41.includes(k)))]:integer(p.wins)>0?[...LESSON_KEYS_V41]:[];
+  return { enemyLessons,trialClears,...(trialBadge?{trialBadge}:{}),sortieClears,challengeClears:Array.isArray(p.challengeClears)?[...new Set(p.challengeClears.filter(x=>typeof x==='string'&&/^[0-4]:(elite|scarcity|overdrive)$/.test(x)&&completedLevels[Number(x[0])]))]:[],version: 2, completedLevels, tutorialCompleted: typeof p.tutorialCompleted === 'boolean' ? p.tutorialCompleted : integer(p.wins) > 0, mechClass: normalizeMechClass(p.mechClass), parts: integer(p.parts), runs: integer(p.runs), wins: integer(p.wins), bestScore: integer(p.bestScore), levels, coreLevel: levels.core,
     unlockedLevel, unlocked,
     equipped: { weapon: unlocked.weapon && p.equipped?.weapon !== false, armor: unlocked.armor && p.equipped?.armor !== false, core: unlocked.core && p.equipped?.core !== false } };
 };

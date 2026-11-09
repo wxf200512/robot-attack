@@ -1,3 +1,5 @@
+import { enemyVisibleV41 } from './flowV41';
+import { BuildLogV41, BuildReportV41, LessonCueV41 } from './FlowUIV41';
 import { normalizeGarage } from './progression';
 import { TrialPickerV40, TacticalHudV40, TacticalResultV40, TrialBadgeV40 } from './TacticalUIV40';
 import { recordTrialV40, SECTOR_MECHS } from './tacticsV40';
@@ -172,6 +174,16 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
     return () => window.clearTimeout(timer);
   }, [game.toast]);
 
+  const campaignBlocking=!!game.narrative.scene;
+  const lessonKey=game.flow.lessons.join('|');
+  useEffect(()=>{
+    if(previewState||!lessonKey)return;
+    setGarage(current=>{
+      const merged=[...new Set([...(current.enemyLessons??[]),...lessonKey.split('|')])];
+      return merged.length===(current.enemyLessons??[]).length?current:normalizeGarage({...current,enemyLessons:merged});
+    });
+  },[lessonKey,previewState]);
+  useEffect(()=>{dragStart.current=null;},[game.status,settings.dragSensitivity,campaignBlocking]);
   const resultReward=game.status==='result'?rewardLedger(game).total:0;
   useEffect(() => {
     if (previewState || game.status !== 'result' || awardedRunId.current === game.runId) return;
@@ -264,7 +276,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
   const showRewardGates = gateVisibleV39(game,nextGateProgress);
   const gateOptions = gateChoicesFor(game);
   const visibleHazards = (game.status === 'running' || (game.status === 'paused' && game.resumeStatus === 'running')) ? LEVEL.hazards.flatMap((h, index) =>
-    game.hazardHps[index] > 0 && game.progress >= h.progress - 14 && game.progress < h.progress
+    game.hazardHps[index] > 0 && enemyVisibleV41(game,h)
       ? [{ ...h,armor:hazardArmorFor(game,index), index, lane: hazardLaneAt(game.layoutIndex, index, game.progress, game.levelIndex), x: roadEnemyX(game, index), y: roadEnemyY(game, index), hp: game.hazardHps[index] }] : []) : [];
   const encounterProgress = LEVEL.encounters[game.encounter]?.progress;
   const bossTop = bossY(game);
@@ -287,7 +299,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
   const weaponPhase = !canShoot(displayStatus ?? 'home') ? 0
     : game.mechClass !== 'pulse' ? Math.min(3, Math.max(0, attackInterval - game.fireCooldown)) : game.fireCooldown === attackInterval ? 2 : game.fireCooldown === attackInterval - 1 ? 3 : game.fireCooldown === 1 ? 1 : 0;
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!canMove(game.status)||!canStartPointerGesture(dragStart.current?.pointerId??null,event)) return;
+    if (campaignBlocking||!canMove(game.status)||!canStartPointerGesture(dragStart.current?.pointerId??null,event)) return;
     dragStart.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -299,14 +311,14 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
   };
 
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    const drag=dragStart.current;if(!drag||drag.pointerId!==event.pointerId||!canMove(game.status))return;
-    const next=advanceDrag({anchorX:drag.startX,lane:drag.currentLane,moved:drag.moved},event.clientX,event.currentTarget.getBoundingClientRect().width);
+    const drag=dragStart.current;if(!drag||drag.pointerId!==event.pointerId||campaignBlocking||!canMove(game.status))return;
+    const next=advanceDrag({anchorX:drag.startX,lane:drag.currentLane,moved:drag.moved},event.clientX,event.currentTarget.getBoundingClientRect().width,settings.dragSensitivity??1);
     drag.startX=next.anchorX;drag.moved=next.moved;if(next.lane!==drag.currentLane){drag.currentLane=next.lane;dispatch({type:'MOVE_LANE',lane:next.lane});}
   };
   const handlePointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
     const drag = dragStart.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
-    if (!drag.moved && canMove(game.status)) {
+    if (!drag.moved && !campaignBlocking && canMove(game.status)) {
       const bounds=event.currentTarget.getBoundingClientRect(); const position=(event.clientX-bounds.left)/bounds.width;
       dispatch({type:'MOVE_LANE',lane:position<.385?0:position>.615?2:1});
     }
@@ -1063,7 +1075,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
         )}
 
         {canShoot(game.status)&&!game.narrative.scene&&<div className="toybot-story-top"><StoryMission game={game}/><StoryRadio game={game} dispatch={dispatch}/></div>}
-        {!game.narrative.scene&&<TacticalHudV40 game={game}/>}
+        {!game.narrative.scene&&<><LessonCueV41 game={game}/>{game.flow.introTicks<=0&&<TacticalHudV40 game={game}/>}</>}
         {game.sortie?<SortieHudV39 game={game}/>:<OperationsHud game={game}/>}
         {game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'&&<div className="toybot-bottom cockpit-bottom">
           <Cockpit game={game} blocked={!!game.narrative.scene} onMove={lane=>dispatch({type:'MOVE_LANE',lane})} onBurst={()=>dispatch({type:'ACTIVATE_BURST'})}/>
@@ -1116,7 +1128,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
                 <div><small>核心生命</small><strong>{game.playerHp}<small> / {game.playerMaxHp}</small></strong></div>
               </div>
               <div className="toybot-pause-progress" aria-label={`当前进度 ${Math.floor(displayProgress)}%`}><span style={{ width: `${displayProgress}%` }} /></div>
-              <p className="menu-pause-note">战场已冻结，准备好后继续出击</p>
+              <BuildLogV41 game={game}/><p className="menu-pause-note">战场已冻结，准备好后继续出击</p>
               <button type="button" className="toybot-primary toybot-pause-resume" onClick={() => dispatch({ type: 'RESUME' })}>继续游戏 <span aria-hidden="true">›</span></button>
               <button type="button" className="toybot-pause-settings" onClick={openSettings}>声音与画面设置</button>
               <button type="button" className="toybot-pause-home" onClick={goHome}>返回游戏首页</button>
@@ -1136,7 +1148,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
               <div className="toybot-ops-debrief">{game.sortie?<>{sortieGoalV39(game.sortie)} · 完成 {sortieCountV39(game)}/{game.sortie.target}</>:<>任务 {game.ops.mission.status==='done'?'完成':'未完成'} · 救援 {game.ops.event.status==='done'?'成功':'未完成'} · 破阵 {game.ops.broken}/3 · 完美闪避 {game.ops.perfects}{game.won&&game.ops.protocol!=='standard'&&<b><OperationSprite cell={2}/>协议徽章已解锁</b>}</>}</div><div className="toybot-debrief-rewards"><div><small>回收零件</small><b>◈ +{previewState?resultReward:earnedParts}</b></div><div><small>当前库存</small><b>{garage.parts+(previewState?resultReward:0)}</b></div><div><small>{game.won ? '归队机甲' : '关卡进度'}</small><b>{game.won ? game.bots + ' 台' : Math.floor(game.progress) + '%'}</b></div></div>
               <p className="toybot-run-highlights">路段击破 <b>{game.kills}</b> · 最佳连击 <b>{game.bestCombo}</b> · 核心爆发 <b>{game.burstSequence}</b></p>
               {!game.won&&<button type="button" className="toybot-primary toybot-quick-retry" onClick={restart}>立即重试本关 <span aria-hidden="true">↗</span></button>}
-              <TacticalResultV40 game={game}/>{!game.sortie&&<RunAnalysis game={game}/>}<RunGoals game={game} garage={previewState?{...garage,parts:garage.parts+resultReward}:garage} onGarage={openGarage}/>
+              <BuildReportV41 game={game}/><TacticalResultV40 game={game}/>{!game.sortie&&<RunAnalysis game={game}/>}<RunGoals game={game} garage={previewState?{...garage,parts:garage.parts+resultReward}:garage} onGarage={openGarage}/>
 
               <div className={'toybot-debrief-actions' + (!game.won || game.levelIndex === LEVELS.length - 1 ? ' is-single-route' : '')}>
                 {game.won && !game.sortie && game.levelIndex < LEVELS.length - 1 && <button type="button" className="toybot-primary" onClick={() => { setSortieChoice(null);setEarnedParts(0); dispatch({ type: 'NEXT_LEVEL', garage }); }}>前往第 {game.levelIndex + 2} 关 <span aria-hidden="true">›</span></button>}

@@ -1,3 +1,4 @@
+import { recordUpgradeV41 } from './flowV41';
 import { sortieGoalV39 } from './sortiesV39';
 import { gameReducer, gateGroundY, playerLaneFor, GATE_CONTACT_Y, type GameState, type Action } from './simulation';
 import { STORY_CHAPTERS } from './story';
@@ -61,7 +62,7 @@ export function campaignReducer(state:CampaignState,action:CampaignAction):Campa
   const previousY=gateGroundY(state.progress,n.relayMark),y=gateGroundY(next.progress,n.relayMark);
   if(y>=GATE_CONTACT_Y&&previousY<=GATE_CONTACT_Y+3&&playerLaneFor(next)===n.relayLane){
    narrative.objective='collected';
-   if(n.route==='rescue'){next.bots+=Number(next.bots<11);}else next.shieldCharges+=1;
+   if(n.route==='rescue'){next.bots+=Number(next.bots<11);}else next.shieldCharges+=1;recordUpgradeV41(next,'剧情中继',n.route==='rescue'?'友军归队':'护盾+1');
    narrative.radio=radio('support-done',n.route==='rescue'?'伙伴：收到归航呼叫！队伍里给我留个位置。〔机甲 +1〕':'米可：航标护盾接通，这一路我替你照看。〔护盾 +1〕');
   }else if(y>GATE_CONTACT_Y+3){narrative.objective='missed';narrative.radio=radio('support-missed','米可：没能接上中继也没关系，维修队会接手。我们继续点亮归航航标。');}
  }

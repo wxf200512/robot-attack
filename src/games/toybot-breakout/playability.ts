@@ -9,6 +9,7 @@ export function visibleFeedback(feedback:CombatFeedback[],low:boolean){
  return [...feedback].sort((a,b)=>rank[b.kind]-rank[a.kind]||b.id-a.id).slice(0,low?2:4).sort((a,b)=>a.id-b.id);
 }
 export function rewardLedger(s:GameState){
+ if(s.sortie){const salvage=Math.min(2,rewardParts(s.score,false)),victory=s.won?1:0,tactical=s.won&&s.sortie.firstClear?1:0;return {salvage,victory,tactical,protocol:0,total:salvage+victory+tactical};}
  const salvage=rewardParts(s.score,false),victory=s.won?3:0,tactical=s.won?s.ops.bonusParts:0,protocol=s.won&&s.ops.protocol!=='standard'?3:0;
  return {salvage,victory,tactical,protocol,total:salvage+victory+tactical+protocol};
 }

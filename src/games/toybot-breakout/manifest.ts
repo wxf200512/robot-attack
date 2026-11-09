@@ -14,7 +14,7 @@ const manifest: GameManifest = {
     zh: "玩具城突围",
   },
   homeCard: {
-    cover: null, // 等放图后改成 '/games/toybot-breakout/optimized/home_cover.jpg'
+    cover: '/games/toybot-breakout/optimized/story-comic-4-v38.jpg',
     color: '#3A8DDE',
   },
   component: () => import('./index'),

@@ -1,0 +1,6 @@
+.sortie-picker-v39{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:7px 0}
+.toybot-page .toybot-shell .sortie-picker-v39 button{padding:5px 2px;min-height:35px;border:1px solid #78c4d74d;border-radius:7px;background:#0a2131;color:#c6d8e6;font-size:10px;line-height:13px;cursor:pointer}
+.toybot-page .toybot-shell .sortie-picker-v39 button[aria-pressed=true]{background:#163c4b;border-color:#a5e4e8;color:#edfcff}
+.sortie-picker-v39 small{display:block;font-size:7px;color:#8bb4c4;line-height:10px}.sortie-picker-v39 button:disabled{opacity:.4;cursor:default}
+.toybot-page .reference-v29>.sortie-hud-v39 small{display:block!important;font-size:8px}
+.sortie-result-v39{padding:8px;border:1px solid #84b6c84d;border-radius:7px;color:#cde7ee;font-size:11px;margin:8px 0}

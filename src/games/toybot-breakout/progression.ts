@@ -1,7 +1,7 @@
 import { mechSpec, normalizeMechClass, type MechClass } from './mechs';
 export type UpgradeId = 'weapon' | 'armor' | 'core';
 export type Garage = {
-  challengeClears:string[];version: 2; completedLevels: boolean[]; tutorialCompleted: boolean; mechClass: MechClass; parts: number; runs: number; wins: number; bestScore: number;
+  sortieClears?:string[];challengeClears:string[];version: 2; completedLevels: boolean[]; tutorialCompleted: boolean; mechClass: MechClass; parts: number; runs: number; wins: number; bestScore: number;
   levels: Record<UpgradeId, number>;
   coreLevel: number; unlockedLevel: number;
   unlocked: Record<UpgradeId, boolean>; equipped: Record<UpgradeId, boolean>;
@@ -30,7 +30,9 @@ export const normalizeGarage = (value: unknown): Garage => {
   for (let i=0;i<5;i++) { contiguous = contiguous && (Array.isArray(p.completedLevels) ? p.completedLevels[i] === true : i < legacyClears); completedLevels.push(contiguous); }
   const unlockedLevel = Math.min(4,completedLevels.filter(Boolean).length);
   const unlocked = { weapon: levels.weapon > 0, armor: levels.armor > 0, core: levels.core > 0 };
-  return { challengeClears:Array.isArray(p.challengeClears)?[...new Set(p.challengeClears.filter(x=>typeof x==='string'&&/^[0-4]:(elite|scarcity|overdrive)$/.test(x)&&completedLevels[Number(x[0])]))]:[],version: 2, completedLevels, tutorialCompleted: typeof p.tutorialCompleted === 'boolean' ? p.tutorialCompleted : integer(p.wins) > 0, mechClass: normalizeMechClass(p.mechClass), parts: integer(p.parts), runs: integer(p.runs), wins: integer(p.wins), bestScore: integer(p.bestScore), levels, coreLevel: levels.core,
+  const validSorties=Array.isArray(p.sortieClears)?[...new Set(p.sortieClears.filter(key=>typeof key==='string'&&/^[0-4]:[01]$/.test(key)&&Number(key[0])<=unlockedLevel))]:[];
+  const sortieClears=validSorties.filter(key=>key.endsWith(':0')||validSorties.includes(key[0]+':0'));
+  return { sortieClears,challengeClears:Array.isArray(p.challengeClears)?[...new Set(p.challengeClears.filter(x=>typeof x==='string'&&/^[0-4]:(elite|scarcity|overdrive)$/.test(x)&&completedLevels[Number(x[0])]))]:[],version: 2, completedLevels, tutorialCompleted: typeof p.tutorialCompleted === 'boolean' ? p.tutorialCompleted : integer(p.wins) > 0, mechClass: normalizeMechClass(p.mechClass), parts: integer(p.parts), runs: integer(p.runs), wins: integer(p.wins), bestScore: integer(p.bestScore), levels, coreLevel: levels.core,
     unlockedLevel, unlocked,
     equipped: { weapon: unlocked.weapon && p.equipped?.weapon !== false, armor: unlocked.armor && p.equipped?.armor !== false, core: unlocked.core && p.equipped?.core !== false } };
 };

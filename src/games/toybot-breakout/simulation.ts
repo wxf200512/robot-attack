@@ -1,3 +1,4 @@
+import { findSortieV39, canEnterSortieV39, sortieCountV39, type SortieSpec } from './sortiesV39';
 import { pursuitForV37, pursuitPointV37, pursuitLaneV37 } from './pursuitV37';
 import { fixedBossHealth } from './playability';
 import { ELITE_ATTACKS, type ElitePattern } from './frontline';
@@ -46,6 +47,7 @@ export type EnemyAttack = { id: number; source: 'hazard' | 'threat'; sourceId: n
 export type KillEffect = { id: number; kind: EnemyKind; lane: number; x: number; y: number; ticks: number; combo: number };
 type Burn = { target: Target; index: number; lane: number; ticks: number; damage: number };
 export type GameState = {
+  sortie?:SortieSpec & {firstClear:boolean};
   report:CombatReport; feedback:CombatFeedback[]; feedbackSequence:number; upgradeFx:{id:number;ticks:number;title:string;positive:boolean}|null;
   ops:Operations;
   modules: Record<RunModule,number>;
@@ -78,7 +80,7 @@ export type GameState = {
   coreDetonations: {kind?:'arc'|'energy';id:number;x:number;y:number;ticks:number}[];
   roadTicks: number; medicPulses: number[];
 };
-export type Action = { type: 'TICK' | 'PAUSE' | 'RESUME' | 'CLEAR_TOAST' | 'ACTIVATE_BURST' } | { type: 'MOVE_LANE'; lane: number }
+export type Action = {type:'START_SORTIE';key:string;garage:Garage} | { type: 'TICK' | 'PAUSE' | 'RESUME' | 'CLEAR_TOAST' | 'ACTIVATE_BURST' } | { type: 'MOVE_LANE'; lane: number }
   | { type: 'START' | 'RESTART' | 'HOME' | 'NEXT_LEVEL'; garage: Garage }
   | {type:'SET_PROTOCOL';protocol:Protocol;garage:Garage}
   | { type: 'SELECT_LEVEL'; levelIndex: number; garage: Garage };
@@ -666,6 +668,12 @@ export function gameReducer(state: GameState, action: Action): GameState {
   if (action.type === 'RESUME') return state.status === 'paused' ? { ...state, status: state.resumeStatus ?? 'running', resumeStatus: null } : state;
   if (action.type === 'CLEAR_TOAST') return { ...state, toast: '' };
   if(action.type==='SET_PROTOCOL'){return state.status==='home'&&Object.prototype.hasOwnProperty.call(PROTOCOLS,action.protocol)&&(action.protocol==='standard'||normalizeGarage(action.garage).completedLevels[state.levelIndex])?{...state,ops:{...state.ops,protocol:action.protocol}}:state;}
+  if(action.type==='START_SORTIE'||action.type==='RESTART'&&state.sortie){
+    const key=action.type==='START_SORTIE'?action.key:state.sortie!.key,spec=findSortieV39(key);
+    if(!spec||!canEnterSortieV39(action.garage,key)||action.type==='START_SORTIE'&&state.status!=='home'&&state.status!=='result')return state;
+    const fresh=createInitialState(action.garage,spec.level,spec.slot);
+    return {...fresh,status:'running',runId:state.runId+1,progress:spec.start,gate:getLevel(spec.level).gateMarks.findIndex(m=>m-1.5>spec.start),hazardHps:fresh.hazardHps.map((hp,i)=>getLevel(spec.level).hazards[i].progress<spec.start?-1:hp),burstEnergy:50,sortie:{...spec,firstClear:!(action.garage.sortieClears??[]).includes(key)}};
+  }
   if ('garage' in action) {
     let campaign = normalizeGarage(action.garage);
     let levelIndex = canEnterLevel(campaign,state.levelIndex) ? state.levelIndex : campaign.unlockedLevel;
@@ -674,7 +682,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
       levelIndex = action.levelIndex;
     }
     if (action.type === 'NEXT_LEVEL') {
-      if (state.status !== 'result' || !state.won || !state.bossDefeated || state.progress !== 100 || !canEnterLevel(campaign,state.levelIndex) || state.levelIndex >= LEVELS.length - 1) return state;
+      if (state.sortie || state.status !== 'result' || !state.won || !state.bossDefeated || state.progress !== 100 || !canEnterLevel(campaign,state.levelIndex) || state.levelIndex >= LEVELS.length - 1) return state;
       campaign = recordLevelCompletion(campaign,state); levelIndex = state.levelIndex + 1;
       if (!canEnterLevel(campaign,levelIndex)) return state;
     }
@@ -790,6 +798,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
     });
     if (s.bots <= 0) return fail(s, null);
     advanceRoadEnemies(s);
+    if(s.sortie&&s.progress>=s.sortie.end){s.progress=s.sortie.end;s.won=sortieCountV39(s)>=s.sortie.target&&s.playerHp>0&&s.bots>0;s.status='result';s.score+=s.won?100+s.bots*10:0;s.pendingShots=[];s.enemyAttacks=[];s.threats=[];s.burns=[];s.feedback=[];s.killEffects=[];s.defenseFx=null;s.upgradeFx=null;s.burstTicks=0;return s;}
     const boss = level.encounters[s.encounter];
     if (boss && s.progress >= boss.progress) { s.progress = boss.progress; enterArena(s); }
     if (s.progress >= 100) { s.status = 'result'; s.won = s.bots > 0 && s.bossDefeated; s.score += s.won ? s.bots * 20 + 100 : 0; s.pendingShots = []; s.burns = []; s.threats = []; s.enemyAttacks = []; }

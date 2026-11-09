@@ -1,3 +1,4 @@
+import { sortieGoalV39 } from './sortiesV39';
 import { gameReducer, gateGroundY, playerLaneFor, GATE_CONTACT_Y, type GameState, type Action } from './simulation';
 import { STORY_CHAPTERS } from './story';
 import { getLevel, hazardLaneAt } from './level';
@@ -52,9 +53,10 @@ export function campaignReducer(state:CampaignState,action:CampaignAction):Campa
  if(n.scene&&(action.type==='TICK'||action.type==='MOVE_LANE'||action.type==='ACTIVATE_BURST'))return state;
  const next=gameReducer(state,action as Action);
  if(next===state)return state;
- if('garage' in action){const narrative=freshNarrative();narrative.replay=normalizeGarage(action.garage).completedLevels[next.levelIndex]===true;if(next.status==='running'){narrative.scene={kind:'briefing',step:0,synced:0};narrative.seen=['briefing'];}return {...next,narrative};}
+ if('garage' in action){const narrative=freshNarrative();if(next.sortie){narrative.radio=radio('sortie-brief',next.sortie.name+'：'+sortieGoalV39(next.sortie)+'，抵达终点后结算。');return {...next,narrative};}narrative.replay=normalizeGarage(action.garage).completedLevels[next.levelIndex]===true;if(next.status==='running'){narrative.scene={kind:'briefing',step:0,synced:0};narrative.seen=['briefing'];}return {...next,narrative};}
  if(action.type!=='TICK')return {...next,narrative:n};
  const narrative:Narrative={...n,seen:[...n.seen],radio:n.radio&&n.radio.ticks>1?{...n.radio,ticks:n.radio.ticks-1}:null};
+ if(next.sortie)return {...next,narrative:{...narrative,radio:next.status==='result'||next.status==='defeat'?null:narrative.radio}};
  if(next.status==='running'&&n.objective==='pending'){
   const previousY=gateGroundY(state.progress,n.relayMark),y=gateGroundY(next.progress,n.relayMark);
   if(y>=GATE_CONTACT_Y&&previousY<=GATE_CONTACT_Y+3&&playerLaneFor(next)===n.relayLane){

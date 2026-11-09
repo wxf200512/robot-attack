@@ -1,3 +1,6 @@
+import { SortieSelectorV39, SortieHudV39 } from './SortieSelectorV39';
+import { findSortieV39, recordSortieV39, runProgressV39, sortieCountV39, sortieGoalV39, gateVisibleV39 } from './sortiesV39';
+import './sortiesV39.css';
 import { PART_DAMAGE_V38 } from './partDamageV38';
 import { RoadWorldV37 } from './RoadWorldV37';
 import { ROAD_TILES_V37 } from './roadMotionV37';
@@ -129,6 +132,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
   const device=navigator as Navigator&{deviceMemory?:number;connection?:{saveData?:boolean}};
   const quality = resolveQuality(settings, navigator.hardwareConcurrency || 4, reducedMotion,device.deviceMemory??0,device.connection?.saveData??false);
   const [garage, setGarage] = useState<Garage>(readGarage);
+  const [sortieChoice,setSortieChoice]=useState<string|null>(null);
   const [storyProgress,setStoryProgress]=useState(readStoryProgress);
   const [storyView,setStoryView]=useState<'comic'|'world'|null>(null);
   const storyWasOpen=useRef(storyView!==null);
@@ -173,7 +177,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
     setEarnedParts(earned);
     setGarage((current) => {
       const updated = {
-        ...recordLevelCompletion(current, { status:game.status, won:game.won, bossDefeated:game.bossDefeated, progress:game.progress, levelIndex:game.levelIndex,protocol:game.ops.protocol }),
+        ...recordSortieV39(recordLevelCompletion(current, { status:game.status, won:game.won, bossDefeated:game.bossDefeated, progress:game.progress, levelIndex:game.levelIndex,protocol:game.ops.protocol }),game),
         parts: current.parts + earned,
         runs: current.runs + 1,
         wins: current.wins + Number(game.won),
@@ -181,7 +185,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
       };
       return updated;
     });
-  }, [game.status, game.runId, game.score, game.won, game.levelIndex, game.bossDefeated, game.progress,game.ops.bonusParts,game.ops.protocol,resultReward,previewState]);
+  }, [game.status, game.runId, game.score, game.won, game.levelIndex, game.bossDefeated, game.progress,game.ops.bonusParts,game.ops.protocol,resultReward,previewState,game]);
 
   useEffect(() => {if(!previewState)saveGarage(garage);}, [garage,previewState]);
   useEffect(()=>{if(!previewState)saveStoryProgress(storyProgress);},[storyProgress,previewState]);
@@ -230,7 +234,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
   const start = () => {
     if (!garage.tutorialCompleted) { setTrainingMode('first'); return; }
     setEarnedParts(0);
-    dispatch({ type: 'START', garage });
+    if(sortieChoice&&findSortieV39(sortieChoice)?.level===game.levelIndex)dispatch({type:'START_SORTIE',key:sortieChoice,garage});else dispatch({ type: 'START', garage });
   };
   const goHome = () => {
     if(previewState)return;
@@ -247,12 +251,14 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
     setGarageOpen(true);
   };
 
+  const selectedSortie=sortieChoice&&findSortieV39(sortieChoice)?.level===game.levelIndex?findSortieV39(sortieChoice):undefined;
+  const displayProgress=runProgressV39(game);
   const visibleBots = Math.min(game.bots, 11);
   const formationColumns = visibleBots <= 1 ? 1 : visibleBots <= 4 ? 2 : 3;
   const robotPositions = playerFormation(game);
   const nextGateProgress = LEVEL.gateMarks[game.gate];
   const gateApproach = nextGateProgress === undefined ? 0 : Math.max(0, Math.min(1, (game.progress - nextGateProgress + 12) / 14));
-  const showRewardGates = game.status === 'running' && nextGateProgress !== undefined && game.progress >= nextGateProgress - 12;
+  const showRewardGates = gateVisibleV39(game,nextGateProgress);
   const gateOptions = gateChoicesFor(game);
   const visibleHazards = (game.status === 'running' || (game.status === 'paused' && game.resumeStatus === 'running')) ? LEVEL.hazards.flatMap((h, index) =>
     game.hazardHps[index] > 0 && game.progress >= h.progress - 14 && game.progress < h.progress
@@ -263,7 +269,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
   const displayStatus = game.status === 'paused' ? game.resumeStatus : game.status;
   const bossScale = arena ? 1.12 * (1 + rushProgress(game) * .25) : .95;
   const rushVisual = displayStatus === 'battle' && isRush(game) && (game.bossStep === 'warning' || game.bossStep === 'rush');
-  const showEncounter = displayStatus === 'running' || displayStatus === 'boss-victory' || (!game.bossDefeated && encounterProgress !== undefined && game.progress >= encounterProgress - 5);
+  const showEncounter = !game.sortie&&(displayStatus === 'running' || displayStatus === 'boss-victory' || (!game.bossDefeated && encounterProgress !== undefined && game.progress >= encounterProgress - 5));
   const encounterLabel = LEVEL.encounters[game.encounter]?.label ?? '轨道维修站';
   const activeWeapon = effectiveWeapon(game);
   const comboFeedback=[game.comboHeal>0?`维修 +${game.comboHeal}`:'',game.burstTicks===0?'能量加成':''].filter(Boolean).join(' · ')||'连击达成';
@@ -1038,11 +1044,11 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
 
 
         <div className="toybot-stats">
-          <div className="toybot-pill"><small>{frontlineStage(game.levelIndex,game.progress).name}</small><b>{Math.floor(game.roadTicks/600)}:{String(Math.floor(game.roadTicks/10)%60).padStart(2,'0')}<em className="frontline-time-goal"> / 2:00</em></b></div>
+          <div className="toybot-pill"><small>{frontlineStage(game.levelIndex,game.progress).name}</small><b>{Math.floor(game.roadTicks/600)}:{String(Math.floor(game.roadTicks/10)%60).padStart(2,'0')}<em className="frontline-time-goal">{game.sortie?' · 短关':' / 2:00'}</em></b></div>
           <div className="toybot-pill"><small>修复分数</small><b>{game.score}</b></div>
         </div>
-        <div className="toybot-meter" aria-label={`关卡进度 ${Math.floor(game.progress)}%`}>
-          <span style={{ width: `${game.progress}%` }} />
+        <div className="toybot-meter" aria-label={`关卡进度 ${Math.floor(displayProgress)}%`}>
+          <span style={{ width: `${displayProgress}%` }} />
         </div>
 
         {showEncounter && (arena||displayStatus==='running') && displayStatus !== 'result' && (
@@ -1054,7 +1060,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
         )}
 
         {canShoot(game.status)&&!game.narrative.scene&&<div className="toybot-story-top"><StoryMission game={game}/><StoryRadio game={game} dispatch={dispatch}/></div>}
-        <OperationsHud game={game}/>
+        {game.sortie?<SortieHudV39 game={game}/>:<OperationsHud game={game}/>}
         {game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'&&<div className="toybot-bottom cockpit-bottom">
           <Cockpit game={game} blocked={!!game.narrative.scene} onMove={lane=>dispatch({type:'MOVE_LANE',lane})} onBurst={()=>dispatch({type:'ACTIVATE_BURST'})}/>
         </div>}
@@ -1072,7 +1078,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
                 <button type="button" className="menu-square-button" onClick={openSettings} aria-label="声音与画面设置"><MenuIcon name="settings"/></button>
               </header>
               <div className="toybot-home-hero">
-                <div className="toybot-home-heading"><div className="toybot-home-kicker">TOYBOT BREAKOUT</div><h1 id="toybot-home-title">玩具城突围</h1><p className="toybot-home-subtitle">归航行动 · 把伙伴接回来</p></div>
+                <div className="toybot-home-heading"><div className="toybot-home-kicker">TOYBOT / 五区15项作战</div><h1 id="toybot-home-title">玩具城突围</h1><p className="toybot-home-subtitle">归航行动 · 把伙伴接回来</p></div>
                 <button type="button" className="menu-world-shortcut" onClick={()=>setStoryView('world')}><MenuIcon name="world"/><span>世界档案</span></button>
                 <MechShowcase mechClass={garage.mechClass} weapon={garage.equipped.weapon} armor={garage.equipped.armor} core={garage.equipped.core} className="toybot-home-mech" />
                 <div className="toybot-mech-caption"><small>{mechSpec(garage.mechClass).role} / 出击机型</small><b>{mechSpec(garage.mechClass).name}</b><small>{coreSkill(garage.mechClass).name}</small></div>
@@ -1083,10 +1089,10 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
                 </div>
               </div>
               <div className="toybot-home-dashboard">
-                <div className="toybot-mission-heading"><span className="menu-sector-number">{String(game.levelIndex+1).padStart(2,'0')}</span><div><small>主线任务 · {STORY_CHAPTERS[game.levelIndex].title}</small><b>{LEVEL.title}</b></div><span className="menu-sector-status">{garage.completedLevels[game.levelIndex]?'已通关':'待突破'}</span></div>
+                <div className="toybot-mission-heading"><span className="menu-sector-number">{String(game.levelIndex+1).padStart(2,'0')}</span><div><small>{selectedSortie?'短关任务 · '+selectedSortie.name:'主线任务 · '+STORY_CHAPTERS[game.levelIndex].title}</small><b>{LEVEL.title}</b></div><span className="menu-sector-status">{selectedSortie?(garage.sortieClears??[]).includes(selectedSortie.key)?'已完成':'待挑战':garage.completedLevels[game.levelIndex]?'已通关':'待突破'}</span></div>
                 <div className="toybot-level-select" role="group" aria-label="选择关卡">{LEVELS.map((level, index) => <button key={level.title} type="button" disabled={!canEnterLevel(garage,index)} title={!canEnterLevel(garage,index) ? '请先通关第 ' + index + ' 关' : garage.completedLevels[index] ? '已通关，可再次挑战' : '已解锁，可以挑战'} aria-pressed={game.levelIndex === index} aria-label={`第 ${index + 1} 关 ${level.title}`} onClick={() => dispatch({ type: 'SELECT_LEVEL', levelIndex: index, garage })}><b>{String(index + 1).padStart(2, '0')}</b><small>{!canEnterLevel(garage,index) ? '未解锁' : garage.completedLevels[index] ? '已通关' : '可挑战'}</small></button>)}</div>
-                <ChallengePicker game={game} garage={garage} onSelect={protocol=>dispatch({type:'SET_PROTOCOL',protocol,garage})}/><p className="toybot-home-story-objective">{STORY_CHAPTERS[game.levelIndex].objective}</p>
-                <button type="button" className="toybot-primary toybot-home-start" onClick={start}><span className="menu-play" aria-hidden="true">▶</span><span>{garage.tutorialCompleted ? '开始突围' : '开始基础训练'}<small>单机甲出发 · 自动攻击</small></span><span className="menu-launch-arrow" aria-hidden="true">››</span></button>
+                <SortieSelectorV39 garage={garage} level={game.levelIndex} selected={selectedSortie?.key??null} onSelect={setSortieChoice}/>{!selectedSortie&&<ChallengePicker game={game} garage={garage} onSelect={protocol=>dispatch({type:'SET_PROTOCOL',protocol,garage})}/>}<p className="toybot-home-story-objective">{selectedSortie?selectedSortie.name+' · '+sortieGoalV39(selectedSortie)+' · 首通额外零件':STORY_CHAPTERS[game.levelIndex].objective}</p>
+                <button type="button" className="toybot-primary toybot-home-start" onClick={start}><span className="menu-play" aria-hidden="true">▶</span><span>{garage.tutorialCompleted ? selectedSortie?'开始短关':'开始突围' : '开始基础训练'}<small>单机甲出发 · 自动攻击</small></span><span className="menu-launch-arrow" aria-hidden="true">››</span></button>
               </div>
               <nav className="menu-bottom-nav" aria-label="游戏功能"><span className="is-current" aria-current="page"><MenuIcon name="battle"/><b>出击</b></span><button type="button" onClick={openGarage}><MenuIcon name="garage"/><b>机库</b></button><button type="button" onClick={()=>setStoryView('comic')}><MenuIcon name="story"/><b>剧情</b></button><button type="button" onClick={()=>setTrainingMode('replay')}><MenuIcon name="training"/><b>训练</b></button></nav>
             </div>}
@@ -1101,11 +1107,11 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
               <h2 id="toybot-pause-title">作战暂停</h2>
               <p className="toybot-pause-context">第 {game.levelIndex + 1} 关 · {LEVEL.title}</p>
               <div className="toybot-pause-stats">
-                <div><small>进度</small><strong>{Math.floor(game.progress)}%</strong></div>
+                <div><small>进度</small><strong>{Math.floor(displayProgress)}%</strong></div>
                 <div><small>小队</small><strong>{game.bots} 台</strong></div>
                 <div><small>核心生命</small><strong>{game.playerHp}<small> / {game.playerMaxHp}</small></strong></div>
               </div>
-              <div className="toybot-pause-progress" aria-label={`当前进度 ${Math.floor(game.progress)}%`}><span style={{ width: `${game.progress}%` }} /></div>
+              <div className="toybot-pause-progress" aria-label={`当前进度 ${Math.floor(displayProgress)}%`}><span style={{ width: `${displayProgress}%` }} /></div>
               <p className="menu-pause-note">战场已冻结，准备好后继续出击</p>
               <button type="button" className="toybot-primary toybot-pause-resume" onClick={() => dispatch({ type: 'RESUME' })}>继续游戏 <span aria-hidden="true">›</span></button>
               <button type="button" className="toybot-pause-settings" onClick={openSettings}>声音与画面设置</button>
@@ -1120,16 +1126,16 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
               <div className="toybot-debrief-topline"><span>战后报告 / 0{game.levelIndex + 1}</span><span>{game.won ? '任务完成' : '机甲回收'}</span></div>
               <div className={game.won ? 'menu-victory-art' : undefined} aria-hidden="true">{game.won ? <><img className="menu-victory-medal" src={UI_MENU_ART.medal} alt="" decoding="async" draggable={false}/><div className="toybot-v28-victory-mech"><MechShowcase mechClass={game.mechClass} weapon={activeWeapon>0} armor={game.armorLevel>0} core={visualCore>0}/><BattleWear amount={game.report.taken/Math.max(1,game.playerMaxHp)}/></div></> : <div className="toybot-result-crest" style={{ backgroundImage: 'url(' + UI_RESULT_CRESTS + ')', backgroundPositionX: '100%' }} />}</div>
               <div className="toybot-debrief-kicker">{game.won ? 'MISSION COMPLETE' : 'MISSION INCOMPLETE'}</div>
-              <h2 id="result-title">{game.won ? (game.levelIndex === LEVELS.length - 1 ? '全境突破' : '突围成功') : '突围受阻'}</h2>
-              <p className="toybot-result-summary">{game.won ? LEVEL.encounters[0].label + ' 已击败 · 区域安全' : game.defeatReason === 'boss-wipe' ? '核心生命耗尽，整备后再次出击' : '小队停止作战，返回机库重新整备'}</p>
+              <h2 id="result-title">{game.sortie?(game.won?'短关完成':'目标未达成'):game.won ? (game.levelIndex === LEVELS.length - 1 ? '全境突破' : '突围成功') : '突围受阻'}</h2>
+              <p className="toybot-result-summary">{game.sortie?game.sortie.name+' · '+sortieGoalV39(game.sortie)+' · 实际 '+sortieCountV39(game):game.won ? LEVEL.encounters[0].label + ' 已击败 · 区域安全' : game.defeatReason === 'boss-wipe' ? '核心生命耗尽，整备后再次出击' : '小队停止作战，返回机库重新整备'}</p>
               <div className="toybot-debrief-score"><span>本次作战得分</span><strong>{game.score.toLocaleString()}</strong><small>历史最佳 {garage.bestScore.toLocaleString()}</small></div>
-              <div className="toybot-ops-debrief">任务 {game.ops.mission.status==='done'?'完成':'未完成'} · 救援 {game.ops.event.status==='done'?'成功':'未完成'} · 破阵 {game.ops.broken}/3 · 完美闪避 {game.ops.perfects}{game.won&&game.ops.protocol!=='standard'&&<b><OperationSprite cell={2}/>协议徽章已解锁</b>}</div><div className="toybot-debrief-rewards"><div><small>回收零件</small><b>◈ +{previewState?resultReward:earnedParts}</b></div><div><small>当前库存</small><b>{garage.parts+(previewState?resultReward:0)}</b></div><div><small>{game.won ? '归队机甲' : '关卡进度'}</small><b>{game.won ? game.bots + ' 台' : Math.floor(game.progress) + '%'}</b></div></div>
+              <div className="toybot-ops-debrief">{game.sortie?<>{sortieGoalV39(game.sortie)} · 完成 {sortieCountV39(game)}/{game.sortie.target}</>:<>任务 {game.ops.mission.status==='done'?'完成':'未完成'} · 救援 {game.ops.event.status==='done'?'成功':'未完成'} · 破阵 {game.ops.broken}/3 · 完美闪避 {game.ops.perfects}{game.won&&game.ops.protocol!=='standard'&&<b><OperationSprite cell={2}/>协议徽章已解锁</b>}</>}</div><div className="toybot-debrief-rewards"><div><small>回收零件</small><b>◈ +{previewState?resultReward:earnedParts}</b></div><div><small>当前库存</small><b>{garage.parts+(previewState?resultReward:0)}</b></div><div><small>{game.won ? '归队机甲' : '关卡进度'}</small><b>{game.won ? game.bots + ' 台' : Math.floor(game.progress) + '%'}</b></div></div>
               <p className="toybot-run-highlights">路段击破 <b>{game.kills}</b> · 最佳连击 <b>{game.bestCombo}</b> · 核心爆发 <b>{game.burstSequence}</b></p>
               {!game.won&&<button type="button" className="toybot-primary toybot-quick-retry" onClick={restart}>立即重试本关 <span aria-hidden="true">↗</span></button>}
-              <RunAnalysis game={game}/><RunGoals game={game} garage={previewState?{...garage,parts:garage.parts+resultReward}:garage} onGarage={openGarage}/>
+              {!game.sortie&&<RunAnalysis game={game}/>}<RunGoals game={game} garage={previewState?{...garage,parts:garage.parts+resultReward}:garage} onGarage={openGarage}/>
 
               <div className={'toybot-debrief-actions' + (!game.won || game.levelIndex === LEVELS.length - 1 ? ' is-single-route' : '')}>
-                {game.won && game.levelIndex < LEVELS.length - 1 && <button type="button" className="toybot-primary" onClick={() => { setEarnedParts(0); dispatch({ type: 'NEXT_LEVEL', garage }); }}>前往第 {game.levelIndex + 2} 关 <span aria-hidden="true">›</span></button>}
+                {game.won && !game.sortie && game.levelIndex < LEVELS.length - 1 && <button type="button" className="toybot-primary" onClick={() => { setSortieChoice(null);setEarnedParts(0); dispatch({ type: 'NEXT_LEVEL', garage }); }}>前往第 {game.levelIndex + 2} 关 <span aria-hidden="true">›</span></button>}
                 {game.won&&<button type="button" className={game.won && game.levelIndex < LEVELS.length - 1 ? 'toybot-secondary' : 'toybot-primary'} onClick={restart}>{game.won ? '再次挑战本关' : '重新出击'}<span aria-hidden="true">↗</span></button>}
                 <button type="button" className="toybot-result-garage" onClick={openGarage}>机库整备 <span aria-hidden="true">›</span></button>
                 <button type="button" className="toybot-home-exit" onClick={goHome}>返回游戏首页</button>

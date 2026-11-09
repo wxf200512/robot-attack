@@ -15,7 +15,7 @@ export const FUSIONS: Record<Fusion,{name:string;pair:RunModule[];detail:string;
 };
 export const eligibleFusion = (modules:Record<RunModule,number>) => (Object.keys(FUSIONS) as Fusion[]).find(key=>FUSIONS[key].pair.every(m=>modules[m]>=1))??null;
 export type FieldObjective = {lane:number;mark:number;hp:number;maxHp:number;status:'pending'|'done'|'missed'};
-export type BossPart = {kind:'cannon'|'shield'|'engine';name:string;lane:number;hp:number;maxHp:number};
+export type BossPart = {kind:'cannon'|'shield'|'engine';name:string;lane:number;hp:number;maxHp:number;brokenAt?:number};
 export type Operations = {
  roadDodgeTicks:number;roadFromLane:number;protocol:Protocol;fusion:Fusion|null;perfectCooldown:number;perfectTicks:number;perfects:number;counterShots:number;
  mission:FieldObjective;event:FieldObjective;eventWarning:number;eventFired:boolean;eventLane:number;

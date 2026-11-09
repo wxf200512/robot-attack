@@ -3,16 +3,18 @@ import { STORY_CHAPTERS } from './story';
 import { getLevel, hazardLaneAt } from './level';
 import { normalizeGarage } from './progression';
 
-export const CHAPTER_FILMS=[1,2,3,4,5].map(n=>`/games/toybot-breakout/optimized/chapter-film-${n}-v12.jpg`);
-export const CHAPTER_FILM_RATIOS=[1,1,1,128/57,128/57];
+export const CHAPTER_FILMS=[1,2,3,4,5].map(n=>`/games/toybot-breakout/optimized/chapter-film-${n}-v38.jpg`);
+export const CHAPTER_FILM_RATIOS=[1,1,1,1,1];
 export const RELAY_ART='/games/toybot-breakout/optimized/story-relay-v12.png';
 export const CHAPTER_DIALOGUE=[
-  {intro:'出口被铸炉监工封住了。附近还有失联伙伴，先让他们听见我们的信号。',boss:'检测到未登记机体。执行高温隔离。',reply:'我们来接伙伴回家。请让开出口。',lore:'这些机体原本负责生产补给。静默协议把他们自己的工作区变成了隔离区。',win:'补给线恢复了！高空航道的维护路径已经接通。'},
-  {intro:'运输桥被蜂群接管了。沿着维护航标前进，我们去恢复空中航路。',boss:'航路已关闭。所有游离能源，立即归巢。',reply:'伙伴不是需要被回收的能源。我们会打开航路。',lore:'这些蜂群以前运送零件。最后一道错误指令，让它们开始回收仍在工作的机体。',win:'蜂群的接管信号停了。沿着这条航路，我们能抵达城市内墙。'},
-  {intro:'堡垒挡住了能源区入口。它还在保护城市，却认不出需要通行的居民。',boss:'城门保持封闭。未经授权，不得通行。',reply:'城门之外，也有你应该保护的居民。',lore:'护盾塔把城防网接进堡垒的装甲。我们要切断错误接管，保住城市的守护者。',win:'接管链路中断，居民通行权限恢复。城门开了，能源塔就在前面。'},
-  {intro:'供能平台正在失稳。接通维护信号，再去切断持续放电的导电核心。',boss:'风暴尚未解除。切换极性，维持隔离。',reply:'继续隔离只会让风暴更强。让我修好它。',lore:'先知已经发现控制冲突，但静默协议不允许它停止隔离。它也在等待有人结束这一切。',win:'供能稳定了。封锁指令来自中央基地——静默协议还在执行。'},
-  {intro:'四区权限已接通。解除符印、突破裁决，我们就能关闭静默协议。',boss:'全城进入静默。所有自主机体，停止运行。',reply:'大家还在等着回家。米可，和我一起把灯点亮。',lore:'中枢将失去的权限集中到帝皇身上。恢复城市，是让守护者重新听见居民的声音。',win:'黎明中枢重启完成。五区重新开放，欢迎回家，火花。'},
+ {intro:'第一盏归航灯就在工厂出口。看准支援门，接回伙伴，再替监工解除错误的安全锁。',boss:'检测到未归箱机体。出口保持高温隔离。',reply:'灯是给伙伴照路的，不是把伙伴留在门外。',lore:'这些补给是工厂伙伴留下的。好门帮你改装，回收闸会削弱机体，看清再选。',win:'工厂航标亮了！监工停止误射，第一批巡游灯具正在出库。'},
+ {intro:'蜂后把伙伴当成了待回收货物。沿运输桥接应他们，别让护卫的扑击截断队伍。',boss:'归巢回收已启动。所有游离机体，立即交还蜂巢。',reply:'他们是同行的伙伴，不是你的货物。',lore:'蜂群接到了过期的归箱指令。击破护卫能中止扑击；来不及就躲开它锁定的那一列。',win:'蜂后收到正确名单了！蜂群重新开始运送零件，而不是回收伙伴。'},
+ {intro:'城门还没认出我们。拆开城防广播箱，把获救伙伴的归航名单送进去。',boss:'未收到五区安全回执。城门禁止开放。',reply:'看看我身后的伙伴。他们也属于这座城。',lore:'城防护盾连着机体上的安全锁。拆掉部件，是让堡垒重新听懂居民的声音。',win:'城防航标接通。堡垒放下重盾，城外的伙伴终于能够进城。'},
+ {intro:'米可在风暴里听见了求救声。先修复中继，再帮先知切断失控的放电回路。',boss:'极性冲突……归箱协议禁止中断……请接收维护信号。',reply:'收到你的信号。坚持住，我们来解除锁定。',lore:'先知一直在抵抗错误指令。预警是它留给我们的机会，沿空白轨道前进。',win:'能源航标恢复！先知送来了最终指令的地址：中央王座运载基地。'},
+ {intro:'四区航标已亮。前面是横跨三路的王座要塞，把最后一次归航呼叫送到它的星核里。',boss:'安全回执不完整。全城玩具，立即归箱。',reply:'我们带来的不只是回执，是每一位伙伴的声音。',lore:'要塞把整座城当成了一个储物箱。三路都能命中机体，拆掉锁定部件，给核心留出通信窗口。',win:'五区归航信号完整！归箱指令撤销，王座要塞展开成巡游领航台。欢迎回家，所有伙伴。'},
 ];
+export const CHAPTER_BREAK_RADIO=['米可：安全锁断连，监工正在重新识别我们。','蜂后：归航名单……已收到。请停止回收同行机体。','米可：护盾锁已解除。把伙伴的名单送进核心。','先知：维护信号恢复。谢谢你听见了我。','米可：王座锁正在松开，给星核送上最后的归航信号。'];
+export const CHAPTER_TURN_RADIO=['米可：监工开启了备用炉膛。留出安全列再反击。','米可：蜂后展开翼巢。先看护卫的锁轨预警。','米可：堡垒启用第二道城门锁。先拆护盾链路。','先知：下一段极性即将变化。沿空白轨道移动。','米可：王座要塞进入最终校验。三路集中输出，别站进裁决预警。'];
 export type SupportRoute='rescue'|'signal';
 export type NarrativeScene={kind:'briefing'|'confrontation'|'aftermath';step:0|1;synced:number};
 export type Narrative={scene:NarrativeScene|null;replay:boolean;route:SupportRoute|null;objective:'inactive'|'pending'|'collected'|'missed';relayLane:number;relayMark:number;radio:{id:string;text:string;ticks:number}|null;seen:string[]};
@@ -26,9 +28,9 @@ export function filmFrame(kind:NarrativeScene['kind'],step:number,clock:number,r
 export function sceneCopy(state:CampaignState){
  const scene=state.narrative.scene,chapter=STORY_CHAPTERS[state.levelIndex],lines=CHAPTER_DIALOGUE[state.levelIndex];
  if(!scene)return {speaker:'米可',title:chapter.title,line:'',hint:''};
- if(scene.kind==='briefing')return scene.step===0?{speaker:'米可 / MIKO',title:state.narrative.replay?chapter.title+' · 维修巡查':chapter.title,line:state.narrative.replay?'这里的权限已经恢复。这次回收残留故障作战壳，接应仍在维修的伙伴，让城市继续正常运转。':lines.intro,hint:state.narrative.replay?'回收故障作战壳，复检'+chapter.permission:chapter.objective}:{speaker:'米可 / 支援频道',title:'选择这次行动的支援',line:'选定支援后，驶入发光中继所在轨道，接回伙伴或接通护盾。',hint:''};
- if(scene.kind==='confrontation')return {speaker:scene.step===0?(state.narrative.replay?'残留封锁信号':'守护者 / 接管中'):'火花 / SPK-01',title:scene.step===0?'封锁指令':'自主回应',line:scene.step===0?lines.boss:lines.reply,hint:scene.step===0?'击破作战外壳，解除错误接管。':chapter.tip};
- return {speaker:state.levelIndex===4?'黎明中枢 / 通信恢复':'米可 / 回收频道',title:scene.step===0?(state.narrative.replay?chapter.permission+'复检完成':state.levelIndex===4?'黎明，重新亮起':chapter.permission+'已恢复'):'同步城市维护记录',line:scene.step===0?(state.narrative.replay?'残留作战壳已回收，维护网络保持在线。辛苦了，队长，伙伴们的归途更安全了。':lines.win):'依次接通三个维护节点，把这次行动传回城市网络。',hint:scene.step===0?(state.narrative.objective==='collected'?'你接通的中继也已恢复，伙伴正在返回航路。':'城市权限已恢复。遗漏的中继会交由维修队处理。'):'战斗胜利已确认；可以跳过同步演出，不影响奖励与解锁。'};
+ if(scene.kind==='briefing')return scene.step===0?{speaker:'米可 / MIKO',title:state.narrative.replay?chapter.title+' · 维修巡查':chapter.title,line:state.narrative.replay?'航标已经点亮。这次清理残留的回收作战壳，接应维修伙伴，为下一次归航巡游补齐零件。':lines.intro,hint:state.narrative.replay?'回收故障作战壳，复检'+chapter.permission:chapter.objective}:{speaker:'米可 / 支援频道',title:'选择这次行动的支援',line:'选定支援后，驶入发光中继所在轨道，接回伙伴或接通护盾。',hint:''};
+ if(scene.kind==='confrontation')return {speaker:scene.step===0?(state.narrative.replay?'残留封锁信号':'守护者 / 接管中'):'火花 / SPK-01',title:scene.step===0?'封锁指令':'自主回应',line:scene.step===0?lines.boss:lines.reply,hint:scene.step===0?'只解除封锁部件，接回被错误指令困住的守护者。':chapter.tip};
+ return {speaker:state.levelIndex===4?'归航中枢 / 通信恢复':'米可 / 回收频道',title:scene.step===0?(state.narrative.replay?chapter.permission+'复检完成':state.levelIndex===4?'归航巡游，重新出发':chapter.permission+'已恢复'):'同步城市维护记录',line:scene.step===0?(state.narrative.replay?'残留回收作战壳已拆解，航标保持在线。这次带回的零件，会让下一支归航队更安全。':lines.win):'依次接通三个维护节点，把这次行动传回城市网络。',hint:scene.step===0?(state.narrative.objective==='collected'?'你接通的中继已加入归航网络，伙伴正在返回航路。':'本区航标已点亮。遗漏的中继会交由维修队处理。'):'战斗胜利已确认；可以跳过同步演出，不影响奖励与解锁。'};
 }
 export function campaignReducer(state:CampaignState,action:CampaignAction):CampaignState{
  const n=state.narrative;
@@ -58,12 +60,14 @@ export function campaignReducer(state:CampaignState,action:CampaignAction):Campa
   if(y>=GATE_CONTACT_Y&&previousY<=GATE_CONTACT_Y+3&&playerLaneFor(next)===n.relayLane){
    narrative.objective='collected';
    if(n.route==='rescue'){next.bots+=Number(next.bots<11);}else next.shieldCharges+=1;
-   narrative.radio=radio('support-done',n.route==='rescue'?'伙伴：收到你的呼叫！这次我们一起回家。〔机甲 +1〕':'米可：中继接通，城市的维护护盾已到位。〔护盾 +1〕');
-  }else if(y>GATE_CONTACT_Y+3){narrative.objective='missed';narrative.radio=radio('support-missed','米可：没能接上中继也没关系，维修队会接手。我们继续恢复城市权限。');}
+   narrative.radio=radio('support-done',n.route==='rescue'?'伙伴：收到归航呼叫！队伍里给我留个位置。〔机甲 +1〕':'米可：航标护盾接通，这一路我替你照看。〔护盾 +1〕');
+  }else if(y>GATE_CONTACT_Y+3){narrative.objective='missed';narrative.radio=radio('support-missed','米可：没能接上中继也没关系，维修队会接手。我们继续点亮归航航标。');}
  }
  if(next.status==='running'&&next.progress>=55&&!narrative.seen.includes('lore')){narrative.seen.push('lore');narrative.radio=radio('sector-lore',CHAPTER_DIALOGUE[next.levelIndex].lore);}
  if(next.status==='boss-intro'&&!narrative.seen.includes('confrontation')){narrative.seen.push('confrontation');narrative.radio=null;narrative.scene={kind:'confrontation',step:0,synced:0};}
- if(next.status==='battle'&&next.bossStage===2&&!narrative.seen.includes('turn')){narrative.seen.push('turn');narrative.radio=radio('boss-turn','米可：接管链路正在松动。'+STORY_CHAPTERS[next.levelIndex].tip);}
+ if(next.status==='battle'&&next.bossStage===2&&!narrative.seen.includes('turn')){narrative.seen.push('turn');narrative.radio=radio('boss-turn',CHAPTER_TURN_RADIO[next.levelIndex]);}
+ if(next.status==='battle'&&next.ops.broken>0&&!narrative.seen.includes('part-release')&&!narrative.radio){narrative.seen.push('part-release');narrative.radio=radio('part-release',CHAPTER_BREAK_RADIO[next.levelIndex]);}
+ if(next.status==='running'&&next.gateCollected&&!state.gateCollected&&!narrative.seen.includes('supply-story')&&!narrative.radio){narrative.seen.push('supply-story');const option=next.gateChoices[next.gate]?.[0];narrative.radio=radio('supply-story',option?.polarity==='penalty'?'米可：那是误导机体的回收闸。看清标记，再选下一道门。':'米可：这是伙伴留下的支援门。把力量带上，把同行者接回来。');}
  if(next.status==='result'&&next.won&&next.bossDefeated&&!narrative.seen.includes('aftermath')){narrative.seen.push('aftermath');narrative.radio=null;narrative.scene={kind:'aftermath',step:0,synced:0};}
  if(next.status==='defeat'||next.status==='result')narrative.radio=null;
  return {...next,narrative};

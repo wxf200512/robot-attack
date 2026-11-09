@@ -18,8 +18,8 @@ export const UI_HANGAR_ART = ROOT + 'ui-hangar-ai-v6.jpg';
 export const UI_RESULT_CRESTS = ROOT + 'ui-result-crests-ai-v6.png';
 export const UI_MENU_ART = { hangar: ROOT + 'ui-menu-hangar-v19.jpg', victory: ROOT + 'ui-menu-victory-v14.jpg', medal: ROOT + 'ui-menu-medal-v14.png' };
 export const UI_MENU_ICONS = ROOT + 'ui-menu-icons-v15.png';
-export const STORY_ART = [1,2,3,4].map(page=>ROOT + `story-comic-${page}-v11.jpg`);
-export const STORY_COVER = ROOT + 'story-cover-v11.jpg';
+export const STORY_ART = [1,2,3,4].map(page=>ROOT + `story-comic-${page}-v38.jpg`);
+export const STORY_COVER = ROOT + 'story-comic-1-v38.jpg';
 
 export const MECH_CLASS_ART = { heavy: ROOT + 'mech-heavy-ai-v7.png', blade: ROOT + 'mech-blade-ai-v7.png' };
 export const BLADE_SLASH_ART = ROOT + 'blade-slash-ai-v7.png';

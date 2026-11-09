@@ -330,6 +330,7 @@ const damageTarget = (s: GameState, target: Target, index: number, raw: number, 
     recordImpact(s,damage,target,index,tier,lane);s.impactSequence++;s.impactDamage=damage;s.impactTarget=target;s.impactLane=lane;s.impactY=targetY(s,target,index);s.impactX=targetX(s,target,index,lane);s.impactWeaponLevel=tier;
     if(object.hp===0){
       if(target==='part'){
+        s.ops.parts[index].brokenAt=s.battleTime;
         s.ops.broken++;s.ops.breakTicks=18;s.score+=45;gainBurstEnergy(s,12);
         s.threats=s.threats.filter(t=>s.ops.parts[index].kind==='cannon'?!['shell','beam','lava'].includes(t.kind):s.ops.parts[index].kind==='shield'?!['pylon','seal','wall'].includes(t.kind):t.kind!=='minion');
         s.enemyAttacks=[];s.bossSalvos=0;s.bossStep='recovery';s.bossStepTicks=0;s.bossAttackLanes=[];

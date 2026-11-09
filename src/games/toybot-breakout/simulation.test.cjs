@@ -807,7 +807,7 @@ const campaignStart=(route='signal',level=0)=>{let s=campaign.campaignReducer(ca
 test('chapter scenes freeze all simulation and input, survive pause, and skipping resumes without free rewards',()=>{
  let s=campaign.campaignReducer(campaign.createCampaign(initial()),{type:'START',garage});assert.equal(s.narrative.scene.kind,'briefing');assert.equal(s.progress,0);
  assert.equal(s.narrative.replay,true);assert.ok(campaign.sceneCopy(s).title.includes('维修巡查'));
- const fresh=campaign.campaignReducer(campaign.createCampaign(initial()),{type:'START',garage:progression.normalizeGarage({tutorialCompleted:true})});assert.equal(fresh.narrative.replay,false);assert.equal(campaign.sceneCopy(fresh).title,'重燃火花');
+ const fresh=campaign.campaignReducer(campaign.createCampaign(initial()),{type:'START',garage:progression.normalizeGarage({tutorialCompleted:true})});assert.equal(fresh.narrative.replay,false);assert.equal(campaign.sceneCopy(fresh).title,load('story').STORY_CHAPTERS[0].title);
  assert.equal(campaignTick(s),s);assert.equal(campaign.campaignReducer(s,{type:'MOVE_LANE',lane:0}),s);
  s=campaign.campaignReducer(s,{type:'PAUSE'});assert.equal(s.status,'paused');assert.equal(campaignTick(s),s);assert.equal(campaign.campaignReducer(s,{type:'STORY_SKIP'}),s);
  s=campaign.campaignReducer(s,{type:'RESUME'});s=campaign.campaignReducer(s,{type:'STORY_SKIP'});assert.equal(s.narrative.scene,null);assert.equal(s.narrative.route,'signal');assert.equal(s.bots,1);assert.equal(s.shieldCharges,0);assert.ok(campaignTick(s).progress>0);
@@ -2121,4 +2121,22 @@ test('road texture follows distance and predictive movement while pause boss bat
  const {roadOffsetV37:offset}=load('roadMotionV37'),s={...initial(),status:'running',progress:30},step=sim.roadStepFor(s,true);
  assert.ok(offset(s,.9,step)>offset(s,0,step));assert.equal(offset({...s,status:'paused',resumeStatus:'running'},.9,step),offset(s,0,step));assert.equal(offset({...s,status:'battle'},.9,step),offset({...s,status:'battle'},0,step));assert.equal(offset(s,.9,step,true),0);
  const art=load('roadMotionV37');assert.equal(art.ROAD_TILES_V37.length,5);for(const url of art.ROAD_TILES_V37)assert.ok(fs.statSync(path.resolve(__dirname,'../../../public'+url)).size<100000);
+});
+
+test('homecoming part release dialogue is local to combat, nonmodal, once-only and never grants rewards',()=>{
+ const base=campaign.createCampaign(battle());base.ops.broken=1;base.narrative.radio=null;
+ const s=campaignTick(base);assert.equal(s.narrative.radio.id,'part-release');assert.equal(s.narrative.scene,null);assert.equal(s.score,base.score);assert.equal(s.bots,base.bots);assert.equal(s.narrative.seen.includes('part-release'),true);
+ const dismissed=campaign.campaignReducer(s,{type:'STORY_DISMISS_RADIO'});assert.equal(campaignTick(dismissed).narrative.radio,null);
+ const busy=campaignTick({...base,narrative:{...base.narrative,radio:{id:'urgent',text:'预警',ticks:10}}});assert.equal(busy.narrative.radio.id,'urgent');assert.equal(base.narrative.seen.length,0);
+});
+test('part damage animation owns its break timestamp and an old scar cannot replay when another part breaks',()=>{
+ const fx=load('partDamageV38'),base={...battle(),battleTime:20};base.ops.parts=operations.makeBossParts(base);const before=JSON.stringify(base);
+ const hit=tick({...base,pendingShots:[incoming(base,{target:'part',targetIndex:0,lane:sim.bossPartLane(base,0),damage:999})]});const p=hit.ops.parts[0];assert.equal(p.hp,0);assert.equal(p.brokenAt,20);assert.equal(JSON.stringify(base),before);
+ assert.equal(fx.partDamageV38(p,20,0,0).phase,'sparks');assert.equal(fx.partDamageV38(p,24,0,0).phase,'smoke');assert.equal(fx.partDamageV38(p,32,0,0).phase,'settled');
+ assert.equal(fx.partDamageV38(p,40,.8,0).phase,'settled');assert.equal(fx.partDamageV38({...p,brokenAt:40},40,.8,1).phase,'sparks');assert.equal(fx.partDamageV38(p,20,.8,0,true).phase,'settled');assert.equal(fx.partDamageV38({...p,brokenAt:undefined},20,.8,0).phase,'settled');
+});
+test('homecoming comic and five chapter films deploy original raster artwork with transparent local damage',()=>{
+ const m=JSON.parse(fs.readFileSync(path.resolve(__dirname,'story-art-v38.json'),'utf8')),art=load('art');assert.equal(m.filter(x=>x.kind==='comic').length,4);assert.equal(m.filter(x=>x.kind==='chapter'&&x.frames===6).length,5);assert.ok(m.find(x=>x.kind==='damage').transparentFraction>.7);
+ for(const url of [...art.STORY_ART,...campaign.CHAPTER_FILMS]){const bytes=fs.readFileSync(path.resolve(__dirname,'../../../public'+url));assert.equal(bytes.readUInt16BE(0),0xffd8);assert.ok(bytes.length<350000);}
+ assert.ok(campaign.CHAPTER_FILM_RATIOS.every(x=>x===1));assert.equal(new Set(load('story').STORY_CHAPTERS.map(c=>c.permission)).size,5);
 });

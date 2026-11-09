@@ -1,3 +1,4 @@
+import { partDamageV38 } from './partDamageV38';
 import { roadOffsetV37 } from './roadMotionV37';
 import { ARENA_ART_V36, EMPEROR_ART_V36 } from './arenaMotionV36';
 import { BLADE_ATTACK_V35 } from './bladeMotionV35';
@@ -64,6 +65,7 @@ export function paintMotion(root:HTMLElement,s:GameState,alpha:number,entries:Mo
 
 
   }
+  else if(kind==='part-damage-v38'){const part=s.ops.parts[id];if(part){const p=partDamageV38(part,s.battleTime,t,id,reduced);node.style.backgroundPosition=atlasCell(p.frame,p.row,8,3);node.dataset.phase=p.phase;node.style.opacity=String(p.opacity);}}
   else if(kind==='world-decor'){const y=Number(node.dataset.worldY);node.style.top=(node.dataset.worldBoss==='true'?bossScreenY(y):worldScreenY(y))+'%';}
   else if(kind==='muzzle'){const shot=shots.get(id);if(shot){const o=shot.origins[0],x=projectedMuzzleX(shot);node.style.left=x+'%';node.style.top=`calc(${worldScreenY(o.y)}% - ${actorPixels(shot.count,size.width)/4}px)`;}}
   else if(kind==='material'){const f=s.feedback.find(f=>f.id===id);if(f){const p=materialSample(f.kind,f.ticks,t);node.style.backgroundPosition=atlasCell(p.frame,p.row,8,4);}}

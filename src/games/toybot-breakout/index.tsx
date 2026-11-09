@@ -1,3 +1,4 @@
+import { PART_DAMAGE_V38 } from './partDamageV38';
 import { RoadWorldV37 } from './RoadWorldV37';
 import { ROAD_TILES_V37 } from './roadMotionV37';
 import './roadWorldV37.css';
@@ -204,7 +205,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
     return()=>{document.removeEventListener('visibilitychange',visibility);window.removeEventListener('blur',suspend);window.removeEventListener('pagehide',suspend);};
   },[game.status]);
   const warmRoadAssets=game.status==='running';
-  useEffect(()=>{void preloadImages([ROAD_TILES_V37[game.levelIndex],...(game.levelIndex===4?[EMPEROR_ART_V36]:[]),ARENA_ART_V36[game.mechClass],...(game.mechClass==='blade'?[BLADE_ATTACK_V35]:[]),CORE_FX_V34[game.mechClass],RUN_ART[game.mechClass],MOTION_ART[game.mechClass],MATERIAL_ART,PROP_ART,PORTRAIT_ART,REFERENCE_LOGO],'high');},[game.mechClass,game.levelIndex]);
+  useEffect(()=>{void preloadImages([PART_DAMAGE_V38,ROAD_TILES_V37[game.levelIndex],...(game.levelIndex===4?[EMPEROR_ART_V36]:[]),ARENA_ART_V36[game.mechClass],...(game.mechClass==='blade'?[BLADE_ATTACK_V35]:[]),CORE_FX_V34[game.mechClass],RUN_ART[game.mechClass],MOTION_ART[game.mechClass],MATERIAL_ART,PROP_ART,PORTRAIT_ART,REFERENCE_LOGO],'high');},[game.mechClass,game.levelIndex]);
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages(Object.values(DEFENSE_ART));},[game.status]);
   useEffect(()=>{if(game.status==='home')void preloadImages([UI_MENU_ICONS,UI_MENU_ART.hangar,ART_V19,FUSION_ART_V19].filter(Boolean),'low');},[game.status]);
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages([CHAPTER_FILMS[game.levelIndex],RELAY_ART]);},[game.status,game.levelIndex]);
@@ -1071,7 +1072,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
                 <button type="button" className="menu-square-button" onClick={openSettings} aria-label="声音与画面设置"><MenuIcon name="settings"/></button>
               </header>
               <div className="toybot-home-hero">
-                <div className="toybot-home-heading"><div className="toybot-home-kicker">TOYBOT BREAKOUT</div><h1 id="toybot-home-title">玩具城突围</h1><p className="toybot-home-subtitle">黎明重启 · 带伙伴回家</p></div>
+                <div className="toybot-home-heading"><div className="toybot-home-kicker">TOYBOT BREAKOUT</div><h1 id="toybot-home-title">玩具城突围</h1><p className="toybot-home-subtitle">归航行动 · 把伙伴接回来</p></div>
                 <button type="button" className="menu-world-shortcut" onClick={()=>setStoryView('world')}><MenuIcon name="world"/><span>世界档案</span></button>
                 <MechShowcase mechClass={garage.mechClass} weapon={garage.equipped.weapon} armor={garage.equipped.armor} core={garage.equipped.core} className="toybot-home-mech" />
                 <div className="toybot-mech-caption"><small>{mechSpec(garage.mechClass).role} / 出击机型</small><b>{mechSpec(garage.mechClass).name}</b><small>{coreSkill(garage.mechClass).name}</small></div>

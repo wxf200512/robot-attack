@@ -1,3 +1,5 @@
+import { PART_DAMAGE_V38, partDamageV38 } from './partDamageV38';
+import { atlasCell } from './visualArt';
 import type { CSSProperties } from 'react';
 import type { GameState } from './simulation';
 import { gateGroundY, laneXAt, LANE_CENTERS } from './simulation';
@@ -32,5 +34,10 @@ export function ChallengePicker({game,garage,onSelect}:{game:GameState;garage:Ga
 
 export function BossMountedParts({game:s}:{game:GameState}){
  if(!s.ops.parts.length)return null;
- return <div className="boss-mounted-parts" aria-label="首领机体可破坏部件">{s.ops.parts.map((part,index)=><div key={part.kind} className={'boss-mounted-part mount-'+index+(part.hp<=0?' is-broken':'')} style={{left:(s.levelIndex===4?[18,50,75]:[28,50,72])[index]+'%',top:(s.levelIndex===4?[50,53,63]:[50,50,62])[index]+'%'}} role="img" aria-label={part.name+(part.hp<=0?' 已击破':` 可破坏部件，耐久 ${part.hp}/${part.maxHp}`)}><span className="boss-mount-bracket"/><small>{part.hp<=0?'已破坏':part.name}</small>{part.hp>0&&<i><span style={{width:part.hp/part.maxHp*100+'%'}}/></i>}</div>)}</div>;
+ return <div className="boss-mounted-parts" aria-label="首领机体可破坏部件">{s.ops.parts.map((part,index)=>{
+  const broken=part.hp<=0,targeted=s.pendingShots.some(shot=>shot.target==='part'&&shot.targetIndex===index),fx=partDamageV38(part,s.battleTime,0,index);
+  return <div key={part.kind} className={'boss-mounted-part mount-'+index+(broken?' is-broken':'')+(targeted?' is-targeted':'')} style={{left:(s.levelIndex===4?[18,50,75]:[28,50,72])[index]+'%',top:(s.levelIndex===4?[50,53,63]:[50,50,62])[index]+'%'}} role="img" aria-label={part.name+(broken?' 已解除':` 可破坏部件，耐久 ${part.hp}/${part.maxHp}`)}>
+   {broken?<span data-motion="part-damage-v38" data-motion-id={index} data-phase={fx.phase} className="part-damage-v38" style={{backgroundImage:`url(${PART_DAMAGE_V38})`,backgroundPosition:atlasCell(fx.frame,fx.row,8,3),opacity:fx.opacity}}/>:<><span className="boss-mount-bracket"/>{(targeted||s.battleTime<20)&&<small>{part.name}</small>}<i><span style={{width:part.hp/part.maxHp*100+'%'}}/></i></>}
+  </div>;
+ })}</div>;
 }

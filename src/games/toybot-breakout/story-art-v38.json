@@ -1,0 +1,58 @@
+[
+  {
+    "kind": "comic",
+    "index": 0,
+    "bytes": 225312
+  },
+  {
+    "kind": "comic",
+    "index": 1,
+    "bytes": 199341
+  },
+  {
+    "kind": "comic",
+    "index": 2,
+    "bytes": 191417
+  },
+  {
+    "kind": "comic",
+    "index": 3,
+    "bytes": 201592
+  },
+  {
+    "kind": "chapter",
+    "index": 0,
+    "frames": 6,
+    "bytes": 151434
+  },
+  {
+    "kind": "chapter",
+    "index": 1,
+    "frames": 6,
+    "bytes": 155014
+  },
+  {
+    "kind": "chapter",
+    "index": 2,
+    "frames": 6,
+    "bytes": 147589
+  },
+  {
+    "kind": "chapter",
+    "index": 3,
+    "frames": 6,
+    "bytes": 153914
+  },
+  {
+    "kind": "chapter",
+    "index": 4,
+    "frames": 6,
+    "bytes": 146770
+  },
+  {
+    "kind": "damage",
+    "frames": 24,
+    "transparentFraction": 0.841064453125,
+    "bytes": 148285
+  }
+]

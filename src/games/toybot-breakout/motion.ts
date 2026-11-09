@@ -1,3 +1,4 @@
+import { pulseFlightV33, pulseImpactV33 } from './pulseVfxV33';
 import { bossMotionV31, enemyMotionV31, BOSS_MOTION_V31, ENEMY_MOTION_V31 } from './hostileMotionV31';
 import { worldScreenY, bossScreenY, projectedMuzzleX, squadScreenX, actorPixels, cameraFlight, FURNACE_ART } from './referenceCamera';
 import { MOTION_ART, RUN_ART, artPose, atlasCell, bossArtFrame, BOSS_EVOLUTION_ART, materialSample, salvageSample } from './visualArt';
@@ -66,8 +67,14 @@ export function paintMotion(root:HTMLElement,s:GameState,alpha:number,entries:Mo
   else if(kind==='salvage'){const e=s.killEffects.find(e=>e.id===id);if(e){const p=salvageSample(e.x,e.y,e.ticks,LANE_CENTERS[s.lane],t);place(node,p.x,p.y);node.style.opacity=String(p.opacity);node.style.scale=String(p.scale);}}
   else if(kind==='assembly'){place(node,LANE_CENTERS[s.lane],60);}
   else if(kind==='hazard'){const body=node.querySelector<HTMLElement>('.hostile-v31-body');if(body){const p=enemyMotionV31(s,id,t,reduced);paintHostile(body,p,ENEMY_MOTION_V31[p.kind],4);}const y=roadEnemyY(v,id);place(node,hazardVisualX(v,id),y);node.style.setProperty('--hazard-scale',String(.72+(y-39)/19*.34));}
-  else if(kind==='core-beam'){
-   const shot=shots.get(id);if(shot){const end=projectileSample(s,{...shot,ticks:0},0,v),o=shot.origins[0],x=projectedMuzzleX(shot),lift=shot.muzzle?actorPixels(shot.count,size.width)/4:0,y=worldScreenY(o.y),endY=shot.target==='boss'?bossScreenY(end.y):worldScreenY(end.y),dx=(end.x-x)*size.width/100,dy=(y-endY)*size.height/100-lift,p={x,y,lift,length:Math.hypot(dx,dy),angle:Math.atan2(dx,dy)*180/Math.PI};node.style.left=p.x+'%';node.style.top=`calc(${p.y}% - ${p.lift}px)`;node.style.height=p.length+'px';node.style.transform=`translate(-50%,-100%) rotate(${p.angle}deg)`;node.style.opacity=String(shot.count>=5?.28:.65);}
+  else if(kind==='core-pulse'){
+   const shot=shots.get(id);if(shot){const p=pulseFlightV33(projectileSample(s,shot,t,v),shot,t,size,reduced);node.style.left=p.x+'%';node.style.top=`calc(${p.y}% - ${p.lift}px)`;node.style.transform=`translate(-50%,-50%) rotate(${p.angle}deg) scale(${p.scale})`;node.style.opacity=String(p.opacity);const art=node.querySelector<HTMLElement>('.core-pulse-flight-art');if(art)art.style.backgroundPosition=atlasCell(p.frame,1,8,3);const vortex=node.querySelector<HTMLElement>('.core-pulse-vortex');if(vortex){vortex.style.backgroundPosition=atlasCell(1+p.frame%4,0,8,3);vortex.style.rotate=p.spin+'deg';}const wake=node.querySelector<HTMLElement>('.core-pulse-wake');if(wake)wake.style.backgroundPosition=atlasCell((p.frame+2)%8,1,8,3);}
+  }else if(kind==='core-pulse-muzzle'){
+   const shot=shots.get(id);if(shot){node.style.left=projectedMuzzleX(shot)+'%';node.style.top=`calc(${worldScreenY(shot.origins[0].y)}% - ${actorPixels(shot.count,size.width)/4}px)`;const art=node.querySelector<HTMLElement>('.core-pulse-muzzle-art');if(art)art.style.backgroundPosition=atlasCell(reduced?2:Math.min(7,Math.floor((shot.duration-shot.ticks+t)*4)),0,8,3);}
+  }else if(kind==='pulse-impact-ring'){
+   const f=s.feedback.find(f=>f.id===id);if(f){const life=f.kind==='boss'?12:f.kind==='elite'?8:4,p=pulseImpactV33(f.ticks,life,t,reduced),age=Math.max(0,(life-f.ticks+t)/life);node.style.backgroundPosition=atlasCell(p.frame,0,8,3);node.style.opacity=String(p.opacity*.55);node.style.transform=reduced?'none':`rotate(${age*35}deg) scale(${.65+age*.65})`;}
+  }else if(kind==='pulse-impact'){
+   const f=s.feedback.find(f=>f.id===id);if(f){const p=pulseImpactV33(f.ticks,f.kind==='boss'?12:f.kind==='elite'?8:4,t,reduced);node.style.backgroundPosition=atlasCell(p.frame,2,8,3);node.style.opacity=String(p.opacity);}
   }
   else if(kind==='shot'){
    const shot=shots.get(id);if(!shot||shot.attackStyle==='blade'&&!shot.burst)continue;

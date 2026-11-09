@@ -1550,11 +1550,10 @@ test('core siege rounds have a bounded forward arc and arrive at their own captu
  assert.ok(samples.every((p,i)=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&(i===0||p.y<samples[i-1].y)));
  const mid=motion.projectileSample(s,{...shot,ticks:3},0),straight=motion.projectileSample(s,{...shot,burst:false,ticks:3},0);assert.ok(mid.y<straight.y);
 });
-test('core beam painter preserves independent body-center emitters and never mutates damage state',()=>{
- const s={...battle(),lane:1,battleLane:1};s.pendingShots=[incoming(s,{id:11,burst:true,attackStyle:'pulse',origins:[{index:1,x:39,y:65}]}),incoming(s,{id:12,burst:true,attackStyle:'pulse',origins:[{index:2,x:61,y:65}]})];
- const makeNode=()=>({style:{setProperty(k,v){this[k]=v;}},querySelector(){return null;}}),root=makeNode(),a=makeNode(),b=makeNode(),before=JSON.stringify(s);
- motion.paintMotion(root,s,.5,[{node:a,kind:'core-beam',id:11},{node:b,kind:'core-beam',id:12}]);
- assert.equal(a.style.left,'39%');assert.equal(b.style.left,'61%');assert.match(a.style.top,/calc/);assert.match(a.style.height,/px$/);assert.ok(!JSON.stringify([a.style,b.style]).match(/NaN|Infinity/));assert.equal(JSON.stringify(s),before);
+test('dynamic pulse painter preserves independent emitters without drawing full-length beams',()=>{
+ const s={...battle(),lane:1,battleLane:1};s.pendingShots=[incoming(s,{id:11,burst:true,attackStyle:'pulse',count:3,duration:8,ticks:8,muzzle:true,origins:[{index:1,x:44.4,y:65}]}),incoming(s,{id:12,burst:true,attackStyle:'pulse',count:3,duration:8,ticks:8,muzzle:true,origins:[{index:2,x:55.6,y:65}]})];
+ const makeNode=()=>({style:{setProperty(k,v){this[k]=v;}},querySelector(){return null;}}),root=makeNode(),a=makeNode(),b=makeNode(),before=JSON.stringify(s),entries=[{node:a,kind:'core-pulse',id:11},{node:b,kind:'core-pulse',id:12}];
+ motion.paintMotion(root,s,0,entries);assert.ok(Math.abs(parseFloat(a.style.left)-41.04)<1e-9);assert.ok(Math.abs(parseFloat(b.style.left)-58.96)<1e-9);assert.match(a.style.top,/calc/);assert.equal(a.style.height,undefined);const start=a.style.top;motion.paintMotion(root,s,.5,entries);assert.notEqual(a.style.top,start);assert.ok(!JSON.stringify([a.style,b.style]).match(/NaN|Infinity/));assert.equal(JSON.stringify(s),before);
 });
 test('core clear-through bonuses increase road power while retaining boss multipliers and firing cadence',()=>{
  const skill=load('mechs').CORE_SKILLS;assert.equal(skill.pulse.damage,1.6);assert.equal(skill.heavy.damage,2);assert.equal(skill.blade.damage,1.6);assert.equal(skill.pulse.bossDamage,1.25);assert.equal(skill.heavy.bossDamage,1.2);assert.equal(skill.blade.bossDamage,1.15);
@@ -2012,9 +2011,9 @@ test('guardian defeat keeps the same armor phase and single-body flinch family',
 test('ground roadblock settles once and the biped summon never samples drone or bee actions',()=>{const art=load('hostileMotionV31'),s={...battle(),enemyAttacks:[],threats:[{id:70,kind:'barrier',duration:36,ticks:36,hp:10},{id:71,kind:'minion',duration:32,ticks:32,hp:10}]};const start=art.enemyMotionV31(s,70,0,false,'threat');assert.equal(start.frame,0);const settled={...s,threats:s.threats.map(t=>({...t,ticks:t.duration-20}))};assert.equal(art.enemyMotionV31(settled,70,0,false,'threat').frame,7);assert.equal(art.enemyMotionV31(settled,70,.9,false,'threat').frame,7);const walker=art.enemyMotionV31(s,71,0,false,'threat');assert.equal(walker.profile,'minion-biped-pounce');assert.notEqual(art.ENEMY_MOTION_V31.minion,art.ENEMY_MOTION_V31.swarm);assert.notEqual(art.ENEMY_MOTION_V31.barrier,art.ENEMY_MOTION_V31.drone);});
 test('boss armor phase changes once at the unfold beat and never blends two body layers',()=>{const art=load('hostileMotionV31');for(let levelIndex=0;levelIndex<5;levelIndex++){const s={...battle(),levelIndex,status:'boss-shift',bossStage:2,bossPhaseTicks:4};assert.equal(art.bossMotionV31(s).row,0);assert.equal(art.bossMotionV31({...s,bossPhaseTicks:5}).row,4);assert.equal(art.bossMotionV31({...s,bossPhaseTicks:9}).row,4);}});
 
-test('core beam presentation keeps only the latest beam per real emitter and lane without changing physics',()=>{
+test('travelling pulse presentation preserves each captured flight without changing physics',()=>{
  const art=load('awakening'),s=battle(),shots=[];for(let volley=0;volley<4;volley++)for(let index=0;index<3;index++)for(let lane=0;lane<3;lane++)shots.push(incoming(s,{id:shots.length+1,burst:true,attackStyle:'pulse',lane,ticks:volley+1,origins:[{index,x:40+index*10,y:59}]}));
- const before=JSON.stringify(shots),visual=art.coreVisualShots(shots);assert.equal(visual.length,9);assert.ok(visual.every(p=>p.id>27));assert.equal(JSON.stringify(shots),before);const normal=incoming(s,{id:99,burst:false});assert.ok(art.coreVisualShots([...shots,normal]).includes(normal));
+ const before=JSON.stringify(shots),visual=art.coreVisualShots(shots);assert.equal(visual.length,36);assert.ok(visual.every(p=>shots.includes(p)));assert.equal(JSON.stringify(shots),before);const normal=incoming(s,{id:99,burst:false});assert.ok(art.coreVisualShots([...shots,normal]).includes(normal));
 });
 test('skill status reports actual output since activation without awarding damage or kills',()=>{
  const read=load('skillPresentationV32').skillReadout,s={...battle(),burstEnergy:100,report:{...battle().report,dealt:120},kills:8},before=JSON.stringify(s),active=sim.gameReducer(s,{type:'ACTIVATE_BURST'});assert.equal(JSON.stringify(s),before);assert.deepEqual(active.burstStart,{damage:120,kills:8});assert.equal(read(active).damage,0);assert.equal(read(active).kills,0);
@@ -2030,3 +2029,19 @@ test('pulse core channel stays braced and sword core contact follows the travell
  const art=load('animationModules').sampleMechMotion,s={...battle(),burstTicks:40,mechClass:'pulse',fireCooldown:sim.attackIntervalFor({...battle(),mechClass:'pulse'})};assert.equal(art(s).action,'pulse-channel');assert.equal(art(s,.9).recoil,0);
  const blade={...battle(),mechClass:'blade',burstTicks:40};blade.pendingShots=[incoming(blade,{burst:true,attackStyle:'blade',duration:5,ticks:1})];const interval=sim.attackIntervalFor(blade);assert.equal(art({...blade,fireCooldown:interval-4},.5).frame,4);assert.equal(art({...blade,fireCooldown:interval-5},.2).frame,5);assert.equal(art({...blade,fireCooldown:interval-6},.1).frame,7);
 });
+
+test('animated pulse position follows the captured projectile rather than drawing a full path',()=>{
+ const fx=load('pulseVfxV33'),motion=load('motion'),camera=load('referenceCamera'),s=battle(),shot=incoming(s,{burst:true,attackStyle:'pulse',duration:8,ticks:8,count:3,origins:[{index:1,x:44.4,y:65.5}],muzzle:true}),size={width:390,height:700},before=JSON.stringify(shot);
+ const at=(ticks,alpha=0)=>{const p={...shot,ticks};return fx.pulseFlightV33(motion.projectileSample(s,p,alpha),p,alpha,size);};const start=at(8),middle=at(4,.2),end=at(0);
+ assert.equal(start.x,camera.projectedMuzzleX(shot));assert.equal(start.lift,camera.actorPixels(3,390)/4);assert.equal(end.lift,0);assert.ok(middle.progress>start.progress&&end.progress>middle.progress);assert.ok(middle.y<start.y);assert.ok(start.frame!==middle.frame);assert.equal(JSON.stringify(shot),before);
+});
+test('muzzle animation is once per actual emitter and never attached to a piercing contact',()=>{
+ const fx=load('pulseVfxV33'),s=battle(),shots=[];for(let index=0;index<3;index++)for(let lane=0;lane<3;lane++)shots.push(incoming(s,{id:shots.length+1,burst:true,attackStyle:'pulse',muzzle:true,lane,duration:5,ticks:5,origins:[{index,x:40+index*10,y:59}]}));const before=JSON.stringify(shots);assert.equal(fx.pulseMuzzlesV33(shots).length,3);assert.equal(fx.pulseMuzzlesV33(shots.map(p=>({...p,muzzle:false}))).length,0);assert.equal(fx.pulseMuzzlesV33(shots.map(p=>({...p,ticks:3}))).length,0);assert.equal(JSON.stringify(shots),before);
+});
+test('pulse impacts play through eight frames and reduced motion does not cycle texture',()=>{
+ const fx=load('pulseVfxV33'),frames=Array.from({length:8},(_,i)=>fx.pulseImpactV33(4-i/2,4,0).frame);assert.deepEqual(frames,[0,1,2,3,4,5,6,7]);assert.equal(fx.pulseImpactV33(0,4,0).opacity,0);assert.equal(fx.pulseImpactV33(3,4,.9,true).frame,3);
+});
+test('new pulse impact artwork is tagged by actual skill damage, not by a visual flight pass',()=>{
+ const s={...battle(),mechClass:'pulse',burstTicks:40,fireCooldown:1000};s.pendingShots=[incoming(s,{burst:true,attackStyle:'pulse',damage:1})];const n=tick(s);assert.ok(n.report.dealt>s.report.dealt);assert.ok(n.feedback.some(f=>f.pulseCore));const miss={...s,pendingShots:[incoming(s,{burst:true,attackStyle:'pulse',damage:1,lane:(s.battleLane+1)%3})]};assert.equal(tick(miss).feedback.length,0);const normal={...s,burstTicks:0};assert.ok(tick(normal).feedback.every(f=>!f.pulseCore));
+});
+test('pulse skill atlas contains twenty-four transparent compact animation cells',()=>{const m=JSON.parse(fs.readFileSync(path.resolve(__dirname,'pulse-vfx-v33.json'),'utf8'));assert.equal(m.frames,24);assert.ok(m.transparentFraction>.6);const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/pulse-vfx-v33.png'));assert.equal(png.readUInt32BE(16),1024);assert.equal(png.readUInt32BE(20),384);assert.equal(png[25],6);assert.ok(png.length<500000);});

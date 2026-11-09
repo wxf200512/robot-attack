@@ -8,7 +8,6 @@ export function awakeningPose(s:GameState,alpha:number,index:number){
  return elapsed>=0&&s.fireCooldown>attackIntervalFor(s)-4?{row:2,frame:Math.min(3,Math.floor(Math.max(0,elapsed)))}:{row:1,frame:Math.floor((s.battleTime+t)/3)%4};
 }
 export function coreVisualShots(shots:PendingShot[]){
- const latest=new Map<string,PendingShot>();for(const shot of shots)if(shot.burst&&shot.attackStyle==='pulse'){const key=shot.origins[0].index+':'+shot.lane;const old=latest.get(key);if(!old||shot.id>old.id)latest.set(key,shot);}
  const seen=new Set<string>();
- return shots.filter(s=>{if(s.burst&&s.attackStyle==='pulse')return latest.get(s.origins[0].index+':'+s.lane)===s;if(!s.burst||s.attackStyle!=='blade')return true;const key=[s.origins[0].index,s.lane,s.ticks,s.duration].join(':');if(seen.has(key))return false;seen.add(key);return true;});
+ return shots.filter(s=>{if(!s.burst||s.attackStyle!=='blade')return true;const key=[s.origins[0].index,s.lane,s.ticks,s.duration].join(':');if(seen.has(key))return false;seen.add(key);return true;});
 }

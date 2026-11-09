@@ -1,0 +1,12 @@
+.toybot-page .toybot-shell .core-pulse-flight{position:absolute;width:52px;height:52px;pointer-events:none;transform-origin:center;mix-blend-mode:normal;contain:layout style;filter:none}
+.toybot-page .toybot-shell .core-pulse-flight.is-large-squad{width:30px;height:30px}
+.core-pulse-flight-art,.core-pulse-muzzle-art{position:absolute;inset:0;display:block;background-size:800% 300%;background-repeat:no-repeat;animation:none!important;filter:none;opacity:.9}
+.toybot-page .toybot-shell .core-pulse-muzzle{position:absolute;width:24px;height:24px;translate:-50% -50%;pointer-events:none;mix-blend-mode:normal}
+.toybot-page .toybot-shell .core-pulse-muzzle.is-large-squad{width:16px;height:16px}
+.toybot-page .toybot-shell .art-v28 .toybot-contact-vfx.contact-pulse-core{width:58px;height:58px;opacity:1;filter:none}
+.toybot-page .toybot-shell .art-v28 .toybot-contact-vfx.contact-pulse-core>i{inset:0;transform:none;background-size:800% 300%;background-repeat:no-repeat;animation:none!important;filter:none}
+
+.core-pulse-vortex{position:absolute;left:-8%;right:-8%;top:25%;height:44%;background-size:800% 300%;background-repeat:no-repeat;opacity:.7;transform-origin:center;pointer-events:none}
+.core-pulse-wake{position:absolute;left:25%;width:50%;top:57%;height:86%;background-size:800% 300%;background-repeat:no-repeat;mask-image:linear-gradient(transparent 30%,#0009 55%,transparent);opacity:.42;pointer-events:none}
+.pulse-impact-ring{position:absolute;left:50%;top:58%;width:130%;height:80%;translate:-50% -50%;background-size:800% 300%;background-repeat:no-repeat;pointer-events:none;transform-origin:center;opacity:.55}
+.toybot-page .toybot-shell .art-v28 .contact-boss.contact-pulse-core{width:86px;height:86px}

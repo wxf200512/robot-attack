@@ -1,3 +1,5 @@
+import { PULSE_VFX_V33, pulseMuzzlesV33 } from './pulseVfxV33';
+import './pulseVfxV33.css';
 import { readableCoreImpacts } from './skillPresentationV32';
 import './skillClarityV32.css';
 import { BOSS_MOTION_V31, ENEMY_MOTION_V31 } from './hostileMotionV31';
@@ -57,6 +59,7 @@ import { purchaseUpgrade, readGarage, saveGarage, toggleUpgrade, upgradeCost, UP
 
 import './playability.css';
 
+const depthForPulse=(shot:import('./simulation').PendingShot)=>Math.round((shot.origins[0].y+(shot.y-shot.origins[0].y)*(1-shot.ticks/shot.duration)+6)*10)+3;
 function ProjectileArt({ level, heavy = false }: { level: number; heavy?: boolean }) {
   if (heavy) level = Math.max(1, level);
   if (level <= 0) return <span className="toybot-reference-bolt" aria-hidden="true"/>;
@@ -193,7 +196,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
     return()=>{document.removeEventListener('visibilitychange',visibility);window.removeEventListener('blur',suspend);window.removeEventListener('pagehide',suspend);};
   },[game.status]);
   const warmRoadAssets=game.status==='running';
-  useEffect(()=>{void preloadImages([RUN_ART[game.mechClass],MOTION_ART[game.mechClass],MATERIAL_ART,PROP_ART,PORTRAIT_ART,REFERENCE_LOGO],'high');},[game.mechClass]);
+  useEffect(()=>{void preloadImages([PULSE_VFX_V33,RUN_ART[game.mechClass],MOTION_ART[game.mechClass],MATERIAL_ART,PROP_ART,PORTRAIT_ART,REFERENCE_LOGO],'high');},[game.mechClass]);
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages(Object.values(DEFENSE_ART));},[game.status]);
   useEffect(()=>{if(game.status==='home')void preloadImages([UI_MENU_ICONS,UI_MENU_ART.hangar,ART_V19,FUSION_ART_V19].filter(Boolean),'low');},[game.status]);
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages([CHAPTER_FILMS[game.levelIndex],RELAY_ART]);},[game.status,game.levelIndex]);
@@ -885,15 +888,13 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
                 {attack.phase === 'flight' && attack.kind === 'shockwave' && <div data-world-y={y} className="toybot-enemy-shockwave" style={{ left: laneXAt(attack.lane, y) + '%', top: y + '%', zIndex: Math.round((y + 5) * 10) + 4 }} aria-hidden="true" />}
               </React.Fragment>;
             })}
+            {pulseMuzzlesV33(game.pendingShots).map(shot=><span key={'core-muzzle-'+shot.id} data-motion="core-pulse-muzzle" data-motion-id={shot.id} className={'core-pulse-muzzle'+(shot.count>=5?' is-large-squad':'')} style={{left:shot.origins[0].x+'%',top:shot.origins[0].y+'%',zIndex:Math.round((shot.origins[0].y+7)*10)}} aria-hidden="true"><i className="core-pulse-muzzle-art" style={{backgroundImage:`url(${PULSE_VFX_V33})`,backgroundPosition:atlasCell(0,0,8,3)}}/></span>)}
             {coreVisualShots(game.pendingShots).map((volley) => (
               <React.Fragment key={volley.id}>
                 {volley.origins.map((origin) => {
                   const size = volley.count <= 1 ? '68px' : volley.count <= 4 ? 'clamp(58px,20.55vw,82px)' : 'clamp(27px,9.8vw,38px)';
 
-                  if(volley.burst&&volley.attackStyle==='pulse'){
-                    const end=volley.target?targetY(game,volley.target,volley.targetIndex):volley.y;
-                    return <div key={origin.index} data-motion="core-beam" data-motion-id={volley.id} className="toybot-core-beam" style={{width:volley.count>=5?4:volley.count>1?7:10,left:origin.x+'%',top:end+'%',height:`calc(${Math.max(1,origin.y-end)}% - ${volley.muzzle?size:'0px'} / 4)`,'--beam-lift':volley.muzzle?size:'0px',zIndex:Math.round((origin.y+5)*10)+5} as React.CSSProperties} aria-hidden="true"><span style={{backgroundImage:`url(${CORE_EFFECT_ART})`}}/></div>;
-                  }
+                  if(volley.burst&&volley.attackStyle==='pulse')return <div key={origin.index} data-motion="core-pulse" data-motion-id={volley.id} className={'core-pulse-flight'+(volley.count>=5?' is-large-squad':'')} style={{left:origin.x+'%',top:origin.y+'%',zIndex:depthForPulse(volley)}} aria-hidden="true"><span className="core-pulse-flight-art" style={{backgroundImage:`url(${PULSE_VFX_V33})`,backgroundPosition:atlasCell(0,1,8,3)}}/><i className="core-pulse-vortex" style={{backgroundImage:`url(${PULSE_VFX_V33})`,backgroundPosition:atlasCell(0,0,8,3)}}/><i className="core-pulse-wake" style={{backgroundImage:`url(${PULSE_VFX_V33})`,backgroundPosition:atlasCell(0,1,8,3)}}/></div>;
                   if (volley.attackStyle === 'blade'&&!volley.burst) {
                     if (!volley.target || game.lane !== volley.lane) return null;
                     const y = targetY(game, volley.target, volley.targetIndex);

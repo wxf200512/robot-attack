@@ -1,3 +1,4 @@
+import { skillReadout } from './skillPresentationV32';
 import { frontlineStage } from './frontline';
 import type { CSSProperties } from 'react';
 import { canActivateBurst, canMove, canShoot, bossAttackLabel, bossWarningTicks, bossRecoveryTicks, BURST_TICKS, MODULES, type GameState, type RunModule } from './simulation';
@@ -31,9 +32,12 @@ export function Cockpit({game:s,blocked,onMove,onBurst}:{game:GameState;blocked:
 }
 export function CoreBurstScreen({game:s,reduced}:{game:GameState;reduced:boolean}){
  if(s.burstTicks<=0||!canShoot(s.status==='paused'?s.resumeStatus??'home':s.status))return null;
- const elapsed=BURST_TICKS-s.burstTicks,cell=s.mechClass==='pulse'?0:s.mechClass==='heavy'?1:2;
- return <div className={'toybot-core-screen core-screen-'+s.mechClass+(elapsed<9?' is-igniting':'')+(s.status==='paused'?' is-paused':'')+(reduced?' reduced':'')} aria-hidden="true">
-  <div className="core-screen-edge"/>{elapsed<9&&<div className="core-ignition" key={s.burstSequence}><span style={{backgroundImage:`url(${CORE_EFFECT_ART})`,backgroundPosition:cell*50+'% 50%'}}/><b>核心解放<small>{coreSkill(s.mechClass).name}</small></b></div>}
-  <i className="core-screen-scan"/>
+ const receipt=skillReadout(s),cell=s.mechClass==='pulse'?0:s.mechClass==='heavy'?1:2;
+ return <div className={'toybot-core-screen core-screen-'+s.mechClass+(s.status==='paused'?' is-paused':'')+(reduced?' reduced':'')}>
+  <div className="core-status" role="status" aria-live="off" aria-label={coreSkill(s.mechClass).name+'生效中'}>
+   <span className="core-status-icon" aria-hidden="true" style={{backgroundImage:`url(${CORE_EFFECT_ART})`,backgroundPosition:cell*50+'% 50%'}}/>
+   <div><b>{coreSkill(s.mechClass).name} · 三轨释放</b><small>爆发期伤害 {receipt.damage} · 击破 {receipt.kills}</small></div><em>{receipt.remaining.toFixed(1)}s</em>
+   <span className="core-status-track" aria-hidden="true"><i style={{transform:`scaleX(${receipt.fill})`}}/></span>
+  </div>
  </div>;
 }

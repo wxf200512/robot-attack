@@ -2011,3 +2011,22 @@ test('guardian defeat keeps the same armor phase and single-body flinch family',
 
 test('ground roadblock settles once and the biped summon never samples drone or bee actions',()=>{const art=load('hostileMotionV31'),s={...battle(),enemyAttacks:[],threats:[{id:70,kind:'barrier',duration:36,ticks:36,hp:10},{id:71,kind:'minion',duration:32,ticks:32,hp:10}]};const start=art.enemyMotionV31(s,70,0,false,'threat');assert.equal(start.frame,0);const settled={...s,threats:s.threats.map(t=>({...t,ticks:t.duration-20}))};assert.equal(art.enemyMotionV31(settled,70,0,false,'threat').frame,7);assert.equal(art.enemyMotionV31(settled,70,.9,false,'threat').frame,7);const walker=art.enemyMotionV31(s,71,0,false,'threat');assert.equal(walker.profile,'minion-biped-pounce');assert.notEqual(art.ENEMY_MOTION_V31.minion,art.ENEMY_MOTION_V31.swarm);assert.notEqual(art.ENEMY_MOTION_V31.barrier,art.ENEMY_MOTION_V31.drone);});
 test('boss armor phase changes once at the unfold beat and never blends two body layers',()=>{const art=load('hostileMotionV31');for(let levelIndex=0;levelIndex<5;levelIndex++){const s={...battle(),levelIndex,status:'boss-shift',bossStage:2,bossPhaseTicks:4};assert.equal(art.bossMotionV31(s).row,0);assert.equal(art.bossMotionV31({...s,bossPhaseTicks:5}).row,4);assert.equal(art.bossMotionV31({...s,bossPhaseTicks:9}).row,4);}});
+
+test('core beam presentation keeps only the latest beam per real emitter and lane without changing physics',()=>{
+ const art=load('awakening'),s=battle(),shots=[];for(let volley=0;volley<4;volley++)for(let index=0;index<3;index++)for(let lane=0;lane<3;lane++)shots.push(incoming(s,{id:shots.length+1,burst:true,attackStyle:'pulse',lane,ticks:volley+1,origins:[{index,x:40+index*10,y:59}]}));
+ const before=JSON.stringify(shots),visual=art.coreVisualShots(shots);assert.equal(visual.length,9);assert.ok(visual.every(p=>p.id>27));assert.equal(JSON.stringify(shots),before);const normal=incoming(s,{id:99,burst:false});assert.ok(art.coreVisualShots([...shots,normal]).includes(normal));
+});
+test('skill status reports actual output since activation without awarding damage or kills',()=>{
+ const read=load('skillPresentationV32').skillReadout,s={...battle(),burstEnergy:100,report:{...battle().report,dealt:120},kills:8},before=JSON.stringify(s),active=sim.gameReducer(s,{type:'ACTIVATE_BURST'});assert.equal(JSON.stringify(s),before);assert.deepEqual(active.burstStart,{damage:120,kills:8});assert.equal(read(active).damage,0);assert.equal(read(active).kills,0);
+ const progressed={...active,burstTicks:31,report:{...active.report,dealt:167.4},kills:11};const p=read(progressed);assert.equal(p.damage,47);assert.equal(p.kills,3);assert.equal(p.remaining,3.1);assert.equal(p.fill,31/50);assert.equal(progressed.report.dealt,167.4);assert.equal(read({...progressed,burstTicks:0}).active,false);
+});
+test('skill countdown freezes in pause and missing historical baseline never shows total-run damage',()=>{
+ const read=load('skillPresentationV32').skillReadout,s={...battle(),burstTicks:42,burstStart:undefined,report:{...battle().report,dealt:9999}};assert.equal(read(s).damage,0);assert.deepEqual(read(s),read({...s,status:'paused',resumeStatus:'battle'}));assert.equal(read({...s,status:'result'}).active,false);
+});
+test('nearby skill explosions merge into bounded local feedback without modifying effect records',()=>{
+ const pick=load('skillPresentationV32').readableCoreImpacts,effects=[{id:1,x:50,y:48,ticks:2},{id:2,x:50.2,y:48,ticks:6},{id:3,x:25,y:42,ticks:4},{id:4,x:75,y:45,ticks:5},{id:5,x:60,y:60,ticks:5}],before=JSON.stringify(effects);const visible=pick(effects);assert.equal(visible.length,3);assert.equal(JSON.stringify(effects),before);const merged=pick(effects.slice(0,2));assert.equal(merged.length,1);assert.equal(merged[0].id,2);
+});
+test('pulse core channel stays braced and sword core contact follows the travelling wave',()=>{
+ const art=load('animationModules').sampleMechMotion,s={...battle(),burstTicks:40,mechClass:'pulse',fireCooldown:sim.attackIntervalFor({...battle(),mechClass:'pulse'})};assert.equal(art(s).action,'pulse-channel');assert.equal(art(s,.9).recoil,0);
+ const blade={...battle(),mechClass:'blade',burstTicks:40};blade.pendingShots=[incoming(blade,{burst:true,attackStyle:'blade',duration:5,ticks:1})];const interval=sim.attackIntervalFor(blade);assert.equal(art({...blade,fireCooldown:interval-4},.5).frame,4);assert.equal(art({...blade,fireCooldown:interval-5},.2).frame,5);assert.equal(art({...blade,fireCooldown:interval-6},.1).frame,7);
+});

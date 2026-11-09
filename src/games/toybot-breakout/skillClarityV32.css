@@ -1,0 +1,23 @@
+/* Skills communicate through attacks and receipts, without a full-screen light show. */
+.toybot-page .toybot-shell.reference-v29 .toybot-core-screen{background:none}
+.toybot-page .toybot-shell.reference-v29.has-core-readout>.ops-mission-hud{display:none}
+.core-status{position:absolute;top:59px;left:8px;min-width:190px;max-width:calc(100% - 16px);display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:7px;padding:5px 8px 7px;border:1px solid color-mix(in srgb,var(--skill-color) 45%,#22364a);border-radius:6px;background:#102638f0;color:#e9f4f8;box-shadow:0 2px 5px #06142255}
+.core-status-icon{width:24px;height:27px;background-size:300% 100%;background-repeat:no-repeat;opacity:.75}
+.core-status b{display:block;font-size:11px;line-height:15px;color:var(--skill-color)}
+.core-status small{display:block;font-size:9px;line-height:13px;color:#bad0da;white-space:nowrap}
+.core-status em{font-style:normal;font-variant-numeric:tabular-nums;font-size:11px;color:#eaf5f9;align-self:start;padding-top:2px}
+.core-status-track{position:absolute;bottom:0;left:0;right:0;height:2px;border-radius:0 0 5px 5px;overflow:hidden;background:#061725}
+.core-status-track i{display:block;height:100%;background:var(--skill-color);transform-origin:left;opacity:.8}
+.toybot-page .toybot-shell.reference-v29.has-core-active .toybot-scene{animation:none!important}
+.toybot-page .toybot-shell.reference-v29 .toybot-core-beam{mix-blend-mode:normal;filter:none;background:linear-gradient(90deg,transparent,#2298b8 24%,#5ed0df 50%,#2298b8 76%,transparent);border-radius:2px;box-shadow:0 0 0 1px #0d526344}
+.toybot-page .toybot-shell.reference-v29 .toybot-core-beam>span{inset:0 -1px;opacity:.45;filter:saturate(.75)}
+.toybot-page .toybot-shell.reference-v29 .is-core-siege-shell,.toybot-page .toybot-shell.reference-v29 .is-core-blade-wave{filter:none!important;border:0;background:none;box-shadow:none}
+.toybot-page .toybot-shell.reference-v29 .core-heavy-round{position:absolute;inset:0;display:block}
+.toybot-page .toybot-shell.reference-v29 .core-heavy-round .toybot-projectile-ai{animation-duration:.8s;filter:none;opacity:.9}
+.toybot-page .toybot-shell.reference-v29 .is-core-blade-wave .toybot-core-attack-art{opacity:.75;animation:none;filter:saturate(.8)}
+.toybot-page .toybot-shell.reference-v29 .has-motion-clock .toybot-core-detonation{width:52px;height:52px;opacity:calc((1 - var(--detonation-age,0) - var(--motion-phase,0)/6)*.6)!important;scale:calc(.9 + (var(--detonation-age,0) + var(--motion-phase,0)/6)*.35);filter:saturate(.7)!important;mix-blend-mode:normal}
+.toybot-page .toybot-shell.reference-v29 .is-reference-awakened .toybot-v28-body{filter:brightness(1.04) drop-shadow(0 0 3px #76ced466)}
+.toybot-page .toybot-shell.reference-v29 .is-reference-awakened.class-heavy .toybot-v28-body{filter:brightness(1.04) drop-shadow(0 0 3px #e7b76f66)}
+.toybot-page .toybot-shell.reference-v29 .is-reference-awakened.class-blade .toybot-v28-body{filter:brightness(1.04) drop-shadow(0 0 3px #bba0e066)}
+.toybot-page .toybot-shell.reference-v29 .cockpit-reactor.is-active{box-shadow:0 0 7px #4bd1da44;background:none}
+.toybot-page .toybot-shell.reference-v29 .cockpit-reactor.is-active img{animation:none}

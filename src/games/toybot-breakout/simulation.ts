@@ -73,7 +73,7 @@ export type GameState = {
   damageSequence: number; damageLoss: number; damageLane: number; toast: string; won: boolean;
   damageKind: 'health' | 'shield' | 'armor' | 'squad'; damageAbsorbed: number;
   kills: number; combo: number; bestCombo: number; comboTicks: number; killSequence: number; killEffects: KillEffect[];
-  burstEnergy: number; burstTicks: number; burstSequence: number; comboHeal: number; comboRewardTicks: number;
+  burstStart?:{damage:number;kills:number}; burstEnergy: number; burstTicks: number; burstSequence: number; comboHeal: number; comboRewardTicks: number;
   coreDetonations: {kind?:'arc'|'energy';id:number;x:number;y:number;ticks:number}[];
   roadTicks: number; medicPulses: number[];
 };
@@ -618,7 +618,7 @@ const enterArena = (s: GameState) => {
 };
 
 export function gameReducer(state: GameState, action: Action): GameState {
-  if(action.type==='ACTIVATE_BURST')return canActivateBurst(state)?{...state,burstEnergy:0,burstTicks:BURST_TICKS,burstSequence:state.burstSequence+1,jamTicks:0}:state;
+  if(action.type==='ACTIVATE_BURST')return canActivateBurst(state)?{...state,burstEnergy:0,burstTicks:BURST_TICKS,burstSequence:state.burstSequence+1,burstStart:{damage:state.report.dealt,kills:state.kills},jamTicks:0}:state;
   if (action.type === 'MOVE_LANE') {
     if (!canMove(state.status)) return state;
     const lane = Math.max(0, Math.min(2, Math.round(action.lane)));

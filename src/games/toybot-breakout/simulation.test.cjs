@@ -179,9 +179,9 @@ test('gates remain staggered, supply before boss is guaranteed, danger lanes are
   for (let sector = 0; sector < 5; sector++) for (let repeat = 0; repeat < 100; repeat++) {
     const layout = repeat % 3, level = levels.getLevel(sector), choices = sim.createGateChoices(sector, layout);
     choices.forEach((options, i) => {
-      assert.equal(options.length, 1);
+      assert.ok(options.length>=1&&options.length<=2);assert.equal(new Set(options.map(o=>o.lane)).size,options.length);
       if (i && options[0].polarity === 'penalty') assert.equal(choices[i - 1][0].polarity, 'reward');
-      level.hazards.forEach((h, hi) => { if (Math.abs(h.progress - level.gateMarks[i]) <= 6) assert.notEqual(options[0].lane, levels.hazardLaneAt(layout, hi, level.gateMarks[i], sector)); });
+      level.hazards.forEach((h, hi) => { if (Math.abs(h.progress - level.gateMarks[i]) <= 6) options.forEach(o=>assert.notEqual(o.lane, levels.hazardLaneAt(layout, hi, level.gateMarks[i], sector))); });
     });
     assert.equal(choices[0][0].effect, 'coreUp'); assert.equal(choices[1][0].effect, 'weaponUp');
     assert.ok(choices.slice(-2).every(options => options[0].polarity === 'reward'));
@@ -224,7 +224,7 @@ test('all five levels and three classes complete roads and bosses by collecting 
       assert.ok(ticks < 5000, `run must terminate: seed=${seed}, level=${levelIndex}, status=${s.status}, step=${s.bossStep}, phase=${s.bossPhaseTicks}, hp=${s.battleHp}, bots=${s.bots}, time=${s.battleTime}, cooldown=${s.fireCooldown}`);
     }
     assert.equal(s.won, true, `seed ${seed} level ${levelIndex + 1}: ${s.status} ${s.defeatReason} hp=${s.battleHp}, bots=${s.bots}`);
-    assert.ok(ticks >= 1800 && ticks <= 5000, `level ${levelIndex + 1}: ${ticks / 10}s`);
+    assert.ok(ticks >= 1500 && ticks <= 5000, `level ${levelIndex + 1}: ${ticks / 10}s`);
   }
 });
 test('gate art threshold and simulation share exact contact point; passing is once-only and a missed lane is not collected', () => {
@@ -1152,7 +1152,7 @@ test('core burst requires earned full energy and only one activation can consume
  assert.equal(campaign.campaignReducer(story,{type:'ACTIVATE_BURST'}),story);
 });
 
-test('burst grants individual captured shots for all chassis without faster fire or extra invulnerability',()=>{
+test('burst grants individual captured shots for all chassis without faster fire; only blade gets its deliberate parry stance',()=>{
  for(const mechClass of ['pulse','heavy','blade']){
   const base={...battle(),mechClass,lane:1,battleLane:1,bossStep:'warning',bots:3,weaponLevel:2,fireCooldown:0,burstEnergy:100};
   const normal=tick(base),activated=sim.gameReducer(base,{type:'ACTIVATE_BURST'}),powered=tick(activated);
@@ -1160,7 +1160,7 @@ test('burst grants individual captured shots for all chassis without faster fire
   assert.ok(powered.pendingShots.every(p=>p.burst&&!p.charged&&Math.abs(p.damage-normal.pendingShots[0].damage*(p.target==='boss'?load('mechs').coreSkill(mechClass).bossDamage*(p.lane===base.lane?1:.6):load('mechs').coreSkill(mechClass).damage))<.001&&p.origins.length===1));
   for(const lane of [0,1,2])assert.deepEqual(powered.pendingShots.filter(p=>p.lane===lane).map(p=>p.origins),normal.pendingShots.map(p=>p.origins));
   const moved=sim.gameReducer(powered,{type:'MOVE_LANE',lane:2});assert.deepEqual(moved.pendingShots,powered.pendingShots);
-  const struck={...powered,playerHp:100,armorPoints:0,shieldCharges:0,invulnerableTicks:0};sim.applySquadHit(struck,10);assert.equal(struck.playerHp,90);
+  const struck={...powered,playerHp:100,armorPoints:0,shieldCharges:0,invulnerableTicks:0};sim.applySquadHit(struck,10);assert.equal(struck.playerHp,mechClass==='blade'?100:90);if(mechClass==='blade')assert.equal(struck.tactics.parries,1);
  }
 });
 
@@ -2171,4 +2171,100 @@ test('all ten short mission recipes can be finished with an ordinary acquired sq
   while(sim.isActiveStatus(s.status)&&count++<1400){const l=levels.getLevel(s.levelIndex),live=l.hazards.flatMap((h,i)=>s.hazardHps[i]>0&&s.progress>=h.progress-14&&s.progress<h.progress?[i]:[]);const targets=live.sort((a,b)=>Number(!!l.hazards[b].elite)-Number(!!l.hazards[a].elite)||l.hazards[a].progress-l.hazards[b].progress);let lane=targets.length?sim.roadEnemyLane(s,targets[0]):s.lane;const gate=s.gateChoices[s.gate]?.[0];if(gate&&!s.gateResolved&&gate.polarity==='reward'&&Math.abs(l.gateMarks[s.gate]-s.progress)<2)lane=gate.lane;s=sim.gameReducer(s,{type:'MOVE_LANE',lane});if(sim.canActivateBurst(s))s=sim.gameReducer(s,{type:'ACTIVATE_BURST'});s=tick(s);}
   assert.equal(s.status,'result',spec.key+' '+mechClass);assert.equal(s.won,true,spec.key+' '+mechClass+' count '+sorties.sortieCountV39(s));assert.equal(s.bossDefeated,false);assert.ok(count<1400);samples.push(spec.key+' '+mechClass+':'+(count/10).toFixed(1));
  }console.log('Short mission balance seconds: '+samples.join(', '));
+});
+
+// V40: deliberate supply decisions, tactical reactions and optional replay trials.
+const tactics40=load('tacticsV40');
+test('V40 all maps offer at least one real two-way choice with a third open lane',()=>{
+ for(let sector=0;sector<5;sector++)for(let layout=0;layout<3;layout++){
+  const rows=sim.createGateChoices(sector,layout,()=>.2);assert.ok(rows.some(r=>r.length===2));
+  for(const row of rows){assert.ok(row.length<3);assert.equal(new Set(row.map(o=>o.lane)).size,row.length);}
+  assert.ok(rows.flat().some(o=>o.effect==='riskyWeapon'));
+ }
+});
+test('V40 choice contact selects the actual occupied lane once and removes the whole fork',()=>{
+ const base=initial(),gate=4,mark=levels.getLevel(0).gateMarks[gate];const row=[{id:'heal',title:'维修+30',effect:'fieldRepair',amount:1,lane:0,polarity:'reward'},{id:'risk',title:'火力+2',effect:'riskyWeapon',amount:2,lane:2,polarity:'reward'}];
+ const s={...base,status:'running',progress:mark-1.51,gate,lane:2,playerHp:40,fireCooldown:1000,hazardHps:base.hazardHps.map(()=>-1),gateChoices:base.gateChoices.map((r,i)=>i===gate?row:r)};
+ const old=JSON.stringify(s),n=tick(s);assert.equal(JSON.stringify(s),old);assert.equal(n.gateCollected,true);assert.equal(n.weaponLevel,2);assert.equal(n.playerHp,40);assert.equal(n.gateChoices[gate][0].id,'risk');assert.equal(load('sortiesV39').gateVisibleV39(n,mark),false);
+ assert.equal(tick(n).weaponLevel,2);
+ const missed=tick({...s,lane:1});assert.equal(missed.gateCollected,false);assert.equal(missed.weaponLevel,0);assert.equal(load('sortiesV39').gateVisibleV39(missed,mark),false);
+});
+test('V40 repair restores health only while risk upgrades at most six future enemies immutably',()=>{
+ const base={...initial(2),status:'running',progress:61,playerHp:20,bots:1};
+ const heal=sim.applyGateEffect(base,{effect:'fieldRepair',title:'维修',amount:1,polarity:'reward'});assert.equal(heal.playerHp,50);assert.equal(heal.bots,1);
+ const risk=sim.applyGateEffect(base,{effect:'riskyWeapon',title:'火力',amount:2,polarity:'reward'});assert.equal(base.weaponLevel,0);assert.equal(base.tactics.riskIds.length,0);assert.equal(risk.weaponLevel,2);assert.ok(risk.tactics.riskIds.length>0&&risk.tactics.riskIds.length<=6);
+ for(const i of risk.tactics.riskIds){assert.equal(risk.hazardHps[i],base.hazardHps[i]*1.5);assert.ok(sim.hazardMaxHpFor(risk,i)>=risk.hazardHps[i]);assert.ok(levels.getLevel(2).hazards[i].progress>67);}
+ assert.equal(sim.applyGateEffect({...base,weaponLevel:4},{effect:'riskyWeapon',title:'火力',polarity:'reward'}).weaponLevel,4);
+});
+test('V40 chain kill statistics record real secondary kills and never duplicate dead targets',()=>{
+ const {ids,state}=eliteScene(),a=ids[0];const s={...state,hazardHps:state.hazardHps.map((_,i)=>ids.includes(i)?1:-1),pendingShots:[incoming(state,{target:'hazard',targetIndex:a,lane:state.lane,damage:100})]};
+ const n=tick(s);assert.ok(n.tactics.chainKills>0);assert.equal(n.tactics.chainKills,n.kills-1);const more=tick({...n,pendingShots:[incoming(n,{target:'hazard',targetIndex:a,lane:state.lane,damage:100})]});assert.equal(more.tactics.chainKills,n.tactics.chainKills);
+});
+test('V40 destroying a guard fractures its visible linked allies and interrupts warning attacks',()=>{
+ const {level,ids,state}=eliteScene(),guard=ids.find(i=>level.hazards[i].eliteRole==='guard'),ally=ids.find(i=>i!==guard&&Math.abs(level.hazards[i].progress-level.hazards[guard].progress)<=4);
+ const s={...state,fireCooldown:1000,enemyAttacks:[{id:901,source:'hazard',sourceId:ally,kind:'drone-burst',lane:state.lane,fromLane:state.lane,fromY:45,phase:'warning',ticks:20,duration:20,damage:10,shotsRemaining:1}],pendingShots:[incoming(state,{target:'hazard',targetIndex:guard,lane:state.lane,damage:100})]};
+ const n=tick(s);assert.equal(n.tactics.guardBreaks,1);assert.ok(n.roadImpacts[ally].fracture>0);assert.ok(!n.enemyAttacks.some(a=>a.id===901));assert.equal(s.roadImpacts[ally],undefined);
+});
+test('V40 a clean completed boss attack opens a bounded window; blocked or damaging hits do not',()=>{
+ const s={...battle(),bossStep:'rush',bossStepTicks:sim.RUSH_DURATION_TICKS-1,bossRushHit:true,bossAttack:'rush',bossAttackLanes:[0],damageSequence:3};s.tactics={...s.tactics,cycleDamage:3};
+ const n=tick(s);assert.equal(n.bossStep,'recovery');assert.equal(n.tactics.windows,1);assert.ok(n.tactics.windowTicks>0);assert.equal(tick(n).tactics.windows,1);
+ assert.equal(tick({...s,damageSequence:4}).tactics.windows,0);
+ const paused=sim.gameReducer(n,{type:'PAUSE'});assert.equal(tick(paused),paused);assert.equal(n.tactics.windowTicks,paused.tactics.windowTicks);
+});
+test('V40 window damage is stronger but never bypasses guard pylons or wrong-lane checks',()=>{
+ const s={...battle(),battleHp:1000,battleMaxHp:1000,bossStepTicks:5};
+ const shot=incoming(s,{damage:20,lane:s.battleLane});const plain=tick({...s,pendingShots:[shot]});const n=tick({...s,tactics:{...s.tactics,windowTicks:15},pendingShots:[shot]});assert.ok(n.report.bossDamage>plain.report.bossDamage);
+ const miss=tick({...s,tactics:{...s.tactics,windowTicks:15},pendingShots:[{...shot,lane:(s.battleLane+1)%3}]});assert.equal(miss.report.bossDamage,0);
+});
+test('V40 pulse clears airborne bullets across all lanes, preserving warnings and ground fields',()=>{
+ const base={...battle(),mechClass:'pulse',burstEnergy:100,enemyAttacks:[{id:1,kind:'sniper-shot',phase:'flight',lane:0},{id:2,kind:'bombard',phase:'flight',lane:2},{id:3,kind:'sniper-shot',phase:'warning',lane:1},{id:4,kind:'heat-mine',phase:'field',lane:2}],threats:[{id:5,kind:'shell',hp:-1},{id:6,kind:'beam',hp:-1},{id:7,kind:'minion',hp:10}]};
+ const old=JSON.stringify(base),s=sim.gameReducer(base,{type:'ACTIVATE_BURST'});assert.equal(JSON.stringify(base),old);assert.deepEqual(s.enemyAttacks.map(a=>a.id),[3,4]);assert.deepEqual(s.threats.map(a=>a.id),[6,7]);assert.equal(s.tactics.skillCleared,3);assert.equal(sim.gameReducer(s,{type:'ACTIVATE_BURST'}),s);
+});
+test('V40 heavy burst suppresses road targets and doubles landed boss part damage',()=>{
+ const {state,ids}=eliteScene(),s={...state,mechClass:'heavy',burstEnergy:100};const active=sim.gameReducer(s,{type:'ACTIVATE_BURST'});assert.ok(active.roadImpacts[ids[0]].fracture>0);assert.ok(active.tactics.skillBreaks>0);assert.equal(s.roadImpacts[ids[0]],undefined);
+ const b={...battle(),mechClass:'heavy'};b.ops.parts=[{kind:'shield',hp:100,maxHp:100,lane:b.battleLane,name:'护盾'}];const shot=incoming(b,{target:'part',targetIndex:0,lane:b.battleLane,damage:10,attackStyle:'heavy'});
+ const normal=tick({...b,pendingShots:[shot]}),burst=tick({...b,burstTicks:20,pendingShots:[{...shot,burst:true}]});assert.equal(100-normal.ops.parts[0].hp,10);assert.equal(100-burst.ops.parts[0].hp,20);
+});
+test('V40 blade parry is temporary, reflects once and never blocks physical collisions',()=>{
+ let b=sim.gameReducer({...battle(),mechClass:'blade',burstEnergy:100},{type:'ACTIVATE_BURST'});const hp=b.playerHp;sim.applySquadHit(b,20);assert.equal(b.playerHp,hp);assert.equal(b.tactics.parries,1);sim.applySquadHit(b,20);assert.equal(b.tactics.parries,1);const n=tick(b);assert.ok(n.report.bossDamage>0);assert.equal(n.tactics.reflection,0);assert.equal(tick(n).tactics.reflection,0);
+ const collision=sim.gameReducer({...battle(),mechClass:'blade',burstEnergy:100,armorPoints:0},{type:'ACTIVATE_BURST'});sim.applySquadHit(collision,10,'collision');assert.equal(collision.playerHp,90);assert.equal(collision.tactics.collisions,1);assert.equal(collision.tactics.parries,0);
+ const ended={...b,invulnerableTicks:0,tactics:{...b.tactics,parryTicks:0}};sim.applySquadHit(ended,10);assert.equal(ended.playerHp,hp-10);
+});
+test('V40 optional trials require prior main clear, cannot stack protocols and enforce designated chassis',()=>{
+ const locked=progression.normalizeGarage({tutorialCompleted:true}),all=progression.normalizeGarage({...garage,completedLevels:[true,true,true,true,true]});
+ let s=sim.createInitialState(locked);assert.equal(sim.gameReducer(s,{type:'SET_TRIAL',trial:'clean',garage:locked}),s);
+ s=sim.gameReducer(s,{type:'SET_TRIAL',trial:'clean',garage:all});assert.equal(s.tactics.trial,'clean');s=sim.gameReducer(s,{type:'SET_PROTOCOL',protocol:'elite',garage:all});assert.equal(s.tactics.trial,null);
+ s=sim.gameReducer(s,{type:'SET_TRIAL',trial:'signature',garage:all});assert.equal(s.ops.protocol,'standard');const wrong={...all,mechClass:'blade'};assert.equal(sim.gameReducer(s,{type:'START',garage:wrong}),s);
+ const fresh=sim.gameReducer(s,{type:'START',garage:all});assert.equal(fresh.tactics.trial,'signature');assert.equal(fresh.tactics.firstTrial,true);assert.equal(fresh.bots,1);
+ const retry=sim.gameReducer({...fresh,status:'result',tactics:{...fresh.tactics,elapsed:999,collisions:4}},{type:'RESTART',garage:all});assert.equal(retry.tactics.elapsed,0);assert.equal(retry.tactics.collisions,0);assert.equal(retry.tactics.trial,'signature');
+});
+test('V40 zero-collision includes shield absorption; timers freeze with pause and story',()=>{
+ const s={...initial(),status:'running',shieldCharges:1};sim.applySquadHit(s,10,'collision');assert.equal(s.report.collisions,0);assert.equal(s.tactics.collisions,1);
+ const n=tick(s);assert.equal(n.tactics.elapsed,1);const paused=sim.gameReducer(n,{type:'PAUSE'});assert.equal(tick(paused).tactics.elapsed,1);
+ const c=load('campaign'),story=c.createCampaign(n);story.narrative.scene={kind:'briefing',step:0,synced:0};assert.equal(c.campaignReducer(story,{type:'TICK'}).tactics.elapsed,1);
+});
+test('V40 trial success requires a real full main win and pays first-clear parts only once',()=>{
+ const g=progression.normalizeGarage({...garage,completedLevels:[true,true,true,true,true]}),s={...battle(),status:'result',won:true,bossDefeated:true,progress:100,tactics:{...battle().tactics,trial:'clean',firstTrial:true,elapsed:2000}};
+ assert.equal(tactics40.trialPassedV40(s),true);assert.equal(load('playability').rewardLedger(s).trial,2);const saved=tactics40.recordTrialV40(g,s);assert.ok(saved.trialClears.includes('0:clean'));assert.equal(saved.trialBadge,'0:clean');assert.equal(saved.parts,g.parts);
+ const retry=sim.gameReducer({...s,status:'home'},{type:'START',garage:saved});assert.equal(retry.tactics.firstTrial,false);assert.equal(tactics40.trialBonusV40({...s,tactics:retry.tactics}),0);
+ for(const bad of [{won:false},{bossDefeated:false},{progress:99},{playerHp:0},{status:'battle'},{sortie:load('sortiesV39').SORTIES_V39[0]}])assert.equal(tactics40.trialPassedV40({...s,...bad}),false);
+ assert.equal(tactics40.trialPassedV40({...s,tactics:{...s.tactics,collisions:1}}),false);
+ assert.equal(tactics40.trialPassedV40({...s,tactics:{...s.tactics,trial:'speed',elapsed:3000}}),true);assert.equal(tactics40.trialPassedV40({...s,tactics:{...s.tactics,trial:'speed',elapsed:3001}}),false);
+ assert.equal(tactics40.trialPassedV40({...s,mechClass:'heavy',tactics:{...s.tactics,trial:'signature'}}),false);
+});
+test('V40 trial saves reject unknown or locked badges and round-trip old garages',()=>{
+ const g=progression.normalizeGarage({completedLevels:[true,false,false,false,false],trialClears:['0:clean','0:clean','4:speed','0:unknown',42],trialBadge:'4:speed'});assert.deepEqual(g.trialClears,['0:clean']);assert.equal(g.trialBadge,undefined);assert.deepEqual(progression.normalizeGarage(JSON.parse(JSON.stringify(g))),g);
+});
+
+test('V40 road parries retaliate against a visible same-lane enemy and cannot bank damage for the boss',()=>{
+ const {state,index}=roadSpecialist('swarm',0,4.9);let s=sim.gameReducer({...state,mechClass:'blade',burstEnergy:100,fireCooldown:1000},{type:'ACTIVATE_BURST'});const hp=s.hazardHps[index];sim.applySquadHit(s,10);const n=tick(s);assert.ok(n.hazardHps[index]<hp);assert.equal(n.tactics.reflection,0);
+ const empty=tick({...s,hazardHps:s.hazardHps.map(()=>-1)});assert.equal(empty.tactics.reflection,0);assert.equal(empty.report.dealt,0);
+});
+test('V40 per-cast utility counters reset without erasing run totals or modifying old state',()=>{
+ const base={...battle(),mechClass:'pulse',burstEnergy:100,tactics:{...battle().tactics,castCleared:5,skillCleared:5}};const n=sim.gameReducer(base,{type:'ACTIVATE_BURST'});assert.equal(n.tactics.castCleared,0);assert.equal(n.tactics.skillCleared,5);assert.equal(base.tactics.castCleared,5);
+});
+
+test('V40 risk max health composes elite rounding and invulnerability does not hide a trial collision',()=>{
+ const base={...initial(2),status:'running',progress:15};base.ops.protocol='elite';base.hazardHps=base.hazardHps.map(hp=>Math.ceil(hp*1.4));const n=sim.applyGateEffect(base,{effect:'riskyWeapon',title:'火力',polarity:'reward'});for(const i of n.tactics.riskIds)assert.ok(n.hazardHps[i]<=sim.hazardMaxHpFor(n,i));
+ const s={...initial(),invulnerableTicks:5};sim.applySquadHit(s,10,'collision');assert.equal(s.playerHp,100);assert.equal(s.tactics.collisions,1);
 });

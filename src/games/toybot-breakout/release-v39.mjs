@@ -20,7 +20,8 @@ export async function auditReleaseV39(site){
  if(rootRefs.length||missing.length)throw Error(JSON.stringify({rootRefs,missing}));
  return {files:files.length,bytes:(await Promise.all(files.map(f=>stat(f)))).reduce((n,s)=>n+s.size,0),rootGameUrls:rootRefs.length,missingLiteralAssets:missing.length,sourceMaps:0,telemetry:'disabled in test package',platformRuntime:'pending Facebook test account and devices'};
 }
-export async function buildReleaseV39(destination){
+export async function buildReleaseV39(destination,version='v39'){
+ if(!/^v[1-9][0-9]*$/.test(version))throw Error('Invalid release version');
  const root=path.resolve(destination);try{await stat(root);throw Error('Release output already exists; choose a fresh directory');}catch(e){if(e.code!=='ENOENT')throw e;}
  await mkdir(root,{recursive:true});const site=path.join(root,'site');
  const run=(cmd,args,options={})=>{const r=spawnSync(cmd,args,{cwd:repo,stdio:'inherit',...options});if(r.status!==0)throw Error('Build/package command failed: '+cmd);};
@@ -30,9 +31,9 @@ export async function buildReleaseV39(destination){
  for(const f of await walk(site)){if(f.endsWith('.map'))await remove(f);else if(/\.(js|css)$/.test(f))await writeFile(f,relativeGameAssetsV39(await readFile(f,'utf8'),f.endsWith('.css')));}
  await remove(path.join(site,'vconsole.js'));await remove(path.join(site,'vite.svg'));
  await writeFile(path.join(site,'index.html'),releaseHtmlV39(await readFile(path.join(site,'index.html'),'utf8')));
- const report=await auditReleaseV39(site),zip=path.join(root,'toybot-breakout-v39-test.zip'),entries=await readdir(site);
+ const report=await auditReleaseV39(site),zip=path.join(root,'toybot-breakout-'+version+'-test.zip'),entries=await readdir(site);
  if(process.platform==='win32')run(path.join(process.env.SystemRoot||'C:/Windows','System32/tar.exe'),['-a','-c','-f',zip,'-C',site,...entries]);else run('zip',['-r',zip,'.'],{cwd:site});
  const bytes=await readFile(zip),commit=spawnSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).stdout?.trim();
  const result={...report,zip:path.basename(zip),zipBytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex'),sourceCommit:commit};await writeFile(path.join(root,'release-report.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));return result;
 }
-if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){if(process.argv.length!==3)throw Error('Usage: node src/games/toybot-breakout/release-v39.mjs <fresh-output-directory>');await buildReleaseV39(process.argv[2]);}
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){if(process.argv.length!==3&&process.argv.length!==4)throw Error('Usage: node src/games/toybot-breakout/release-v39.mjs <fresh-output-directory> [vNN]');await buildReleaseV39(process.argv[2],process.argv[3]);}

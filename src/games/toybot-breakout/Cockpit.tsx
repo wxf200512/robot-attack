@@ -1,3 +1,4 @@
+import { skillUtilityV40 } from './tacticsV40';
 import { skillReadout } from './skillPresentationV32';
 import { frontlineStage } from './frontline';
 import type { CSSProperties } from 'react';
@@ -36,7 +37,7 @@ export function CoreBurstScreen({game:s,reduced}:{game:GameState;reduced:boolean
  return <div className={'toybot-core-screen core-screen-'+s.mechClass+(s.status==='paused'?' is-paused':'')+(reduced?' reduced':'')}>
   <div className="core-status" role="status" aria-live="off" aria-label={coreSkill(s.mechClass).name+'生效中'}>
    <span className="core-status-icon" aria-hidden="true" style={{backgroundImage:`url(${CORE_EFFECT_ART})`,backgroundPosition:cell*50+'% 50%'}}/>
-   <div><b>{coreSkill(s.mechClass).name} · 三轨释放</b><small>爆发期伤害 {receipt.damage} · 击破 {receipt.kills}</small></div><em>{receipt.remaining.toFixed(1)}s</em>
+   <div><b>{coreSkill(s.mechClass).name} · 三轨释放</b><small>爆发期伤害 {receipt.damage} · 击破 {receipt.kills} · {skillUtilityV40(s)}</small></div><em>{receipt.remaining.toFixed(1)}s</em>
    <span className="core-status-track" aria-hidden="true"><i style={{transform:`scaleX(${receipt.fill})`}}/></span>
   </div>
  </div>;

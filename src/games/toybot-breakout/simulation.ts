@@ -1,3 +1,4 @@
+import { bossMoveV43, eliteRearmV43, recoveryScaleV43 } from './encounterV43';
 import { newFinalPassV42, type FinalPassV42 } from './polishV42';
 import { enemyFlightV42, safeToQueueV42 } from './safetyV42';
 import { newFlowV41, copyFlowV41, enemyLeadV41, enemyVisibleV41, pressureV41, protectComboV41, usefulGatesV41, recordUpgradeV41, recordContributionV41, damageAdviceV41, LESSONS_V41, type FlowV41, type ContributionV41 } from './flowV41';
@@ -9,7 +10,7 @@ import { ELITE_ATTACKS, type ElitePattern } from './frontline';
 import { newReport, type CombatReport, type CombatFeedback } from './experience';
 import { createOperations, copyOperations, fieldVisible, fieldY, makeBossParts, partBroken, eligibleFusion, FUSIONS, PROTOCOLS, prepMark, type Operations, type Protocol, type Fusion } from './operations';
 import { coreSkill, mechSpec, normalizeMechClass, type MechClass } from './mechs';
-import { BOSS_LOADOUTS, SPECIAL_LABELS, type BossSpecial } from './bossSkills';
+import { SPECIAL_LABELS, type BossSpecial } from './bossSkills';
 import { bossLaneAt, getLevel, hazardLaneAt, LEVELS, type EnemyKind } from './level';
 import { garageStats, garageInterval, normalizeGarage, canEnterLevel, recordLevelCompletion, type Garage } from './progression';
 export const LANE_CENTERS = [27, 50, 73];
@@ -174,7 +175,7 @@ export const bossPhase = (state: GameState): 'shield' | 'weak' | 'warning' | 'at
 };
 export const bossEnrage = (s: GameState) => s.battleTime < BOSS_ENRAGE_TICKS ? 0 : Math.min(3, 1 + Math.floor((s.battleTime - BOSS_ENRAGE_TICKS) / 450));
 export const isRush = (s: GameState) => s.bossAttack === 'rush' || s.bossAttack === 'sweep';
-export const bossRecoveryTicks=(s:GameState)=>Math.round((s.bossCycle===0?BOSS_RECOVERY_TICKS:Math.max(s.bossAttack in SPECIAL_LABELS?24:BOSS_RECOVERY_TICKS,24+s.levelIndex*2))*(s.ops.protocol==='overdrive'?.8:1));
+export const bossRecoveryTicks=(s:GameState)=>Math.round((s.bossCycle===0?BOSS_RECOVERY_TICKS:Math.max(s.bossAttack in SPECIAL_LABELS?24:BOSS_RECOVERY_TICKS,24+s.levelIndex*2))*recoveryScaleV43(s.bossStage,s.bossCycle)*(s.ops.protocol==='overdrive'?.8:1));
 export const bossDamageLanes = (s: GameState) => s.levelIndex===4?[0,1,2]:s.bossMoveTicks > 0 ? [] : s.bossStep === 'rush'
   ? (s.bossStepTicks >= 4 && s.bossStepTicks <= 16 ? s.bossAttackLanes : []) : [s.battleLane];
 export const attackRangeFor = (s:GameState) => s.mechClass==='blade'?Math.max(s.burstTicks>0?coreSkill(s.mechClass).range:mechSpec(s.mechClass).range,s.ops.counterShots>0||s.report.bladeReady?11:0):mechSpec(s.mechClass).range;
@@ -453,8 +454,7 @@ const sequenceLength = (s: GameState) => s.bossAttack === 'judgement' ? 2 : s.bo
 const beginWarning = (s: GameState) => {
   s.tactics.cycleDamage=s.damageSequence;s.tactics.windowTicks=0;
   s.bossStep = 'warning'; s.bossStepTicks = 0; s.bossRushHit = false; s.bossWave = 0;
-  const pattern = BOSS_LOADOUTS[s.levelIndex];
-  s.bossAttack = pattern[Math.max(0, s.bossCycle - 1) % pattern.length];
+  s.bossAttack = bossMoveV43(s.levelIndex,s.bossStage,s.bossCycle);
   if(partBroken(s,'engine')&&isRush(s))s.bossAttack='cannon';
   if (s.bossAttack === 'orbits') s.bossAttackLanes = [0,1,2].filter(lane => lane !== s.battleLane);
   else if (s.bossAttack === 'hive-link') s.bossAttackLanes = [s.battleLane];
@@ -520,7 +520,7 @@ const queueEnemyAttack = (s: GameState, source: EnemyAttack['source'], sourceId:
   if(!safeToQueueV42(s,proposals,s.status==='battle'&&s.bossStep==='warning'?Math.max(0,bossWarningTicks(s)-s.bossStepTicks):0))return false;
   s.enemyAttackSources.push(key);s.enemyAttackSequence+=proposals.length;s.enemyAttacks.push(...proposals);
   if(first){s.flow.lessons.push(kind);s.flow.introSources.push(key);s.flow.lastLesson=kind;s.flow.introTicks=50;}
-  if(source==='hazard'&&getLevel(s.levelIndex).hazards[sourceId]?.elite)s.roadCooldowns[sourceId]=profile?.rearm??60;
+  if(source==='hazard'&&getLevel(s.levelIndex).hazards[sourceId]?.elite)s.roadCooldowns[sourceId]=eliteRearmV43(profile?.rearm??60);
   return true;
 };
 const advanceEnemyAttacks = (s: GameState) => {

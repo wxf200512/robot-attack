@@ -1,0 +1,513 @@
+{
+  "compression": "lossless WebP, exact RGBA pixel verification",
+  "originalArt": "art-source and historical generators preserved",
+  "deletedUnused": [
+    {
+      "file": "boss-mech.png",
+      "bytes": 392781
+    },
+    {
+      "file": "home-mech-armor-v1.png",
+      "bytes": 310628
+    },
+    {
+      "file": "home-mech-armor-weapon-v1.png",
+      "bytes": 312794
+    },
+    {
+      "file": "home-mech-hero-v1.png",
+      "bytes": 278282
+    },
+    {
+      "file": "mech-road.jpg",
+      "bytes": 69206
+    },
+    {
+      "file": "player-fire-sheet.png",
+      "bytes": 152998
+    },
+    {
+      "file": "player-mech-back.png",
+      "bytes": 272929
+    },
+    {
+      "file": "player-mech.png",
+      "bytes": 315656
+    },
+    {
+      "file": "player-run-sheet.png",
+      "bytes": 189583
+    },
+    {
+      "file": "upgrade-armor-v1.png",
+      "bytes": 29043
+    },
+    {
+      "file": "upgrade-core-v1.png",
+      "bytes": 31640
+    },
+    {
+      "file": "upgrade-weapon-v1.png",
+      "bytes": 29853
+    }
+  ],
+  "converted": [
+    {
+      "from": "blade-slash-ai-v7.png",
+      "to": "blade-slash-ai-v7.webp",
+      "before": 627065,
+      "after": 467564
+    },
+    {
+      "from": "boss-cast-v10.png",
+      "to": "boss-cast-v10.webp",
+      "before": 3194378,
+      "after": 2159216
+    },
+    {
+      "from": "boss-defeat-ai-v3.png",
+      "to": "boss-defeat-ai-v3.webp",
+      "before": 1836588,
+      "after": 1249360
+    },
+    {
+      "from": "boss-evolution-v28.png",
+      "to": "boss-evolution-v28.webp",
+      "before": 2510557,
+      "after": 1724868
+    },
+    {
+      "from": "boss-furnace-v29.png",
+      "to": "boss-furnace-v29.webp",
+      "before": 1326456,
+      "after": 828038
+    },
+    {
+      "from": "boss-intro-ai-v4.png",
+      "to": "boss-intro-ai-v4.webp",
+      "before": 1408898,
+      "after": 1011764
+    },
+    {
+      "from": "boss-motion-sheet.png",
+      "to": "boss-motion-sheet.webp",
+      "before": 332060,
+      "after": 221568
+    },
+    {
+      "from": "boss-objectives-v10.png",
+      "to": "boss-objectives-v10.webp",
+      "before": 1044119,
+      "after": 603580
+    },
+    {
+      "from": "boss-roster-ai-v2.png",
+      "to": "boss-roster-ai-v2.webp",
+      "before": 1654441,
+      "after": 1181960
+    },
+    {
+      "from": "boss-rush-ai-v5.png",
+      "to": "boss-rush-ai-v5.webp",
+      "before": 1357821,
+      "after": 933718
+    },
+    {
+      "from": "boss-stage2-ai-v4.png",
+      "to": "boss-stage2-ai-v4.webp",
+      "before": 1388467,
+      "after": 982118
+    },
+    {
+      "from": "boss-threats-ai-v2.png",
+      "to": "boss-threats-ai-v2.webp",
+      "before": 544618,
+      "after": 315984
+    },
+    {
+      "from": "cockpit-console-v22.png",
+      "to": "cockpit-console-v22.webp",
+      "before": 535199,
+      "after": 266604
+    },
+    {
+      "from": "cockpit-v29.png",
+      "to": "cockpit-v29.webp",
+      "before": 1208212,
+      "after": 579326
+    },
+    {
+      "from": "core-blade-v34.png",
+      "to": "core-blade-v34.webp",
+      "before": 830693,
+      "after": 734060
+    },
+    {
+      "from": "core-effects-v22.png",
+      "to": "core-effects-v22.webp",
+      "before": 884278,
+      "after": 576646
+    },
+    {
+      "from": "core-heavy-v34.png",
+      "to": "core-heavy-v34.webp",
+      "before": 703141,
+      "after": 621408
+    },
+    {
+      "from": "core-pulse-v34.png",
+      "to": "core-pulse-v34.webp",
+      "before": 648169,
+      "after": 575696
+    },
+    {
+      "from": "enemy-barrier-motion-v31.png",
+      "to": "enemy-barrier-motion-v31.webp",
+      "before": 563340,
+      "after": 344862
+    },
+    {
+      "from": "enemy-bomber-motion-v31.png",
+      "to": "enemy-bomber-motion-v31.webp",
+      "before": 556660,
+      "after": 397430
+    },
+    {
+      "from": "enemy-drone-motion-v31.png",
+      "to": "enemy-drone-motion-v31.webp",
+      "before": 445017,
+      "after": 289300
+    },
+    {
+      "from": "enemy-medic-motion-v31.png",
+      "to": "enemy-medic-motion-v31.webp",
+      "before": 723298,
+      "after": 504474
+    },
+    {
+      "from": "enemy-minion-motion-v31.png",
+      "to": "enemy-minion-motion-v31.webp",
+      "before": 605449,
+      "after": 393364
+    },
+    {
+      "from": "enemy-roster-ai-v9.png",
+      "to": "enemy-roster-ai-v9.webp",
+      "before": 467929,
+      "after": 252890
+    },
+    {
+      "from": "enemy-sniper-motion-v31.png",
+      "to": "enemy-sniper-motion-v31.webp",
+      "before": 378688,
+      "after": 256012
+    },
+    {
+      "from": "enemy-swarm-motion-v31.png",
+      "to": "enemy-swarm-motion-v31.webp",
+      "before": 407096,
+      "after": 290938
+    },
+    {
+      "from": "fusion-atlas-v19.png",
+      "to": "fusion-atlas-v19.webp",
+      "before": 574894,
+      "after": 380960
+    },
+    {
+      "from": "gate-3d-ai-v2.png",
+      "to": "gate-3d-ai-v2.webp",
+      "before": 588080,
+      "after": 329940
+    },
+    {
+      "from": "gate-v29.png",
+      "to": "gate-v29.webp",
+      "before": 857853,
+      "after": 435584
+    },
+    {
+      "from": "home-mech-base-v1.png",
+      "to": "home-mech-base-v1.webp",
+      "before": 274671,
+      "after": 169496
+    },
+    {
+      "from": "logo-v29.png",
+      "to": "logo-v29.webp",
+      "before": 131453,
+      "after": 73728
+    },
+    {
+      "from": "material-v28.png",
+      "to": "material-v28.webp",
+      "before": 822235,
+      "after": 565688
+    },
+    {
+      "from": "mech-blade-ai-v7.png",
+      "to": "mech-blade-ai-v7.webp",
+      "before": 997281,
+      "after": 769344
+    },
+    {
+      "from": "mech-blade-arena-v36.png",
+      "to": "mech-blade-arena-v36.webp",
+      "before": 849717,
+      "after": 635192
+    },
+    {
+      "from": "mech-blade-attack-v35.png",
+      "to": "mech-blade-attack-v35.webp",
+      "before": 494792,
+      "after": 363768
+    },
+    {
+      "from": "mech-blade-awaken-v23.png",
+      "to": "mech-blade-awaken-v23.webp",
+      "before": 1025276,
+      "after": 669422
+    },
+    {
+      "from": "mech-blade-combat-v10.png",
+      "to": "mech-blade-combat-v10.webp",
+      "before": 1012338,
+      "after": 694492
+    },
+    {
+      "from": "mech-blade-front-v8.png",
+      "to": "mech-blade-front-v8.webp",
+      "before": 294861,
+      "after": 206968
+    },
+    {
+      "from": "mech-blade-motion-v28.png",
+      "to": "mech-blade-motion-v28.webp",
+      "before": 1271502,
+      "after": 960624
+    },
+    {
+      "from": "mech-blade-motion-v29.png",
+      "to": "mech-blade-motion-v29.webp",
+      "before": 1480990,
+      "after": 992408
+    },
+    {
+      "from": "mech-blade-motion-v30.png",
+      "to": "mech-blade-motion-v30.webp",
+      "before": 1049380,
+      "after": 660206
+    },
+    {
+      "from": "mech-blade-run-v30.png",
+      "to": "mech-blade-run-v30.webp",
+      "before": 496107,
+      "after": 290168
+    },
+    {
+      "from": "mech-heavy-ai-v7.png",
+      "to": "mech-heavy-ai-v7.webp",
+      "before": 2060199,
+      "after": 1313386
+    },
+    {
+      "from": "mech-heavy-arena-v36.png",
+      "to": "mech-heavy-arena-v36.webp",
+      "before": 906372,
+      "after": 659714
+    },
+    {
+      "from": "mech-heavy-awaken-v23.png",
+      "to": "mech-heavy-awaken-v23.webp",
+      "before": 1301626,
+      "after": 837056
+    },
+    {
+      "from": "mech-heavy-combat-v10.png",
+      "to": "mech-heavy-combat-v10.webp",
+      "before": 1607828,
+      "after": 984710
+    },
+    {
+      "from": "mech-heavy-front-v8.png",
+      "to": "mech-heavy-front-v8.webp",
+      "before": 386580,
+      "after": 231666
+    },
+    {
+      "from": "mech-heavy-motion-v28.png",
+      "to": "mech-heavy-motion-v28.webp",
+      "before": 2015371,
+      "after": 1516336
+    },
+    {
+      "from": "mech-heavy-motion-v29.png",
+      "to": "mech-heavy-motion-v29.webp",
+      "before": 2482913,
+      "after": 1520004
+    },
+    {
+      "from": "mech-heavy-motion-v30.png",
+      "to": "mech-heavy-motion-v30.webp",
+      "before": 1239616,
+      "after": 776782
+    },
+    {
+      "from": "mech-heavy-run-v30.png",
+      "to": "mech-heavy-run-v30.webp",
+      "before": 585798,
+      "after": 347164
+    },
+    {
+      "from": "mech-portraits-v28.png",
+      "to": "mech-portraits-v28.webp",
+      "before": 1287244,
+      "after": 857160
+    },
+    {
+      "from": "mech-portraits-v29.png",
+      "to": "mech-portraits-v29.webp",
+      "before": 1404903,
+      "after": 815266
+    },
+    {
+      "from": "mech-pulse-arena-v36.png",
+      "to": "mech-pulse-arena-v36.webp",
+      "before": 873537,
+      "after": 649468
+    },
+    {
+      "from": "mech-pulse-awaken-v23.png",
+      "to": "mech-pulse-awaken-v23.webp",
+      "before": 1525962,
+      "after": 938910
+    },
+    {
+      "from": "mech-pulse-combat-v10.png",
+      "to": "mech-pulse-combat-v10.webp",
+      "before": 925411,
+      "after": 636258
+    },
+    {
+      "from": "mech-pulse-motion-v28.png",
+      "to": "mech-pulse-motion-v28.webp",
+      "before": 1393776,
+      "after": 1002598
+    },
+    {
+      "from": "mech-pulse-motion-v29.png",
+      "to": "mech-pulse-motion-v29.webp",
+      "before": 1425210,
+      "after": 920844
+    },
+    {
+      "from": "mech-pulse-motion-v30.png",
+      "to": "mech-pulse-motion-v30.webp",
+      "before": 1136338,
+      "after": 679676
+    },
+    {
+      "from": "mech-pulse-run-v30.png",
+      "to": "mech-pulse-run-v30.webp",
+      "before": 448281,
+      "after": 258068
+    },
+    {
+      "from": "operations-atlas-v19.png",
+      "to": "operations-atlas-v19.webp",
+      "before": 979597,
+      "after": 601718
+    },
+    {
+      "from": "part-damage-v38.png",
+      "to": "part-damage-v38.webp",
+      "before": 148285,
+      "after": 111052
+    },
+    {
+      "from": "player-evolution-ai-v2.png",
+      "to": "player-evolution-ai-v2.webp",
+      "before": 681428,
+      "after": 473276
+    },
+    {
+      "from": "player-run-armor-v1.png",
+      "to": "player-run-armor-v1.webp",
+      "before": 254637,
+      "after": 177828
+    },
+    {
+      "from": "player-run-single-v1.png",
+      "to": "player-run-single-v1.webp",
+      "before": 195446,
+      "after": 137842
+    },
+    {
+      "from": "projectile-ai-atlas-v1.png",
+      "to": "projectile-ai-atlas-v1.webp",
+      "before": 729289,
+      "after": 510518
+    },
+    {
+      "from": "props-v28.png",
+      "to": "props-v28.webp",
+      "before": 671657,
+      "after": 385706
+    },
+    {
+      "from": "pulse-vfx-v33.png",
+      "to": "pulse-vfx-v33.webp",
+      "before": 208330,
+      "after": 168858
+    },
+    {
+      "from": "reactor-core-v22.png",
+      "to": "reactor-core-v22.webp",
+      "before": 270168,
+      "after": 137998
+    },
+    {
+      "from": "shield-armor-v13.png",
+      "to": "shield-armor-v13.webp",
+      "before": 414864,
+      "after": 288124
+    },
+    {
+      "from": "shield-break-v13.png",
+      "to": "shield-break-v13.webp",
+      "before": 270182,
+      "after": 181266
+    },
+    {
+      "from": "shield-idle-v13.png",
+      "to": "shield-idle-v13.webp",
+      "before": 543066,
+      "after": 358970
+    },
+    {
+      "from": "shield-impact-v13.png",
+      "to": "shield-impact-v13.webp",
+      "before": 750284,
+      "after": 473512
+    },
+    {
+      "from": "ui-menu-icons-v15.png",
+      "to": "ui-menu-icons-v15.webp",
+      "before": 304924,
+      "after": 168990
+    },
+    {
+      "from": "ui-result-crests-ai-v6.png",
+      "to": "ui-result-crests-ai-v6.webp",
+      "before": 398864,
+      "after": 216982
+    },
+    {
+      "from": "weapon-cannon-ai-atlas-v1.png",
+      "to": "weapon-cannon-ai-atlas-v1.webp",
+      "before": 817087,
+      "after": 537530
+    }
+  ],
+  "savedBytes": 25598561
+}

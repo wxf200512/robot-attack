@@ -4,7 +4,7 @@ import { getLevel, type EnemyKind } from './level';
 const ROOT='/games/toybot-breakout/optimized/';
 export const BOSS_MOTION_V31=['furnace','queen','fortress','oracle','emperor'].map(k=>ROOT+'boss-'+k+'-motion-v31.webp');
 export type HostileKind=EnemyKind|'minion'|'barrier';
-export const ENEMY_MOTION_V31:Record<HostileKind,string>=Object.fromEntries(['drone','swarm','sniper','bomber','medic','minion','barrier'].map(k=>[k,ROOT+'enemy-'+k+'-motion-v31.png'])) as Record<HostileKind,string>;
+export const ENEMY_MOTION_V31:Record<HostileKind,string>=Object.fromEntries(['drone','swarm','sniper','bomber','medic','minion','barrier'].map(k=>[k,ROOT+'enemy-'+k+'-motion-v31.webp'])) as Record<HostileKind,string>;
 type Profile={id:string;stride:number;attack:number;hover:number;lean:number;charge:(p:number)=>number};
 const linear=(p:number)=>p,smooth=(p:number)=>p*p*(3-2*p);
 export const BOSS_MOTION_PROFILES:readonly Profile[]=[

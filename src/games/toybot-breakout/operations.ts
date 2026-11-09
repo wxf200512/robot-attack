@@ -43,5 +43,5 @@ export function makeBossParts(s:GameState):BossPart[]{return (['cannon','shield'
  return {kind,name:PART_NAMES[s.levelIndex][lane],lane,hp,maxHp:Math.max(12,Math.round(s.battleMaxHp*.025))};
 });}
 export const partBroken=(s:GameState,kind:BossPart['kind'])=>s.ops.parts.some(p=>p.kind===kind&&p.hp===0);
-export const ART_V19='/games/toybot-breakout/optimized/operations-atlas-v19.png';
-export const FUSION_ART_V19='/games/toybot-breakout/optimized/fusion-atlas-v19.png';
+export const ART_V19='/games/toybot-breakout/optimized/operations-atlas-v19.webp';
+export const FUSION_ART_V19='/games/toybot-breakout/optimized/fusion-atlas-v19.webp';

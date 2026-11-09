@@ -1,8 +1,8 @@
 import type { GameState, PendingShot } from './simulation';
 import { LANE_CENTERS, formationFor } from './simulation';
 const ROOT='/games/toybot-breakout/optimized/';
-export const REFERENCE_LOGO=ROOT+'logo-v29.png';
-export const FURNACE_ART=ROOT+'boss-furnace-v29.png';
+export const REFERENCE_LOGO=ROOT+'logo-v29.webp';
+export const FURNACE_ART=ROOT+'boss-furnace-v29.webp';
 // Camera projection only: simulation distances, collision times and saved state
 // stay in their original coordinates. Every projectile and contact uses this map.
 export const worldScreenY=(y:number)=>y<=59?34+(y-39)*1.7:68+(y-59)*1.5;

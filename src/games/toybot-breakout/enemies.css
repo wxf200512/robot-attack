@@ -1,5 +1,5 @@
 /* Four original AI sprites, not recolors of the patrol drone. */
-.toybot-shell .toybot-hazard:not(.enemy-kind-drone) .toybot-drone-sprite{background-image:url('/games/toybot-breakout/optimized/enemy-roster-ai-v9.png');background-size:200% 200%;aspect-ratio:1;animation:none;filter:drop-shadow(0 3px 3px #07152388)}
+.toybot-shell .toybot-hazard:not(.enemy-kind-drone) .toybot-drone-sprite{background-image:url('/games/toybot-breakout/optimized/enemy-roster-ai-v9.webp');background-size:200% 200%;aspect-ratio:1;animation:none;filter:drop-shadow(0 3px 3px #07152388)}
 .toybot-shell .enemy-kind-swarm .toybot-drone-sprite{width:42px;background-position:0 0}
 .toybot-shell .enemy-kind-swarm .toybot-hazard-hp{width:28px;height:3px}
 .toybot-shell .enemy-kind-sniper .toybot-drone-sprite{width:72px;background-position:100% 0}

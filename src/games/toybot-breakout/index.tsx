@@ -1,3 +1,4 @@
+import { assetStageV43, crowdV43 } from './encounterV43';
 import { strongFeedbackV42 } from './polishV42';
 import { enemyVisibleV41 } from './flowV41';
 import { BuildLogV41, BuildReportV41, LessonCueV41 } from './FlowUIV41';
@@ -29,7 +30,7 @@ import { RUN_ART, MOTION_ART, MATERIAL_ART, PROP_ART, PORTRAIT_ART, equipmentCel
 import './artV28.css';
 import { ELITE_ATTACKS, roadEnemyName, frontlineStage, type ElitePattern } from './frontline';
 import { coreVisualShots } from './awakening';
-import { Cockpit, CoreBurstScreen, COCKPIT_ART, REACTOR_ART, CORE_EFFECT_ART } from './Cockpit';
+import { Cockpit, CoreBurstScreen, COCKPIT_ART, CORE_EFFECT_ART } from './Cockpit';
 import { ExperienceLayer, RunAnalysis } from './ExperienceLayer';
 import { useSceneMotion } from './useSceneMotion';
 import OperationsLayer, { OperationsHud, ChallengePicker, FusionSprite, OperationSprite } from './OperationsLayer';
@@ -76,6 +77,7 @@ import { createInitialState, bossHealthFor, effectiveWeapon, bossPhase, bossY, g
 import { purchaseUpgrade, readGarage, saveGarage, toggleUpgrade, upgradeCost, UPGRADES, moduleLevel, garageStats, previewUpgrade, equipAllUpgrades, MODULE_MAX_LEVEL, canEnterLevel, recordLevelCompletion, type Garage, type UpgradeId } from './progression';
 
 import './playability.css';
+import './clarityV43.css';
 
 const depthForPulse=(shot:import('./simulation').PendingShot)=>Math.round((shot.origins[0].y+(shot.y-shot.origins[0].y)*(1-shot.ticks/shot.duration)+6)*10)+3;
 function ProjectileArt({ level, heavy = false }: { level: number; heavy?: boolean }) {
@@ -214,8 +216,8 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
     return () => { engine.dispose(); if (audio.current === engine) audio.current = null; };
   }, []);
   useEffect(() => { audioSettings.current=settings; audio.current?.setSettings(settings); if(!previewState)saveSettings(settings); }, [settings,previewState]);
-  const {track:musicId,paused:musicPaused,runId:musicRunId,levelIndex:musicLevel,volume:musicSceneVolume}=musicSceneFor(game,!!game.narrative.scene);
-  useEffect(() => { audio.current?.setMusic({track:musicId,paused:musicPaused,runId:musicRunId,levelIndex:musicLevel,volume:musicSceneVolume}); }, [musicId,musicPaused,musicRunId,musicLevel,musicSceneVolume]);
+  const {track:musicId,paused:musicPaused,runId:musicRunId,levelIndex:musicLevel,volume:musicSceneVolume,warmBoss:musicWarmBoss}=musicSceneFor(game,!!game.narrative.scene);
+  useEffect(() => { audio.current?.setMusic({track:musicId,paused:musicPaused,runId:musicRunId,levelIndex:musicLevel,volume:musicSceneVolume,warmBoss:musicWarmBoss}); }, [musicId,musicPaused,musicRunId,musicLevel,musicSceneVolume,musicWarmBoss]);
   useEffect(() => { for (const cue of gameSoundEvents(previousGame.current,game)) audio.current?.play(cue,soundPan(cue,game)); previousGame.current=game; }, [game]);
   useEffect(() => { const count=UPGRADES.reduce((sum,u)=>sum+moduleLevel(garage,u.id),0); if(count>previousModules.current)audio.current?.play('upgrade'); previousModules.current=count; },[garage]);
   useEffect(() => {
@@ -224,20 +226,15 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
     document.addEventListener('visibilitychange',visibility); window.addEventListener('blur',suspend); window.addEventListener('pagehide',suspend);
     return()=>{document.removeEventListener('visibilitychange',visibility);window.removeEventListener('blur',suspend);window.removeEventListener('pagehide',suspend);};
   },[game.status]);
-  const warmRoadAssets=game.status==='running';
-  useEffect(()=>{void preloadImages([PART_DAMAGE_V38,ROAD_TILES_V37[game.levelIndex],...(game.levelIndex===4?[EMPEROR_ART_V36]:[]),ARENA_ART_V36[game.mechClass],...(game.mechClass==='blade'?[BLADE_ATTACK_V35]:[]),CORE_FX_V34[game.mechClass],RUN_ART[game.mechClass],MOTION_ART[game.mechClass],MATERIAL_ART,PROP_ART,PORTRAIT_ART,REFERENCE_LOGO],'high');},[game.mechClass,game.levelIndex]);
-  useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages(Object.values(DEFENSE_ART));},[game.status]);
-  useEffect(()=>{if(game.status==='home')void preloadImages([UI_MENU_ICONS,UI_MENU_ART.hangar,ART_V19,FUSION_ART_V19].filter(Boolean),'low');},[game.status]);
-  useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages([CHAPTER_FILMS[game.levelIndex],RELAY_ART]);},[game.status,game.levelIndex]);
-  useEffect(() => { if(warmRoadAssets)void preloadImages(Object.values(ENEMY_MOTION_V31)); },[warmRoadAssets]);
-  const warmBossAssets=game.status==='running'&&game.progress>=65;
-  const warmCombatAssets=game.status==='running'&&game.progress>=35;
-  const warmNextMap=game.status==='running'&&game.progress>=80;
-  useEffect(() => { if(warmCombatAssets)void preloadImages([COCKPIT_ART,REACTOR_ART,CORE_EFFECT_ART,BOSS_OBJECTIVE_ART]); },[warmCombatAssets,game.mechClass]);
-  useEffect(() => { if(warmBossAssets)void preloadImages([BOSS_MOTION_V31[game.levelIndex],BOSS_DEFEAT_ART,THREAT_ART]); },[warmBossAssets,game.levelIndex]);
-  useEffect(() => { if(warmNextMap&&game.levelIndex<LEVELS.length-1)void preloadImages([MAP_ART[game.levelIndex+1]],'low'); },[warmNextMap,game.levelIndex]);
-  const warmResult=game.status==='battle'&&game.battleHp<game.battleMaxHp*.3;
-  useEffect(()=>{if(warmResult)void preloadImages([UI_MENU_ART.victory,UI_MENU_ART.medal],'low');},[warmResult]);
+  const loadStage=assetStageV43(game.status,game.progress,garageOpen,!!storyView||!!game.narrative.scene);
+  useEffect(()=>{void preloadImages([REFERENCE_LOGO,PORTRAIT_ART],'high');},[]);
+  useEffect(()=>{if(!loadStage.home)return;const timer=window.setTimeout(()=>{void preloadImages([MAP_ART[game.levelIndex],RUN_ART[game.mechClass]],'low');},800);return()=>window.clearTimeout(timer);},[loadStage.home,game.levelIndex,game.mechClass]);
+  useEffect(()=>{if(loadStage.workshop)void preloadImages([UI_MENU_ICONS,ART_V19,FUSION_ART_V19],'low');},[loadStage.workshop]);
+  useEffect(()=>{if(loadStage.story)void preloadImages([CHAPTER_FILMS[game.levelIndex],RELAY_ART]);},[loadStage.story,game.levelIndex]);
+  useEffect(()=>{if(loadStage.combat)void preloadImages([ROAD_TILES_V37[game.levelIndex],RUN_ART[game.mechClass],MOTION_ART[game.mechClass],MATERIAL_ART,PROP_ART,COCKPIT_ART,...Object.values(DEFENSE_ART),CORE_FX_V34[game.mechClass]],'high');},[loadStage.combat,game.mechClass,game.levelIndex]);
+  useEffect(()=>{if(loadStage.road)void preloadImages(Object.values(ENEMY_MOTION_V31));},[loadStage.road]);
+  useEffect(()=>{if(loadStage.boss)void preloadImages([PART_DAMAGE_V38,ARENA_ART_V36[game.mechClass],...(game.mechClass==='blade'?[BLADE_ATTACK_V35]:[]),...(game.levelIndex===4?[EMPEROR_ART_V36]:[]),BOSS_MOTION_V31[game.levelIndex],BOSS_DEFEAT_ART,THREAT_ART,BOSS_OBJECTIVE_ART],'high');},[loadStage.boss,game.levelIndex,game.mechClass]);
+  useEffect(()=>{if(loadStage.result)void preloadImages([UI_MENU_ART.victory,UI_MENU_ART.medal],'low');},[loadStage.result]);
   const openSettings=()=>{ if(isActiveStatus(game.status))dispatch({type:'PAUSE'}); setSettingsOpen(true); };
 
   const unlock = (id: UpgradeId) => {setGarageGoal(undefined);setGarage((current) => purchaseUpgrade(current, id));};
@@ -485,17 +482,17 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
         .toybot-robot.lead{animation:none}
         .robot-player-art{position:relative;width:100%;aspect-ratio:3/4;filter:drop-shadow(0 6px 7px #000b);transition:transform .12s ease-out}
         .robot-player-art:before{content:'';position:absolute;z-index:0;left:18%;right:18%;bottom:7%;height:8%;border-radius:50%;background:#08192788;filter:blur(4px)}
-        .robot-run-sprite{position:absolute;z-index:1;inset:0;background:url('/games/toybot-breakout/optimized/player-run-single-v1.png') 0 0/400% 100% no-repeat}
-        .mech-a1 .robot-run-sprite,.mech-a2 .robot-run-sprite,.mech-a3 .robot-run-sprite,.mech-a4 .robot-run-sprite{background-image:url('/games/toybot-breakout/optimized/player-run-armor-v1.png')}
+        .robot-run-sprite{position:absolute;z-index:1;inset:0;background:url('/games/toybot-breakout/optimized/player-run-single-v1.webp') 0 0/400% 100% no-repeat}
+        .mech-a1 .robot-run-sprite,.mech-a2 .robot-run-sprite,.mech-a3 .robot-run-sprite,.mech-a4 .robot-run-sprite{background-image:url('/games/toybot-breakout/optimized/player-run-armor-v1.webp')}
         .toybot-scene.is-moving .toybot-robot{animation:toybot-run-bob .64s linear infinite}
         .toybot-scene.is-moving .toybot-robot:not(.lead){animation-delay:-.16s}
         .toybot-scene.is-moving .robot-run-sprite{animation:toybot-run-frames .64s steps(4,end) infinite}
         .toybot-scene.is-moving .toybot-robot:not(.lead) .robot-run-sprite{animation-delay:-.16s}
         .toybot-scene.is-battle .toybot-robot{animation:toybot-battle-ready 1.15s ease-in-out infinite alternate}
         .robot-player-art.is-firing{transform:translateY(1px) rotate(-1.5deg)}
-        .robot-weapon-ai{position:absolute;z-index:3;left:54%;top:9%;width:64%;aspect-ratio:1;background-image:url('/games/toybot-breakout/optimized/weapon-cannon-ai-atlas-v1.png');background-size:400% 400%;background-repeat:no-repeat;pointer-events:none;filter:drop-shadow(0 2px 2px #07172599)}
+        .robot-weapon-ai{position:absolute;z-index:3;left:54%;top:9%;width:64%;aspect-ratio:1;background-image:url('/games/toybot-breakout/optimized/weapon-cannon-ai-atlas-v1.webp');background-size:400% 400%;background-repeat:no-repeat;pointer-events:none;filter:drop-shadow(0 2px 2px #07172599)}
         .robot-fire-spark{position:absolute;z-index:3;left:34%;top:31%;width:32%;height:33%;background:url('/games/toybot-breakout/optimized/muzzle-flash.png?v=1') center/contain no-repeat;filter:drop-shadow(0 0 8px #8df7ff);pointer-events:none;animation:toybot-arm-flash .2s ease-out both}
-        .robot-boss-sprite{display:block;width:100%;aspect-ratio:256/292;background:url('/games/toybot-breakout/optimized/boss-motion-sheet.png?v=1') 0 0/300% 100% no-repeat;filter:drop-shadow(0 0 8px #69e9ff66)}
+        .robot-boss-sprite{display:block;width:100%;aspect-ratio:256/292;background:url('/games/toybot-breakout/optimized/boss-motion-sheet.webp?v=1') 0 0/300% 100% no-repeat;filter:drop-shadow(0 0 8px #69e9ff66)}
         .toybot-drone-sprite{display:block;width:64px;aspect-ratio:128/115;background:url('/games/toybot-breakout/optimized/drone-motion-sheet.png?v=1') 0 0/300% 100% no-repeat;filter:drop-shadow(0 0 7px #5ce8ff66)}
         .toybot-scene.is-moving .toybot-drone-sprite{animation:toybot-enemy-frames .9s steps(3,end) infinite}
         .toybot-hazard{animation:toybot-drone-hover .9s ease-in-out infinite alternate}
@@ -554,7 +551,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
         .toybot-shot.weapon-powered,.toybot-shot.weapon-heavy,.toybot-shot.weapon-overdrive,.toybot-shot.weapon-ultimate{width:32px;height:44px;background:none;border:0;box-shadow:none;scale:1;filter:drop-shadow(0 0 2px var(--bolt-color))}
         .toybot-shot.is-swarm[class*="weapon-"]{width:26px;height:36px}
         .toybot-shot[class*="weapon-"]:after{display:none}
-        .toybot-projectile-ai{display:block;width:100%;height:100%;background:url('/games/toybot-breakout/optimized/projectile-ai-atlas-v1.png') 0 0/400% 400% no-repeat;animation:toybot-ai-projectile-frames .4s steps(4,end) infinite}
+        .toybot-projectile-ai{display:block;width:100%;height:100%;background:url('/games/toybot-breakout/optimized/projectile-ai-atlas-v1.webp') 0 0/400% 400% no-repeat;animation:toybot-ai-projectile-frames .4s steps(4,end) infinite}
         @keyframes toybot-ai-projectile-frames{to{background-position-x:133.333333%}}
         @media(prefers-reduced-motion:reduce){.toybot-projectile-ai{animation:none}}
         .toybot-muzzle-event{position:absolute;z-index:5;top:calc(59% - var(--squad-size,44px) / 4);left:var(--shot-lane-center);pointer-events:none}
@@ -845,7 +842,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
         @media(prefers-reduced-motion:reduce){.is-player-hit .robot-player-art,.toybot-damage-vignette{animation:none}.toybot-damage-vignette{opacity:0}}
       `}</style>
 
-      <section className={'toybot-shell toybot-menu-system reference-v29'+(game.burstTicks>0?' has-core-active has-core-readout':'')+' core-style-'+game.mechClass + (game.narrative.radio&&canShoot(game.status)&&!game.narrative.scene?' has-story-radio':'') + (game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'?' has-cockpit':'') + (game.burstTicks===0&&!game.pendingShots.some(shot=>shot.burst)&&settings.shake!==false&&!reducedMotion&&quality!=='low'&&game.feedback.some(f=>f.ticks>=4&&strongFeedbackV42(f))?' has-impact-shake':'') + ((displayStatus==='running'||displayStatus==='battle')?' has-core-control':'') + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
+      <section className={'toybot-shell toybot-menu-system reference-v29'+(crowdV43(game)?' is-crowded-v43':'')+(game.burstTicks>0?' has-core-active has-core-readout':'')+' core-style-'+game.mechClass + (game.narrative.radio&&canShoot(game.status)&&!game.narrative.scene?' has-story-radio':'') + (game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'?' has-cockpit':'') + (game.burstTicks===0&&!game.pendingShots.some(shot=>shot.burst)&&settings.shake!==false&&!reducedMotion&&quality!=='low'&&game.feedback.some(f=>f.ticks>=4&&strongFeedbackV42(f))?' has-impact-shake':'') + ((displayStatus==='running'||displayStatus==='battle')?' has-core-control':'') + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
         {game.status !== 'home' && <div
           ref={sceneRef}
           className={`toybot-scene art-v28 sector-${game.levelIndex} formation-${formationColumns} weapon-tier-${activeWeapon} ${displayStatus === 'running' ? 'is-moving' : displayStatus === 'battle' ? 'is-battle' : displayStatus === 'defeat' ? `is-defeat ${game.defeatReason}` : ''} ${game.status === 'paused'||previewFrozen||game.finish.resumeTicks>0 ? 'is-paused' : ''} ${game.invulnerableTicks > 0 ? `is-player-hit damage-${game.damageKind}` : ''} ${arena ? 'is-arena' : ''} ${displayStatus === 'boss-intro' ? 'is-boss-intro' : displayStatus === 'boss-shift' ? 'is-boss-shift' : displayStatus === 'boss-victory' ? 'is-boss-victory' : ''}`}
@@ -974,7 +971,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
                 const kind=threat.kind as keyof typeof OBJECTIVE_NAMES;
                 const cell={egg:1,tether:2,pylon:3,wall:4,orb:5,seal:6,field:7}[kind];
                 if(kind==='field') return <div key={threat.id} className={`toybot-skill-field sector-${game.levelIndex}`} style={{left:LANE_CENTERS[threat.lane]+'%'}} role="img" aria-label={OBJECTIVE_NAMES.field}><span style={{backgroundImage:`url(${BOSS_OBJECTIVE_ART})`}} /></div>;
-                return <div key={threat.id} data-motion="threat" data-motion-id={threat.id} className={'toybot-skill-object kind-'+kind} style={{left:enemyThreatX(game,threat)+'%',top:y+'%',zIndex:Math.round((y+8)*10)}} role="img" aria-label={OBJECTIVE_NAMES[kind]}>
+                return <div key={threat.id} data-motion="threat" data-motion-id={threat.id} className={'toybot-skill-object is-targetable-v43 kind-'+kind} style={{left:enemyThreatX(game,threat)+'%',top:y+'%',zIndex:Math.round((y+8)*10)}} role="img" aria-label={OBJECTIVE_NAMES[kind]}>
                   <span className="toybot-skill-object-art" style={{backgroundImage:`url(${BOSS_OBJECTIVE_ART})`,backgroundPosition:(cell%4*100/3)+'% '+(cell>=4?100:0)+'%'}} />
                   {threat.maxHp>0&&<span className="toybot-threat-hp"><i style={{width:threat.hp/threat.maxHp*100+'%'}} /></span>}
                   <i className="toybot-skill-countdown" style={{scale:`${threat.ticks/threat.duration} 1`}} />
@@ -987,7 +984,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
               if (threat.kind === 'beam') return <div key={threat.id} className={"toybot-storm-beam " + (threat.ticks <= 2 ? 'is-firing' : '')} style={{ left: toX + '%', zIndex: 700 }} role="img" aria-label="风暴能量束，离开紫色轨道" />;
               return <React.Fragment key={threat.id}>
                 <span data-world-y={59} className={`toybot-threat-landing ${threat.kind}`} style={{ left: toX + '%', top: '59%', opacity: .18 + progress * .52 }} aria-hidden="true" />
-                <div data-motion="threat" data-motion-id={threat.id} className={`toybot-boss-threat kind-${threat.kind} ${threat.kind === 'lava' && threat.ticks === 0 ? 'is-burning' : ''} ${game.enemyAttacks.some(a => a.source === 'threat' && a.sourceId === threat.id && a.phase === 'warning') ? 'enemy-charging' : ''} sector-${game.levelIndex}`} style={{ left: x + '%', top: y + '%', '--threat-scale': .58 + progress * .5, zIndex: Math.round((y + 5) * 10) + 3 } as React.CSSProperties} role="img" aria-label={threat.kind === 'lava' ? '熔岩炮，落地后持续灼烧' : threat.kind === 'shell' ? '首领炮弹，切换轨道躲避' : threat.kind === 'barrier' ? '可射击破坏的路障' : '可射击的小型机器人'}>
+                <div data-motion="threat" data-motion-id={threat.id} className={`toybot-boss-threat ${threat.maxHp>0?'is-targetable-v43':''} kind-${threat.kind} ${threat.kind === 'lava' && threat.ticks === 0 ? 'is-burning' : ''} ${game.enemyAttacks.some(a => a.source === 'threat' && a.sourceId === threat.id && a.phase === 'warning') ? 'enemy-charging' : ''} sector-${game.levelIndex}`} style={{ left: x + '%', top: y + '%', '--threat-scale': .58 + progress * .5, zIndex: Math.round((y + 5) * 10) + 3 } as React.CSSProperties} role="img" aria-label={threat.kind === 'lava' ? '熔岩炮，落地后持续灼烧' : threat.kind === 'shell' ? '首领炮弹，切换轨道躲避' : threat.kind === 'barrier' ? '可射击破坏的路障' : '可射击的小型机器人'}>
                   {threat.kind==='minion'||threat.kind==='barrier'?<span className="toybot-threat-art hostile-v31-body" style={{backgroundImage:`url(${ENEMY_MOTION_V31[threat.kind==='barrier'?'barrier':'minion']})`,backgroundSize:'800% 400%',backgroundPosition:'0% 0%'}}/>:<span className="toybot-threat-art" style={{ backgroundImage: `url(${THREAT_ART})`, backgroundPositionY: (row * 50) + '%' }} />}
                   {threat.maxHp > 0 && <span className="toybot-threat-hp"><i style={{ width: threat.hp / threat.maxHp * 100 + '%' }} /></span>}
                 </div>

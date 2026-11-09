@@ -28,7 +28,7 @@
 .toybot-page .in-boss-arena.has-core-control .toybot-boss-top-hud small{font-size:9px}
 .toybot-ops-debrief b .ops-art,.ops-challenge-picker em .ops-art{display:inline-block;vertical-align:middle;width:24px;height:24px;margin-right:4px}
 
-.ops-prep-door{width:76px;height:86px;transform:translate(-50%,-85%);background: url('/games/toybot-breakout/optimized/gate-3d-ai-v2.png') 33.333% 0/400% 200% no-repeat;border:0;border-radius:0;box-shadow:none}
+.ops-prep-door{width:76px;height:86px;transform:translate(-50%,-85%);background: url('/games/toybot-breakout/optimized/gate-3d-ai-v2.webp') 33.333% 0/400% 200% no-repeat;border:0;border-radius:0;box-shadow:none}
 .ops-prep-door.is-selected{border:0;box-shadow:none;filter:drop-shadow(0 0 7px #76fff2)}
 .ops-prep-door .ops-art{position:absolute;left:25px;top:28px;width:26px;height:26px}
 .ops-prep-door b{position:absolute;top:9px;left:0;right:0;text-shadow:0 1px 3px #071a2d}

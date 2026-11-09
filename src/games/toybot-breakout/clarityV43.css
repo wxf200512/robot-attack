@@ -1,0 +1,11 @@
+/* Hostile danger is warm and directional; player fire retains each weapon's art. */
+.reference-v29 .toybot-enemy-bolt,.reference-v29 .toybot-boss-threat.kind-shell .toybot-threat-art{filter:sepia(.8) saturate(2.6) hue-rotate(325deg) drop-shadow(0 0 2px #ff613c)}
+.reference-v29 .toybot-enemy-target{border:2px dashed #ffad67;box-shadow:inset 0 0 0 1px #38170eaa;background-color:#ff4b2222;opacity:.85}
+.reference-v29 .toybot-enemy-target.is-live{border-style:solid;border-color:#ff6947}
+.reference-v29 .toybot-enemy-target:after{content:'▼';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);color:#ffd2a6;font-size:14px;text-shadow:0 1px 2px #39140c}
+.reference-v29 .is-targetable-v43:after{content:'◇';position:absolute;right:-3px;top:-4px;color:#ffdf85;font:bold 16px/1 sans-serif;text-shadow:0 1px 3px #10202e;pointer-events:none}
+.reference-v29 .is-targetable-v43 .toybot-threat-hp{height:4px;background:#152535;border:1px solid #ffdb8b}
+.reference-v29 .is-targetable-v43 .toybot-threat-hp i{background:#ffd06e}
+.reference-v29.is-crowded-v43 .toybot-v28-footdust,.reference-v29.is-crowded-v43 .toybot-depth-layer,.reference-v29.is-crowded-v43 .core-pulse-wake,.reference-v29.is-crowded-v43 .core-pulse-vortex{opacity:.18}
+.reference-v29.is-crowded-v43 .toybot-contact-vfx{filter:saturate(.8);opacity:.7}
+.reference-v29.is-crowded-v43 .toybot-enemy-target,.reference-v29.is-crowded-v43 .toybot-boss-strike-lane{opacity:.95}

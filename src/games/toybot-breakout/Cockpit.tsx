@@ -7,9 +7,9 @@ import type { CSSProperties } from 'react';
 import { canActivateBurst, canMove, canShoot, bossAttackLabel, bossWarningTicks, bossRecoveryTicks, BURST_TICKS, MODULES, type GameState, type RunModule } from './simulation';
 import { coreSkill, mechSpec } from './mechs';
 import { FUSIONS } from './operations';
-export const COCKPIT_ART='/games/toybot-breakout/optimized/cockpit-v29.png';
-export const REACTOR_ART='/games/toybot-breakout/optimized/reactor-core-v22.png';
-export const CORE_EFFECT_ART='/games/toybot-breakout/optimized/core-effects-v22.png';
+export const COCKPIT_ART='/games/toybot-breakout/optimized/cockpit-v29.webp';
+export const REACTOR_ART='/games/toybot-breakout/optimized/reactor-core-v22.webp';
+export const CORE_EFFECT_ART='/games/toybot-breakout/optimized/core-effects-v22.webp';
 export function Cockpit({game:s,blocked,onMove,onBurst}:{game:GameState;blocked:boolean;onMove:(lane:number)=>void;onBurst:()=>void}){
  const opportunity=blocked?null:skillOpportunityV42(s);
  const skill=coreSkill(s.mechClass),active=s.burstTicks>0,ready=canActivateBurst(s)&&!blocked;

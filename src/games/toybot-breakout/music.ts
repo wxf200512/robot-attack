@@ -1,11 +1,11 @@
 import type { GameState } from './simulation';
 import { musicTrack, musicLoopStart, musicLoopEnd, MUSIC_ENCODER_DELAY, type MusicId, type MusicTrack } from './musicTracks';
-export type MusicScene={track:MusicId|null;paused:boolean;runId:number;levelIndex:number;volume:number};
+export type MusicScene={track:MusicId|null;paused:boolean;runId:number;levelIndex:number;volume:number;warmBoss?:boolean};
 export function musicSceneFor(state:GameState,storyBlocked=false):MusicScene{
  const phase=state.status==='paused'?state.resumeStatus:state.status;
  const boss=phase==='boss-intro'||phase==='battle'||phase==='boss-shift';
  const stopped=phase==='defeat'||phase==='result'||phase==='boss-victory';
- return {track:stopped?null:boss?`boss-${Math.max(0,Math.min(4,state.levelIndex))}` as MusicId:'road',paused:state.status==='paused'||storyBlocked,runId:state.runId,levelIndex:state.levelIndex,volume:phase==='home'?.6:1};
+ return {track:stopped?null:boss?`boss-${Math.max(0,Math.min(4,state.levelIndex))}` as MusicId:'road',paused:state.status==='paused'||storyBlocked,runId:state.runId,levelIndex:state.levelIndex,volume:phase==='home'?.6:1,warmBoss:phase==='running'&&state.progress>=65};
 }
 export function musicPosition(track:MusicTrack,elapsed:number){
  const end=musicLoopEnd(track),start=musicLoopStart(track);
@@ -66,7 +66,7 @@ export function createMusicPlayer(ctx:AudioContext,output:AudioNode,fetcher:type
   const allowed=new Set<MusicId>([scene.track,preload]);
   for(const [id,task]of loading)if(!allowed.has(id)){task.controller.abort();loading.delete(id);}
   for(const id of cache.keys())if(!allowed.has(id))cache.delete(id);
-  if(scene.track==='road')void load(preload).catch(()=>{});
+  if(scene.track==='road'&&scene.warmBoss)void load(preload).catch(()=>{});
   if(live?.key===keyFor(scene)){live.gain.gain.setTargetAtTime(scene.volume,ctx.currentTime,.2);return;}
   const ticket=++version;
   void load(scene.track).then(buffer=>{

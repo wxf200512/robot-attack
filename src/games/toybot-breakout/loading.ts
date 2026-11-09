@@ -6,7 +6,7 @@ const pump=()=>{
  queue.sort((a,b)=>rank[a.priority]-rank[b.priority]);
  while(active<3&&queue.length){const job=queue.shift()!;active++;let finished=false;
   const finish=(failed=false)=>{if(finished)return;finished=true;active--;if(failed){cache.delete(job.url);job.reject(new Error('Image unavailable: '+job.url));}else job.resolve();queueMicrotask(pump);};
-  try{const image=new Image();image.decoding='async';image.onload=()=>{image.onload=null;image.onerror=null;void Promise.resolve(image.decode?.()).catch(()=>{}).then(()=>finish());};image.onerror=()=>{image.onload=null;image.onerror=null;finish(true);};image.src=job.url;}catch{finish(true);}
+  try{const image=new Image();image.decoding='async';image.fetchPriority=job.priority==='high'?'high':job.priority==='low'?'low':'auto';image.onload=()=>{image.onload=null;image.onerror=null;void Promise.resolve(image.decode?.()).catch(()=>{}).then(()=>finish());};image.onerror=()=>{image.onload=null;image.onerror=null;finish(true);};image.src=job.url;}catch{finish(true);}
  }
 };
 export function preloadImages(urls:string[],priority:Priority='normal'){

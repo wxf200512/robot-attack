@@ -2,13 +2,13 @@
 .toybot-shell .art-v28 .robot-player-art.toybot-v28-mech{aspect-ratio:1;filter:none;transition:none;overflow:visible}
 .toybot-shell .toybot-v28-body{position:absolute;inset:-14%;display:block;background-size:800% 800%;background-repeat:no-repeat;transform-origin:50% 76%;scale:var(--art-mirror,1) 1}
 .toybot-shell .art-v28 .toybot-robot{filter:drop-shadow(-1px 2px 1px #07162f55)}
-.toybot-shell .art-v28 .toybot-robot:after,.toybot-shell .art-v28 .toybot-hazard:after{background:url('/games/toybot-breakout/optimized/props-v28.png') 33.333333% 100%/400% 200% no-repeat;width:112%;height:auto;aspect-ratio:1;border-radius:0;bottom:-31%;z-index:-1;opacity:.72}
+.toybot-shell .art-v28 .toybot-robot:after,.toybot-shell .art-v28 .toybot-hazard:after{background:url('/games/toybot-breakout/optimized/props-v28.webp') 33.333333% 100%/400% 200% no-repeat;width:112%;height:auto;aspect-ratio:1;border-radius:0;bottom:-31%;z-index:-1;opacity:.72}
 .toybot-shell .art-v28 .toybot-hazard:after{width:80%;bottom:-18%;opacity:.7}
 .toybot-shell .art-v28 .toybot-contact-vfx i{inset:-18%;background-size:800% 400%;background-repeat:no-repeat;transform:none;opacity:1}
 .toybot-shell .art-v28 .toybot-contact-vfx:after{display:none}
 .toybot-shell .art-v28 .toybot-contact-vfx{opacity:1;filter:none}
 .toybot-shell .art-v28 .toybot-impact-burst{display:none}
-.toybot-shell .art-v28 .toybot-enemy-break span{background-image:url('/games/toybot-breakout/optimized/material-v28.png');background-size:800% 400%;background-position:0 100%;animation:toybot-v28-break .7s steps(7,end) both;filter:none;scale:1;opacity:1}
+.toybot-shell .art-v28 .toybot-enemy-break span{background-image:url('/games/toybot-breakout/optimized/material-v28.webp');background-size:800% 400%;background-position:0 100%;animation:toybot-v28-break .7s steps(7,end) both;filter:none;scale:1;opacity:1}
 .toybot-v28-local-impact{position:absolute;width:78px;height:78px;translate:-50% -50%;background-size:800% 400%;background-repeat:no-repeat;pointer-events:none}
 .toybot-v28-salvage{position:absolute;width:22px;height:22px;translate:-50% -50%;background-size:400% 200%;background-repeat:no-repeat;pointer-events:none}
 .toybot-v28-assembly{position:absolute;width:122px;height:122px;translate:-50% -50%;background-size:400% 200%;background-repeat:no-repeat;pointer-events:none;z-index:595;scale:calc(.85 + var(--assembly-age)*.2)}
@@ -20,9 +20,9 @@
 .toybot-shell .art-v28 .toybot-scene-background{filter:saturate(.88) contrast(.97);transform-origin:50% 32%}
 .toybot-shell .art-v28 .toybot-hazard .toybot-drone-sprite{filter:drop-shadow(-1px 2px 1px #07162f66);backface-visibility:hidden}
 .toybot-shell .art-v28 .robot-boss-sprite{filter:drop-shadow(-2px 5px 3px #06162677)}
-.toybot-shell .art-v28 .toybot-obstacle.boss:after{content:'';position:absolute;z-index:-1;left:0;top:62%;width:100%;height:48%;background:url('/games/toybot-breakout/optimized/props-v28.png') 33.333333% 100%/400% 200%;opacity:.8;pointer-events:none}
+.toybot-shell .art-v28 .toybot-obstacle.boss:after{content:'';position:absolute;z-index:-1;left:0;top:62%;width:100%;height:48%;background:url('/games/toybot-breakout/optimized/props-v28.webp') 33.333333% 100%/400% 200%;opacity:.8;pointer-events:none}
 .toybot-v28-foreground{position:absolute;inset:33% 0 0;overflow:hidden;pointer-events:none;z-index:690;contain:paint}
-.toybot-v28-foreground i{position:absolute;left:-27%;top:12%;width:33%;aspect-ratio:1;background:url('/games/toybot-breakout/optimized/props-v28.png') 100% 100%/400% 200% no-repeat;opacity:.7;transform:scaleX(-1);filter:blur(.3px)}
+.toybot-v28-foreground i{position:absolute;left:-27%;top:12%;width:33%;aspect-ratio:1;background:url('/games/toybot-breakout/optimized/props-v28.webp') 100% 100%/400% 200% no-repeat;opacity:.7;transform:scaleX(-1);filter:blur(.3px)}
 .toybot-v28-foreground i+i{left:auto;right:-27%;top:60%;transform:none}
 .is-moving .toybot-v28-foreground i{animation:toybot-v28-parallax 4.5s linear infinite}.is-moving .toybot-v28-foreground i+i{animation-delay:-2.25s}
 .toybot-shell .toybot-v28-victory-mech{position:absolute;left:50%;bottom:0;width:110px;height:110px;translate:-50% 0;z-index:2}
@@ -36,7 +36,7 @@
 .quality-low .toybot-v28-foreground{display:none}
 @media(prefers-reduced-motion:reduce){.toybot-shell .toybot-v28-victory-mech .toybot-mech-showcase,.toybot-shell .art-v28 .is-equipment-deploying .toybot-v28-mech,.is-moving .toybot-v28-foreground i,.toybot-shell .art-v28 .toybot-enemy-break span{animation:none}.toybot-v28-foreground{display:none}}
 
-.toybot-v28-footdust{position:absolute;left:15%;bottom:-22%;width:85%;aspect-ratio:1;background:url('/games/toybot-breakout/optimized/props-v28.png') 66.666667% 100%/400% 200%;pointer-events:none;opacity:0;z-index:-1}
+.toybot-v28-footdust{position:absolute;left:15%;bottom:-22%;width:85%;aspect-ratio:1;background:url('/games/toybot-breakout/optimized/props-v28.webp') 66.666667% 100%/400% 200%;pointer-events:none;opacity:0;z-index:-1}
 
 .toybot-shell .toybot-v28-portrait{display:block;z-index:1;position:absolute;inset:-4%;background-size:800% 300%;background-repeat:no-repeat;pointer-events:none}
 

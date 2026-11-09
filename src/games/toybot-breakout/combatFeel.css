@@ -53,6 +53,6 @@
 .toybot-melee-slash.has-arc-module{filter:drop-shadow(0 0 5px #83f6ff)}
 
 .toybot-shell .toybot-status-effects{flex-wrap:wrap;row-gap:3px;max-width:100%}
-.toybot-mounted-module{position:absolute;width:var(--module-size);height:var(--module-size);background:url('/games/toybot-breakout/optimized/projectile-ai-atlas-v1.png') 0 100%/400% 400% no-repeat;pointer-events:none;z-index:3;left:8%;top:28%;filter:drop-shadow(0 0 3px #79eaff)}
+.toybot-mounted-module{position:absolute;width:var(--module-size);height:var(--module-size);background:url('/games/toybot-breakout/optimized/projectile-ai-atlas-v1.webp') 0 100%/400% 400% no-repeat;pointer-events:none;z-index:3;left:8%;top:28%;filter:drop-shadow(0 0 3px #79eaff)}
 .toybot-mounted-module.mounted-burn{left:auto;right:8%;filter:hue-rotate(150deg) drop-shadow(0 0 3px #ffb36d)}
 .toybot-mounted-module.mounted-recycle{left:42%;top:38%;filter:hue-rotate(275deg) drop-shadow(0 0 3px #8dffb5)}

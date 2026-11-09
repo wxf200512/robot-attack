@@ -1,5 +1,5 @@
 import { attackIntervalFor, DODGE_TICKS, isBossArena, type GameState, type PendingShot } from './simulation';
-export const AWAKEN_ART={pulse:'/games/toybot-breakout/optimized/mech-pulse-awaken-v23.png',heavy:'/games/toybot-breakout/optimized/mech-heavy-awaken-v23.png',blade:'/games/toybot-breakout/optimized/mech-blade-awaken-v23.png'};
+export const AWAKEN_ART={pulse:'/games/toybot-breakout/optimized/mech-pulse-awaken-v23.webp',heavy:'/games/toybot-breakout/optimized/mech-heavy-awaken-v23.webp',blade:'/games/toybot-breakout/optimized/mech-blade-awaken-v23.webp'};
 export function awakeningPose(s:GameState,alpha:number,index:number){
  const t=Math.max(0,Math.min(1,alpha));
  if(!isBossArena(s))return {row:0,frame:Math.floor((s.roadTicks+t+index*1.3)/1.6)%4};

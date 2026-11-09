@@ -1,7 +1,7 @@
 import { DEFENSE_VFX_TICKS, type GameState } from './simulation';
 
 const ROOT='/games/toybot-breakout/optimized/';
-export const DEFENSE_ART={idle:ROOT+'shield-idle-v13.png',impact:ROOT+'shield-impact-v13.png',break:ROOT+'shield-break-v13.png',armor:ROOT+'shield-armor-v13.png'};
+export const DEFENSE_ART={idle:ROOT+'shield-idle-v13.webp',impact:ROOT+'shield-impact-v13.webp',break:ROOT+'shield-break-v13.webp',armor:ROOT+'shield-armor-v13.webp'};
 export type DefenseLayer={art:keyof typeof DEFENSE_ART;frame:number;kind:'shield'|'armor';transient:boolean};
 export function defenseLayers(game:GameState,index:number,reduced=false):DefenseLayer[]{
  const status=game.status==='paused'?game.resumeStatus:game.status;

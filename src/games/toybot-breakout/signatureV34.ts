@@ -2,7 +2,7 @@ import type { MechClass } from './mechs';
 import type { PendingShot } from './simulation';
 import type { CombatFeedback } from './experience';
 import { pulseFlightV33 } from './pulseVfxV33';
-export const CORE_FX_V34:Record<MechClass,string>={pulse:'/games/toybot-breakout/optimized/core-pulse-v34.png',heavy:'/games/toybot-breakout/optimized/core-heavy-v34.png',blade:'/games/toybot-breakout/optimized/core-blade-v34.png'};
+export const CORE_FX_V34:Record<MechClass,string>={pulse:'/games/toybot-breakout/optimized/core-pulse-v34.webp',heavy:'/games/toybot-breakout/optimized/core-heavy-v34.webp',blade:'/games/toybot-breakout/optimized/core-blade-v34.webp'};
 export const signatureShotV34=(shot:PendingShot)=>shot.burst&&shot.origins[0].index===0&&!shot.splashDone;
 export function coreMuzzlesV34(shots:PendingShot[]){
  const emitters=new Map<number,PendingShot>();

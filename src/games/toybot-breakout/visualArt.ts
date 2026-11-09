@@ -2,12 +2,12 @@ import type { GameState } from './simulation';
 export { motionTier } from './animationTypes';
 export { sampleMechMotion as artPose } from './animationModules';
 const ROOT='/games/toybot-breakout/optimized/';
-export const RUN_ART={pulse:ROOT+'mech-pulse-run-v30.png',heavy:ROOT+'mech-heavy-run-v30.png',blade:ROOT+'mech-blade-run-v30.png'};
-export const MOTION_ART={pulse:ROOT+'mech-pulse-motion-v30.png',heavy:ROOT+'mech-heavy-motion-v30.png',blade:ROOT+'mech-blade-motion-v30.png'};
-export const BOSS_EVOLUTION_ART=ROOT+'boss-evolution-v28.png';
-export const MATERIAL_ART=ROOT+'material-v28.png';
-export const PROP_ART=ROOT+'props-v28.png';
-export const PORTRAIT_ART=ROOT+'mech-portraits-v29.png';
+export const RUN_ART={pulse:ROOT+'mech-pulse-run-v30.webp',heavy:ROOT+'mech-heavy-run-v30.webp',blade:ROOT+'mech-blade-run-v30.webp'};
+export const MOTION_ART={pulse:ROOT+'mech-pulse-motion-v30.webp',heavy:ROOT+'mech-heavy-motion-v30.webp',blade:ROOT+'mech-blade-motion-v30.webp'};
+export const BOSS_EVOLUTION_ART=ROOT+'boss-evolution-v28.webp';
+export const MATERIAL_ART=ROOT+'material-v28.webp';
+export const PROP_ART=ROOT+'props-v28.webp';
+export const PORTRAIT_ART=ROOT+'mech-portraits-v29.webp';
 export function equipmentCell(kind:'pulse'|'heavy'|'blade',weapon:boolean,armor:boolean,core:boolean){return atlasCell(Number(weapon)+Number(armor)*2+Number(core)*4,{pulse:0,heavy:1,blade:2}[kind],8,3);}
 export const atlasCell=(column:number,row:number,columns=8,rows=8)=>`${Math.max(0,Math.min(columns-1,column))*100/(columns-1)}% ${Math.max(0,Math.min(rows-1,row))*100/(rows-1)}%`;
 export function bossArtFrame(s:GameState){

@@ -4,13 +4,28 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const ts = require('typescript');
+
+const migrationV43=JSON.parse(fs.readFileSync(path.join(__dirname,'asset-migration-v43.json'),'utf8'));
+function fixturePath(file){if(fs.existsSync(file))return file;const normalized=String(file).replaceAll('\\','/');if(normalized.includes('/optimized/')){const item=migrationV43.converted.find(m=>m.from===path.basename(file));if(item)return path.join(path.dirname(file),item.to);}if(normalized.includes('/art-source/')&&String(file).endsWith('.webp'))return String(file).replace(/\.webp$/,'.png');return file;}
+const readFixture=(file,...args)=>fs.readFileSync(fixturePath(file),...args);
+const fixtureExists=file=>fs.existsSync(fixturePath(file));
+function imageInfo(b){
+ if(b.toString('ascii',1,4)==='PNG')return {width:b.readUInt32BE(16),height:b.readUInt32BE(20),alpha:b[25]===6};
+ assert.equal(b.toString('ascii',0,4),'RIFF');assert.equal(b.toString('ascii',8,12),'WEBP');
+ for(let i=12;i+8<b.length;){const kind=b.toString('ascii',i,i+4),size=b.readUInt32LE(i+4),at=i+8;
+  if(kind==='VP8X')return {width:1+b.readUIntLE(at+4,3),height:1+b.readUIntLE(at+7,3),alpha:!!(b[at]&16)};
+  if(kind==='VP8L'){assert.equal(b[at],47);const v=b.readUInt32LE(at+1);return {width:(v&16383)+1,height:((v>>>14)&16383)+1,alpha:!!(v>>>28&1)};}
+  i=at+size+(size%2);
+ }throw Error('Unsupported artwork container');
+}
+
 const cache = new Map();
 function load(name) {
   const file = path.resolve(__dirname, name + '.ts');
   if (cache.has(file)) return cache.get(file);
   const module = { exports: {} };
   cache.set(file, module.exports);
-  const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS } }).outputText;
+  const code = ts.transpileModule(readFixture(file, 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS } }).outputText;
   new Function('require', 'module', 'exports', code)((id) => id.startsWith('./') ? load(id) : require(id), module, module.exports);
   return module.exports;
 }
@@ -55,7 +70,7 @@ test('wave recipes keep weak lead ranks, stronger rear ranks and a final supply 
  for(const l of levels.LEVELS){for(let wave=0;wave<3;wave++){const pack=l.hazards.filter(h=>h.horde&&h.wave===wave&&!h.eliteRole);assert.ok(pack.find(h=>h.slot<6).hp<=pack.at(-1).hp);}assert.ok(Math.max(...l.hazards.filter(h=>h.horde).map(h=>h.progress))<l.encounters[0].progress-10);}
 });
 test('later boss recovery offers a readable stationary counter window and honors overdrive',()=>{
- const s={...battle(4),bossCycle:3};assert.equal(sim.bossRecoveryTicks(s),32);assert.ok(sim.bossRecoveryTicks({...s,ops:{...s.ops,protocol:'overdrive'}})<32);
+ const s={...battle(4),bossCycle:3};assert.equal(sim.bossRecoveryTicks(s),26);assert.ok(sim.bossRecoveryTicks({...s,ops:{...s.ops,protocol:'overdrive'}})<26);
  let n=tick(s);for(let i=0;i<6;i++)n=tick(n);assert.equal(n.bossMoveTicks,0);const lane=n.battleLane;n=tick(n);assert.equal(n.battleLane,lane);assert.equal(n.bossStep,'recovery');
 });
 test('debrief uses actual remaining boss durability and dominant damage cause',()=>{
@@ -315,7 +330,7 @@ test('support and shells never compete for a dodge task in the same wave', () =>
       s = tick(s);
       const active = s.threats.filter(t => t.hp !== 0);
       assert.ok(!(active.some(t => t.kind === 'shell') && active.some(t => t.kind !== 'shell')), `level ${level + 1}`);
-      assert.ok(new Set(active.filter(t => t.kind !== 'shell').map(t => t.kind)).size <= 1);
+      assert.ok(new Set(active.filter(t=>t.kind!=='shell').map(t=>t.kind)).size<=1 || active.every(t=>t.kind==='orb'||t.kind==='field'&&active.some(core=>core.kind==='orb'&&core.id===t.linkId)),'only a linked orb and its fields may coexist');
       if (active.some(t => t.kind === 'shell')) assert.equal(s.bossStep, 'flight');
     }
   }
@@ -766,11 +781,11 @@ test('training checkpoints resume safely, save only a lesson index, and do not t
 });
 test('optimized art URLs resolve, transparent character sheets keep alpha, and original art is archived', () => {
  const art=load('art'),urls=[...art.MAP_ART,...Object.values(art.MECH_CLASS_ART),...Object.values(art.MECH_FRONT_ART),art.BOSS_ART,art.BOSS_INTRO_ART,art.BOSS_STAGE2_ART,art.BOSS_DEFEAT_ART,art.BOSS_RUSH_ART,art.GATE_ART,art.PLAYER_ART,art.THREAT_ART,art.UI_HANGAR_ART,art.UI_RESULT_CRESTS,art.BLADE_SLASH_ART,art.ENEMY_ART];
- for(const url of urls){assert.ok(url.includes('/optimized/'));const file=path.resolve(__dirname,'../../../public',url.slice(1));assert.ok(fs.existsSync(file),url);}
- for(const url of Object.values(art.MECH_CLASS_ART)){const b=fs.readFileSync(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(b[25],6,'mech PNG must keep RGBA alpha');}
- assert.ok(fs.existsSync(path.join(__dirname,'art-source','ui-hangar-ai-v6.png')));
- for(const url of [...art.STORY_ART,art.STORY_COVER]){const bytes=fs.readFileSync(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(bytes.readUInt16BE(0),0xffd8,'comic deployment images are JPEG');}
- for(let page=1;page<=4;page++)assert.ok(fs.existsSync(path.join(__dirname,'art-source',`story-comic-${page}-v11.png`)));
+ for(const url of urls){assert.ok(url.includes('/optimized/'));const file=path.resolve(__dirname,'../../../public',url.slice(1));assert.ok(fixtureExists(file),url);}
+ for(const url of Object.values(art.MECH_CLASS_ART)){const b=readFixture(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(imageInfo(b).alpha,true,'mech PNG must keep RGBA alpha');}
+ assert.ok(fixtureExists(path.join(__dirname,'art-source','ui-hangar-ai-v6.png')));
+ for(const url of [...art.STORY_ART,art.STORY_COVER]){const bytes=readFixture(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(bytes.readUInt16BE(0),0xffd8,'comic deployment images are JPEG');}
+ for(let page=1;page<=4;page++)assert.ok(fixtureExists(path.join(__dirname,'art-source',`story-comic-${page}-v11.png`)));
 });
 
 test('story chapters follow the five actual guardians and never replace playable levels',()=>{
@@ -852,8 +867,8 @@ test('background lore is once per run, nonmodal, dismissible, and freezes during
 });
 test('all chapter film cells stay within six frames and generated assets resolve with alpha relay',()=>{
  for(const kind of ['briefing','confrontation','aftermath'])for(const step of [0,1])for(const time of [0,900,5000,999999]){const frame=campaign.filmFrame(kind,step,time);assert.ok(frame>=0&&frame<6);assert.equal(campaign.filmFrame(kind,step,time,true),campaign.filmFrame(kind,step,0));}
- for(const url of campaign.CHAPTER_FILMS){const bytes=fs.readFileSync(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(bytes.readUInt16BE(0),0xffd8);}
- const relay=fs.readFileSync(path.resolve(__dirname,'../../../public',campaign.RELAY_ART.slice(1)));assert.equal(relay[25],6);
+ for(const url of campaign.CHAPTER_FILMS){const bytes=readFixture(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(bytes.readUInt16BE(0),0xffd8);}
+ const relay=readFixture(path.resolve(__dirname,'../../../public',campaign.RELAY_ART.slice(1)));assert.equal(relay[25],6);
 });
 test('interactive campaign completes all five sectors with both support routes and all chassis',()=>{
  for(const route of ['rescue','signal'])for(const mechClass of ['pulse','heavy','blade'])for(let sector=0;sector<5;sector++){
@@ -1080,14 +1095,14 @@ test('arena sidestep has moving hitbox, preserves shot origins and does not gran
 test('eight-frame combat sheets retain alpha and exact frame boundaries for all three classes', () => {
   const art=load('art');
   for(const url of Object.values(art.BATTLE_ART)) {
-    const file=path.resolve(__dirname,'../../../public',url.slice(1)),data=fs.readFileSync(file);
-    assert.equal(data.readUInt32BE(16),1536);assert.equal(data.readUInt32BE(20),576);assert.equal(data[25],6);
-    assert.equal(data.readUInt32BE(16)/8,data.readUInt32BE(20)/3);
-    assert.ok(fs.existsSync(path.join(__dirname,'art-source',path.basename(file))));
+    const file=path.resolve(__dirname,'../../../public',url.slice(1)),data=readFixture(file);
+    assert.equal(imageInfo(data).width,1536);assert.equal(imageInfo(data).height,576);assert.equal(imageInfo(data).alpha,true);
+    assert.equal(imageInfo(data).width/8,imageInfo(data).height/3);
+    assert.ok(fixtureExists(path.join(__dirname,'art-source',path.basename(file))));
   }
   for(const [url,cols,rows]of [[art.BOSS_CAST_ART,8,5],[art.BOSS_OBJECTIVE_ART,4,2]]) {
-    const data=fs.readFileSync(path.resolve(__dirname,'../../../public',url.slice(1)));
-    assert.equal(data.readUInt32BE(16)%cols,0);assert.equal(data.readUInt32BE(20)%rows,0);assert.equal(data[25],6);
+    const data=readFixture(path.resolve(__dirname,'../../../public',url.slice(1)));
+    assert.equal(imageInfo(data).width%cols,0);assert.equal(imageInfo(data).height%rows,0);assert.equal(imageInfo(data).alpha,true);
   }
 });
 
@@ -1138,7 +1153,7 @@ test('stale defense impacts clear on arena entry, boss victory, restart and defe
 });
 test('four defense atlases preserve alpha and six exact square cells',()=>{
  assert.deepEqual([0,1,2,3,4,5].map(defense.defenseCell),['0% 0%','100% 0%','0% 50%','100% 50%','0% 100%','100% 100%']);
- for(const url of Object.values(defense.DEFENSE_ART)){const data=fs.readFileSync(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(data.readUInt32BE(16),512);assert.equal(data.readUInt32BE(20),768);assert.equal(data[25],6);assert.ok(fs.existsSync(path.join(__dirname,'art-source',path.basename(url))));}
+ for(const url of Object.values(defense.DEFENSE_ART)){const data=readFixture(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(imageInfo(data).width,512);assert.equal(imageInfo(data).height,768);assert.equal(imageInfo(data).alpha,true);assert.ok(fixtureExists(path.join(__dirname,'art-source',path.basename(url))));}
 });
 
 test('core burst requires earned full energy and only one activation can consume it',()=>{
@@ -1437,8 +1452,8 @@ test('challenge medal persistence validates victory, deduplicates and preserves 
  assert.deepEqual(progression.normalizeGarage(null).challengeClears,[]);
 });
 test('new artwork is local RGBA atlases with preserved originals and regular cell geometry',()=>{
- for(const [file,cols,rows]of [['operations-atlas-v19.png',3,3],['fusion-atlas-v19.png',3,2]]){
-  const data=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',file));assert.equal(data[25],6);assert.equal(data.readUInt32BE(16)%cols,0);assert.equal(data.readUInt32BE(20)%rows,0);assert.ok(fs.existsSync(path.join(__dirname,'art-source',file)));
+ for(const [file,cols,rows]of [['operations-atlas-v19.webp',3,3],['fusion-atlas-v19.webp',3,2]]){
+  const data=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',file));assert.equal(imageInfo(data).alpha,true);assert.equal(imageInfo(data).width%cols,0);assert.equal(imageInfo(data).height%rows,0);assert.ok(fixtureExists(path.join(__dirname,'art-source',file)));
  }
 });
 
@@ -1561,8 +1576,8 @@ test('core clear-through bonuses increase road power while retaining boss multip
 });
 test('cockpit and skill atlases have deployment dimensions and preserve RGBA originals',()=>{
  for(const [name,width,height]of [['cockpit-console-v22',1080,360],['reactor-core-v22',384,384],['core-effects-v22',1200,400]]){
-  const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',name+'.png'));
-  assert.equal(png.readUInt32BE(16),width);assert.equal(png.readUInt32BE(20),height);assert.equal(png[25],6);assert.ok(fs.existsSync(path.join(__dirname,'art-source',name+'.png')));
+  const png=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',name+'.png'));
+  assert.equal(imageInfo(png).width,width);assert.equal(imageInfo(png).height,height);assert.equal(imageInfo(png).alpha,true);assert.ok(fixtureExists(path.join(__dirname,'art-source',name+'.png')));
  }
 });
 
@@ -1598,7 +1613,7 @@ test('integrated body sheets sample running idle firing and dodge rows without s
  const dodge=[4,3,2,1].map(dodgeTicks=>a.awakeningPose({...s,dodgeTicks},.5,0));assert.ok(dodge.every(p=>p.row===3&&p.frame>=0&&p.frame<=3));assert.deepEqual(dodge.map(p=>p.frame),[0,1,2,3]);assert.equal(JSON.stringify(s),before);
 });
 test('whole-body awakening assets retain regular 4 by 4 RGBA geometry',()=>{
- const a=load('awakening');for(const url of Object.values(a.AWAKEN_ART)){const png=fs.readFileSync(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(png.readUInt32BE(16),1024);assert.equal(png.readUInt32BE(20),1024);assert.equal(png[25],6);}
+ const a=load('awakening');for(const url of Object.values(a.AWAKEN_ART)){const png=readFixture(path.resolve(__dirname,'../../../public',url.slice(1)));assert.equal(imageInfo(png).width,1024);assert.equal(imageInfo(png).height,1024);assert.equal(imageInfo(png).alpha,true);}
 });
 test('core beam length and angle reconstruct the real body-center to target segment at different aspect ratios',()=>{
  const s={...battle(),battleLane:2},shot=incoming(s,{burst:true,origins:[{index:1,x:39,y:65}],lane:2,count:3});
@@ -1647,7 +1662,7 @@ test('new elite patterns have fixed readable telegraphs, interruptible charges a
   assert.equal(JSON.stringify(state),old);assert.ok(s.enemyAttacks.length>0);assert.ok(s.enemyAttacks.every(a=>a.kind===pattern&&a.phase==='warning'&&a.ticks>=profile.warning));
   const pinned=s.enemyAttacks.map(a=>a.lane),moved=tick({...s,lane:(state.lane+1)%3});assert.deepEqual(moved.enemyAttacks.map(a=>a.lane),pinned);
   assert.equal(tick({...s,hazardHps:s.hazardHps.map(()=>-1)}).enemyAttacks.length,0);
-  assert.equal(s.roadCooldowns[index],profile.rearm);const paused=sim.gameReducer(s,{type:'PAUSE'});assert.equal(tick(paused),paused);
+  assert.equal(s.roadCooldowns[index],load('encounterV43').eliteRearmV43(profile.rearm));const paused=sim.gameReducer(s,{type:'PAUSE'});assert.equal(tick(paused),paused);
  }
 });
 test('mines and storm orbs become real lingering fields after travel and survive a destroyed launcher',()=>{
@@ -1729,7 +1744,7 @@ function musicHarness(){
  ctx.decodeAudioData=async data=>musicBuffer(data.id);
  const fetcher=async(url,{signal})=>{const track=tracks.MUSIC_TRACKS.find(t=>t.url===url);requests.push({id:track.id,signal});return {ok:true,status:200,arrayBuffer:async()=>({id:track.id})};};
  const player=music.createMusicPlayer(ctx,ctx.createGain(),fetcher);
- return {...h,ctx,engine,player,requests,scene:(track='road',paused=false,levelIndex=0,runId=1)=>({track,paused,levelIndex,runId,volume:1})};
+ return {...h,ctx,engine,player,requests,scene:(track='road',paused=false,levelIndex=0,runId=1)=>({track,paused,levelIndex,runId,volume:1,warmBoss:true})};
 }
 test('music follows road and five boss scenes, blocks under story, and keeps intro through the boss phase change',()=>{
  for(let sector=0;sector<5;sector++){
@@ -1742,7 +1757,7 @@ test('music follows road and five boss scenes, blocks under story, and keeps int
 });
 test('every original music track exists as a compact MP3 with a valid intro and repeat region',()=>{
  let bytes=0;assert.equal(tracks.MUSIC_TRACKS.length,6);assert.equal(new Set(tracks.MUSIC_TRACKS.map(t=>t.title)).size,6);
- for(const t of tracks.MUSIC_TRACKS){const file=path.resolve(__dirname,'../../../public'+t.url),data=fs.readFileSync(file);bytes+=data.length;assert.equal(data[0],255);assert.equal(data[1]&224,224);assert.ok(data.length>100000);assert.ok(tracks.musicLoopEnd(t)>tracks.musicLoopStart(t)+20);if(t.id!=='road')assert.ok(tracks.musicLoopStart(t)>6);}
+ for(const t of tracks.MUSIC_TRACKS){const file=path.resolve(__dirname,'../../../public'+t.url),data=readFixture(file);bytes+=data.length;assert.equal(data[0],255);assert.equal(data[1]&224,224);assert.ok(data.length>100000);assert.ok(tracks.musicLoopEnd(t)>tracks.musicLoopStart(t)+20);if(t.id!=='road')assert.ok(tracks.musicLoopStart(t)>6);}
  assert.ok(bytes<3000000,'music payload should remain lightweight');
 });
 test('loop timing preserves the one-time entrance and accounts for raw MP3 padding without shifting gapless decoders',()=>{
@@ -1892,7 +1907,7 @@ test('V28 salvage receipts converge on the squad and never award currency',()=>{
 });
 test('V28 production atlases are normalized RGBA PNGs with no missing frame cells',()=>{
  const names=[['mech-pulse-motion',1024,1024],['mech-heavy-motion',1024,1024],['mech-blade-motion',1024,1024],['boss-evolution',1536,960],['material',1024,512],['props',1024,512],['mech-portraits',1536,576]];
- for(const [name,w,h] of names){const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',name+'-v28.png'));assert.equal(png.toString('ascii',1,4),'PNG');assert.equal(png.readUInt32BE(16),w);assert.equal(png.readUInt32BE(20),h);assert.equal(png[25],6,'RGBA alpha required');}
+ for(const [name,w,h] of names){const png=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',name+'-v28.png'));assert.ok(imageInfo(png).width>0);assert.equal(imageInfo(png).width,w);assert.equal(imageInfo(png).height,h);assert.equal(imageInfo(png).alpha,true,'RGBA alpha required');}
 });
 
 test('V28 portrait combinations reflect all equipped modules independently',()=>{const art=load('visualArt');for(const kind of ['pulse','heavy','blade']){const seen=new Set();for(let mask=0;mask<8;mask++)seen.add(art.equipmentCell(kind,Boolean(mask&1),Boolean(mask&2),Boolean(mask&4)));assert.equal(seen.size,8);}assert.equal(art.motionTier(1,0,0),4);});
@@ -1920,9 +1935,9 @@ test('projected boss contact retains a captured body anchor after relocation and
 });
 test('reference art contains real RGBA atlases, compact gameplay backgrounds and no missing variants',()=>{
  for(const [name,w,h]of [['boss-furnace',1024,512],['gate',1024,512],['cockpit',1536,512],['logo',512,190],['mech-portraits',1536,576],['mech-pulse-motion',1024,1024],['mech-heavy-motion',1024,1024],['mech-blade-motion',1024,1024]]){
-  const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',name+'-v29.png'));assert.equal(png.readUInt32BE(16),w);assert.equal(png.readUInt32BE(20),h);assert.equal(png[25],6);
+  const png=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',name+'-v29.png'));assert.equal(imageInfo(png).width,w);assert.equal(imageInfo(png).height,h);assert.equal(imageInfo(png).alpha,true);
  }
- for(let i=1;i<=5;i++){const jpg=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/map-'+i+'-v29.jpg'));assert.equal(jpg[0],255);assert.equal(jpg[1],216);assert.ok(jpg.length<350000);}
+ for(let i=1;i<=5;i++){const jpg=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/map-'+i+'-v29.jpg'));assert.equal(jpg[0],255);assert.equal(jpg[1],216);assert.ok(jpg.length<350000);}
 });
 
 test('reference core activation retains the chunky upgraded body and eight-frame action family',()=>{const art=load('visualArt');for(const mechClass of ['pulse','heavy','blade']){const s={...initial(),status:'running',mechClass,burstTicks:50,weaponLevel:0};assert.equal(art.artPose(s).row,4);assert.equal(art.artPose({...s,status:'battle',fireCooldown:0}).row,3);assert.equal(art.artPose({...s,status:'battle',fireCooldown:0}).sheet,'arena');}});
@@ -1947,11 +1962,11 @@ test('independent animation modules remain presentation-only and freeze for redu
  for(const mechClass of ['pulse','heavy','blade']){const s={...battle(),mechClass,dodgeTicks:3},before=JSON.stringify(s);for(const alpha of [0,.2,.5,.9]){const p=sample(s,alpha);assert.ok(p.frame>=0&&p.frame<8);assert.equal(p.row%3,2);assert.equal(p.sheet,'arena');}const stopped=sample(s,.5,0,true);assert.equal(stopped.frame,0);assert.equal(stopped.recoil,0);assert.equal(JSON.stringify(s),before);}
 });
 test('independent sprite atlases preserve transparency and calibrated action cells',()=>{
- const meta=JSON.parse(fs.readFileSync(path.resolve(__dirname,'motion-registration-v30.json'),'utf8').replace(/^\uFEFF/,''));const hashes=new Set();
- for(const m of meta){assert.equal(m.frames,64);assert.equal(m.measuredFrames,64);assert.ok(m.transparentFraction>.6);assert.ok(m.interpolatedFrames<=1);assert.ok(m.maxCoreXErrorPx<=5);const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/mech-'+m.class+'-motion-v30.png'));assert.equal(png.readUInt32BE(16),1024);assert.equal(png.readUInt32BE(20),1024);assert.equal(png[25],6);hashes.add(require('node:crypto').createHash('sha256').update(png).digest('hex'));}assert.equal(hashes.size,3);
+ const meta=JSON.parse(readFixture(path.resolve(__dirname,'motion-registration-v30.json'),'utf8').replace(/^\uFEFF/,''));const hashes=new Set();
+ for(const m of meta){assert.equal(m.frames,64);assert.equal(m.measuredFrames,64);assert.ok(m.transparentFraction>.6);assert.ok(m.interpolatedFrames<=1);assert.ok(m.maxCoreXErrorPx<=5);const png=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/mech-'+m.class+'-motion-v30.png'));assert.equal(imageInfo(png).width,1024);assert.equal(imageInfo(png).height,1024);assert.equal(imageInfo(png).alpha,true);hashes.add(require('node:crypto').createHash('sha256').update(png).digest('hex'));}assert.equal(hashes.size,3);
 });
 
-test('all independent running cycles contain sixteen stable cells per equipment tier',()=>{const art=load('visualArt'),meta=JSON.parse(fs.readFileSync(path.resolve(__dirname,'run-registration-v30.json'),'utf8').replace(/^\uFEFF/,''));for(const m of meta){const s={...quietRoad(0),mechClass:m.class,fireCooldown:0};const poses=Array.from({length:200},(_,i)=>art.artPose({...s,roadTicks:i/10}));assert.equal(new Set(poses.map(p=>p.frame)).size,16);assert.ok(poses.every(p=>p.sheet==='run'));assert.equal(m.strideFrames,16);assert.ok(m.maxCoreXErrorPx<=1);const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/mech-'+m.class+'-run-v30.png'));assert.equal(png.readUInt32BE(16),1024);assert.equal(png.readUInt32BE(20),512);assert.equal(png[25],6);}});
+test('all independent running cycles contain sixteen stable cells per equipment tier',()=>{const art=load('visualArt'),meta=JSON.parse(readFixture(path.resolve(__dirname,'run-registration-v30.json'),'utf8').replace(/^\uFEFF/,''));for(const m of meta){const s={...quietRoad(0),mechClass:m.class,fireCooldown:0};const poses=Array.from({length:200},(_,i)=>art.artPose({...s,roadTicks:i/10}));assert.equal(new Set(poses.map(p=>p.frame)).size,16);assert.ok(poses.every(p=>p.sheet==='run'));assert.equal(m.strideFrames,16);assert.ok(m.maxCoreXErrorPx<=1);const png=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/mech-'+m.class+'-run-v30.png'));assert.equal(imageInfo(png).width,1024);assert.equal(imageInfo(png).height,512);assert.equal(imageInfo(png).alpha,true);}});
 
 test('five guardians own different animation assets and charge/move/attack/hit profiles',()=>{
  const art=load('hostileMotionV31');assert.equal(new Set(art.BOSS_MOTION_V31).size,5);assert.equal(new Set(art.BOSS_MOTION_PROFILES.map(p=>p.id)).size,5);
@@ -2002,7 +2017,7 @@ test('hostile motion samplers are pure and reduced motion freezes frame and proc
  const art=load('hostileMotionV31'),s={...battle(),bossStep:'recovery',bossMoveTicks:3,hostileReactions:{'boss:0':{ticks:5,cooldown:13}}},before=JSON.stringify(s);const p=art.bossMotionV31(s,.7,true);assert.equal(p.frame,0);assert.equal(p.bob,0);assert.equal(p.lean,0);assert.equal(p.flash,0);assert.equal(JSON.stringify(s),before);assert.deepEqual(art.bossMotionV31(s,.3),art.bossMotionV31({...s,status:'paused',resumeStatus:'battle'},.3));
 });
 test('twelve hostile atlases are transparent independent normalized resources with all action rows',()=>{
- const meta=JSON.parse(fs.readFileSync(path.resolve(__dirname,'hostile-registration-v31.json'),'utf8').replace(/^\uFEFF/,''));assert.equal(meta.length,12);const hashes=new Set();for(const m of meta){assert.equal(m.frames,m.group==='boss'?64:32);assert.ok(m.transparentFraction>.45);assert.ok(m.maxRegistrationShiftPx<=m.cellSize/16);const png=fs.readFileSync(m.group==='boss'?path.resolve(__dirname,'art-source/boss-'+m.id+'-atlas-v31.png'):path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/enemy-'+m.id+'-motion-v31.png'));if(m.group==='boss'){const runtime=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/boss-'+m.id+'-motion-v31.webp'));assert.equal(runtime.toString('ascii',0,4),'RIFF');assert.equal(runtime.toString('ascii',8,12),'WEBP');assert.ok(runtime.length<png.length/2);}assert.equal(png.readUInt32BE(16),m.cellSize*8);assert.equal(png.readUInt32BE(20),m.rows*m.cellSize);assert.equal(png[25],6);hashes.add(require('node:crypto').createHash('sha256').update(png).digest('hex'));}assert.equal(hashes.size,12);
+ const meta=JSON.parse(readFixture(path.resolve(__dirname,'hostile-registration-v31.json'),'utf8').replace(/^\uFEFF/,''));assert.equal(meta.length,12);const hashes=new Set();for(const m of meta){assert.equal(m.frames,m.group==='boss'?64:32);assert.ok(m.transparentFraction>.45);assert.ok(m.maxRegistrationShiftPx<=m.cellSize/16);const png=readFixture(m.group==='boss'?path.resolve(__dirname,'art-source/boss-'+m.id+'-atlas-v31.png'):path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/enemy-'+m.id+'-motion-v31.png'));if(m.group==='boss'){const runtime=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/boss-'+m.id+'-motion-v31.webp'));assert.equal(runtime.toString('ascii',0,4),'RIFF');assert.equal(runtime.toString('ascii',8,12),'WEBP');assert.ok(runtime.length<png.length/2);}assert.equal(imageInfo(png).width,m.cellSize*8);assert.equal(imageInfo(png).height,m.rows*m.cellSize);assert.equal(imageInfo(png).alpha,true);hashes.add(require('node:crypto').createHash('sha256').update(png).digest('hex'));}assert.equal(hashes.size,12);
 });
 
 
@@ -2044,14 +2059,14 @@ test('pulse impacts play through eight frames and reduced motion does not cycle 
 test('new pulse impact artwork is tagged by actual skill damage, not by a visual flight pass',()=>{
  const s={...battle(),mechClass:'pulse',burstTicks:40,fireCooldown:1000};s.pendingShots=[incoming(s,{burst:true,attackStyle:'pulse',damage:1})];const n=tick(s);assert.ok(n.report.dealt>s.report.dealt);assert.ok(n.feedback.some(f=>f.pulseCore));const miss={...s,pendingShots:[incoming(s,{burst:true,attackStyle:'pulse',damage:1,lane:(s.battleLane+1)%3})]};assert.equal(tick(miss).feedback.length,0);const normal={...s,burstTicks:0};assert.ok(tick(normal).feedback.every(f=>!f.pulseCore));
 });
-test('pulse skill atlas contains twenty-four transparent compact animation cells',()=>{const m=JSON.parse(fs.readFileSync(path.resolve(__dirname,'pulse-vfx-v33.json'),'utf8'));assert.equal(m.frames,24);assert.ok(m.transparentFraction>.6);const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/pulse-vfx-v33.png'));assert.equal(png.readUInt32BE(16),1024);assert.equal(png.readUInt32BE(20),384);assert.equal(png[25],6);assert.ok(png.length<500000);});
+test('pulse skill atlas contains twenty-four transparent compact animation cells',()=>{const m=JSON.parse(readFixture(path.resolve(__dirname,'pulse-vfx-v33.json'),'utf8'));assert.equal(m.frames,24);assert.ok(m.transparentFraction>.6);const png=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/pulse-vfx-v33.webp'));assert.equal(imageInfo(png).width,1024);assert.equal(imageInfo(png).height,384);assert.equal(imageInfo(png).alpha,true);assert.ok(png.length<500000);});
 
 test('signature skills have distinct resources and only the actual lead emitter receives the main crest',()=>{const fx=load('signatureV34'),s=battle(),shot=incoming(s,{burst:true,origins:[{index:0,x:50,y:59}]});assert.equal(new Set(Object.values(fx.CORE_FX_V34)).size,3);assert.ok(fx.signatureShotV34(shot));assert.ok(!fx.signatureShotV34({...shot,origins:[{index:1,x:44,y:65}]}));assert.ok(!fx.signatureShotV34({...shot,splashDone:true}));assert.ok(!fx.signatureShotV34({...shot,burst:false}));});
 test('launch effects are once per real emitter for pulse cannon and sword, never a splash event',()=>{const fx=load('signatureV34'),s=battle();for(const attackStyle of ['pulse','heavy','blade']){const shots=[];for(let index=0;index<3;index++)for(let lane=0;lane<3;lane++)shots.push(incoming(s,{id:shots.length+1,burst:true,attackStyle,muzzle:attackStyle!=='blade',duration:5,ticks:5,lane,origins:[{index,x:40+index*10,y:59}]}));const before=JSON.stringify(shots);assert.equal(fx.coreMuzzlesV34(shots).length,3);assert.equal(fx.coreMuzzlesV34(shots.map(p=>({...p,splashDone:true}))).length,0);assert.equal(JSON.stringify(shots),before);}});
 test('swordstorm begins at its own body center even though it has no gun muzzle',()=>{const fx=load('signatureV34'),s={...battle(),mechClass:'blade'},shot=incoming(s,{burst:true,attackStyle:'blade',muzzle:false,count:3,duration:5,ticks:5,origins:[{index:1,x:44.4,y:65}]}),before=JSON.stringify(shot),logical=motion.projectileSample(s,shot,0),p=fx.coreFlightV34(logical,shot,0,{width:390,height:700});assert.ok(Math.abs(p.x-41.04)<1e-9);assert.ok(p.lift>0);assert.ok(p.scale<1&&p.scale>.7);assert.equal(JSON.stringify(shot),before);const quiet=fx.coreFlightV34(logical,shot,.5,{width:390,height:700},true);assert.equal(quiet.frame,0);assert.equal(quiet.spin,0);});
 test('overlapping skill impacts merge before budget selection and preserve critical destruction receipts',()=>{const fx=load('signatureV34'),records=[{id:1,x:50,y:40,ticks:5,kind:'boss',coreStyle:'heavy'},{id:2,x:50,y:40,ticks:4,kind:'heavy',coreStyle:'heavy'},{id:3,x:25,y:48,ticks:3,kind:'hit',coreStyle:'pulse'},{id:4,x:25,y:48,ticks:4,kind:'hit',coreStyle:'pulse'},{id:5,x:75,y:48,ticks:3,kind:'hit'}],before=JSON.stringify(records),out=fx.signatureFeedbackV34(records);assert.deepEqual(out.map(f=>f.id),[1,4,5]);assert.equal(JSON.stringify(records),before);});
 test('each core class tags its own real impact style and a cross-lane miss creates no impact art',()=>{for(const mechClass of ['pulse','heavy','blade']){const s={...battle(),mechClass,burstTicks:40,fireCooldown:1000};s.pendingShots=[incoming(s,{burst:true,attackStyle:mechClass,damage:1})];const n=tick(s);assert.ok(n.feedback.some(f=>f.coreStyle===mechClass));const miss={...s,pendingShots:[incoming(s,{burst:true,attackStyle:mechClass,lane:(s.battleLane+1)%3,damage:1})]};assert.equal(tick(miss).feedback.length,0);}});
-test('three signature atlases contain seventy-two transparent high-detail animation cells',()=>{const metadata=JSON.parse(fs.readFileSync(path.resolve(__dirname,'core-vfx-v34.json'),'utf8'));assert.equal(metadata.length,3);const hashes=new Set();for(const m of metadata){assert.equal(m.frames,24);assert.ok(m.transparentFraction>.45);const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/core-'+m.kind+'-v34.png'));assert.equal(png.readUInt32BE(16),1536);assert.equal(png.readUInt32BE(20),576);assert.equal(png[25],6);assert.ok(png.length<1500000);hashes.add(require('node:crypto').createHash('sha256').update(png).digest('hex'));}assert.equal(hashes.size,3);});
+test('three signature atlases contain seventy-two transparent high-detail animation cells',()=>{const metadata=JSON.parse(readFixture(path.resolve(__dirname,'core-vfx-v34.json'),'utf8'));assert.equal(metadata.length,3);const hashes=new Set();for(const m of metadata){assert.equal(m.frames,24);assert.ok(m.transparentFraction>.45);const png=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/core-'+m.kind+'-v34.png'));assert.equal(imageInfo(png).width,1536);assert.equal(imageInfo(png).height,576);assert.equal(imageInfo(png).alpha,true);assert.ok(png.length<1500000);hashes.add(require('node:crypto').createHash('sha256').update(png).digest('hex'));}assert.equal(hashes.size,3);});
 
 test('blade strike traverses sixteen exclusive poses without changing combat state',()=>{
  const {bladeStrikeV35}=load('bladeMotionV35'),{motionContext}=load('animationTypes');
@@ -2062,8 +2077,8 @@ test('blade strike traverses sixteen exclusive poses without changing combat sta
  const frozen=bladeStrikeV35(motionContext({...s,fireCooldown:5},.9,0,true),1.7,3);assert.equal(frozen.clipFrame,0);assert.equal(frozen.recoil,0);
 });
 test('blade slash art is a transparent separate sixteen-frame clip for each equipment tier',()=>{
- const m=JSON.parse(fs.readFileSync(path.resolve(__dirname,'blade-motion-v35.json'),'utf8'));assert.equal(m.framesPerTier,16);assert.equal(m.frames,32);assert.ok(m.transparentFraction>.5);
- const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/mech-blade-attack-v35.png'));assert.equal(png.readUInt32BE(16),1024);assert.equal(png.readUInt32BE(20),512);assert.equal(png[25],6);
+ const m=JSON.parse(readFixture(path.resolve(__dirname,'blade-motion-v35.json'),'utf8'));assert.equal(m.framesPerTier,16);assert.equal(m.frames,32);assert.ok(m.transparentFraction>.5);
+ const png=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/mech-blade-attack-v35.webp'));assert.equal(imageInfo(png).width,1024);assert.equal(imageInfo(png).height,512);assert.equal(imageInfo(png).alpha,true);
 });
 
 test('boss arena guards are planted independent of every road stride and paused status',()=>{
@@ -2089,7 +2104,7 @@ test('final colossus can be hit in all three lanes and receives each impact at i
  const ordinary={...battle(0),battleLane:1};assert.deepEqual(sim.bossDamageLanes(ordinary),[1]);assert.equal(tick({...ordinary,pendingShots:[incoming(ordinary,{lane:0})]}).report.dealt,0);
 });
 test('grounded arena atlases provide distinct stance fire and dodge rows with real transparency',()=>{
- const meta=JSON.parse(fs.readFileSync(path.resolve(__dirname,'arena-v36.json'),'utf8'));assert.equal(meta.length,4);
+ const meta=JSON.parse(readFixture(path.resolve(__dirname,'arena-v36.json'),'utf8'));assert.equal(meta.length,4);
  for(const m of meta){assert.ok(m.transparentFraction>.45);assert.equal(m.columns,8);assert.equal(m.frames,m.kind==='emperor'?32:48);assert.ok(m.bytes<1800000);}
  const modules=load('arenaMotionV36');assert.equal(new Set(Object.values(modules.ARENA_ART_V36)).size,3);assert.ok(load('referenceCamera').bossPixels({...battle(),levelIndex:4})>load('referenceCamera').bossPixels(battle()));
 });
@@ -2136,8 +2151,8 @@ test('part damage animation owns its break timestamp and an old scar cannot repl
  assert.equal(fx.partDamageV38(p,40,.8,0).phase,'settled');assert.equal(fx.partDamageV38({...p,brokenAt:40},40,.8,1).phase,'sparks');assert.equal(fx.partDamageV38(p,20,.8,0,true).phase,'settled');assert.equal(fx.partDamageV38({...p,brokenAt:undefined},20,.8,0).phase,'settled');
 });
 test('homecoming comic and five chapter films deploy original raster artwork with transparent local damage',()=>{
- const m=JSON.parse(fs.readFileSync(path.resolve(__dirname,'story-art-v38.json'),'utf8')),art=load('art');assert.equal(m.filter(x=>x.kind==='comic').length,4);assert.equal(m.filter(x=>x.kind==='chapter'&&x.frames===6).length,5);assert.ok(m.find(x=>x.kind==='damage').transparentFraction>.7);
- for(const url of [...art.STORY_ART,...campaign.CHAPTER_FILMS]){const bytes=fs.readFileSync(path.resolve(__dirname,'../../../public'+url));assert.equal(bytes.readUInt16BE(0),0xffd8);assert.ok(bytes.length<350000);}
+ const m=JSON.parse(readFixture(path.resolve(__dirname,'story-art-v38.json'),'utf8')),art=load('art');assert.equal(m.filter(x=>x.kind==='comic').length,4);assert.equal(m.filter(x=>x.kind==='chapter'&&x.frames===6).length,5);assert.ok(m.find(x=>x.kind==='damage').transparentFraction>.7);
+ for(const url of [...art.STORY_ART,...campaign.CHAPTER_FILMS]){const bytes=readFixture(path.resolve(__dirname,'../../../public'+url));assert.equal(bytes.readUInt16BE(0),0xffd8);assert.ok(bytes.length<350000);}
  assert.ok(campaign.CHAPTER_FILM_RATIOS.every(x=>x===1));assert.equal(new Set(load('story').STORY_CHAPTERS.map(c=>c.permission)).size,5);
 });
 
@@ -2403,4 +2418,36 @@ test('V42 simultaneous teammate kills still trigger the captured heavy splash ex
 
 test('V42 destroy receipts include summoned units and never turn an ordinary surviving hit into a break',()=>{
  const s={...battle(),lane:1,threats:[{id:900,kind:'minion',lane:1,fromLane:1,hp:2,maxHp:2,ticks:25,duration:32,damage:10}],pendingShots:[incoming(battle(),{target:'threat',targetIndex:900,lane:1,damage:10,attackStyle:'pulse'})]};const n=tick(s);assert.ok(n.feedback.some(f=>f.destroyed));const alive=tick({...s,threats:s.threats.map(t=>({...t,hp:50,maxHp:50}))});assert.ok(alive.feedback.every(f=>!f.destroyed));
+});
+
+
+test('V43 cold entry defers guardian music until late-road warmup',async()=>{
+ const h=musicHarness();try{
+  h.player.setScene({...h.scene(),warmBoss:false});await flushMusic();assert.deepEqual(h.requests.map(r=>r.id),['road']);
+  const count=h.stats.started;h.player.setScene({...h.scene(),warmBoss:true});await flushMusic();assert.deepEqual(h.requests.map(r=>r.id),['road','boss-0']);assert.equal(h.stats.started,count);
+  assert.equal(music.musicSceneFor({...initial(),status:'home'}).warmBoss,false);assert.equal(music.musicSceneFor({...initial(),status:'running',progress:65}).warmBoss,true);
+ }finally{h.player.dispose();h.engine.dispose();h.restore();}
+});
+test('V43 higher enemy cadence preserves telegraphs, first recovery and each guardian identity',()=>{
+ const v=load('encounterV43'),skills=load('bossSkills');
+ for(let level=0;level<5;level++){
+  const s={...battle(level),bossCycle:0};assert.equal(v.recoveryScaleV43(1,0),1);
+  assert.ok(sim.bossRecoveryTicks({...s,bossCycle:2,bossStage:2})<sim.bossRecoveryTicks({...s,bossCycle:2,bossStage:1}));
+  assert.ok(sim.bossRecoveryTicks({...s,bossCycle:2,bossStage:2})>=17);
+  const one=Array.from({length:6},(_,i)=>v.bossMoveV43(level,1,i+1)),two=Array.from({length:6},(_,i)=>v.bossMoveV43(level,2,i+1));assert.notDeepEqual(one,two);
+  assert.ok(two.every(k=>skills.BOSS_LOADOUTS[level].includes(k)));assert.ok(two.every((k,i)=>k!==two[(i+5)%6]));
+  assert.equal(sim.bossWarningTicks({...s,bossAttack:skills.BOSS_LOADOUTS[level][0]}),20);
+ }
+ for(const profile of Object.values(load('frontline').ELITE_ATTACKS))assert.ok(v.eliteRearmV43(profile.rearm)<profile.rearm);
+});
+test('V43 asset phases leave boss and battle sheets out of home entry and warm only the active encounter',()=>{
+ const v=load('encounterV43');assert.deepEqual(v.assetStageV43('home',0,false,false),{home:true,workshop:false,story:false,road:false,combat:false,boss:false,result:false});
+ assert.equal(v.assetStageV43('running',64,false,false).boss,false);assert.equal(v.assetStageV43('running',65,false,false).boss,true);assert.equal(v.assetStageV43('battle',0,false,false).boss,true);
+ assert.equal(v.crowdV43({...initial(),enemyAttacks:Array(5).fill({}),pendingShots:[]}),true);
+});
+test('V43 lossless migration keeps every runtime counterpart and removes only enumerated unused assets',()=>{
+ const root=path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized');assert.equal(migrationV43.converted.length,76);
+ for(const row of migrationV43.converted){assert.equal(fs.existsSync(path.join(root,row.from)),false);const buffer=fs.readFileSync(path.join(root,row.to));assert.ok(imageInfo(buffer).width>0);assert.equal(buffer.length,row.after);assert.ok(row.after<row.before);}
+ for(const row of migrationV43.deletedUnused)assert.equal(fs.existsSync(path.join(root,row.file)),false);
+ assert.ok(migrationV43.savedBytes>24*1048576);
 });

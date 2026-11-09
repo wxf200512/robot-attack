@@ -1,0 +1,53 @@
+{
+  "method": "built-in image_gen; reference-guided generation and background editing",
+  "reference": "art-source/design-reference-v29.png",
+  "sources": "src/games/toybot-breakout/art-source",
+  "runtime": "public/games/toybot-breakout/optimized",
+  "specifications": [
+    {
+      "assets": "map-1..5-v29.png",
+      "prompt": "REFERENCE ROLE: attached image defines EXACT game art and camera style. Produce ONLY the clean environment layer for this mobile game, no robots, bosses, gates, projectiles, warnings, UI, logos or text. Vertical 9:16 premium stylized 3D toy-metal environment. Blue-gray brushed steel roadway, large slabs, fine restrained texture, thick yellow safety rails. Three lanes separated by TWO slim ivory lane lines, consistent perspective. Precisely place vanishing point at x50% y24%; road starts narrow at x47%-53% y24%, widens to x0%-100% at bottom. Road occupies middle and lower screen; side buildings stay OUTSIDE the road edges, never block lanes. Horizon skyline y20%. Coherent bright upper-left sunlight, real soft contact lighting, warm orange architectural highlights, blue road shadows, rich atmospheric depth. Match attached reference material, lighting, sense of speed and camera, not a flat cartoon or watercolor. Empty road ready for separately rendered game characters. No black fades or border.",
+      "variants": [
+        "warm orange industrial pipeworks, metal gantries, smokestacks",
+        "white and cyan skyport drone assembly platforms, distant aircraft docks",
+        "red rust armored foundry fortress, immense shield pylons",
+        "violet electric reactor towers and charged clouds, still clear readable road",
+        "gold white futuristic imperial factory citadel, dramatic warm clear sky"
+      ]
+    },
+    {
+      "assets": "map-1..5-v29-clean.png",
+      "operation": "Final production background correction, original images retained",
+      "prompt": "Edit this exact background. Remove ONLY the two long ivory/white lane divider stripes painted on the blue steel road. Inpaint both former stripe areas with the surrounding blue-gray steel slab material and matching rivets/texture. The ENTIRE blue roadway must now have NO white/ivory/yellow longitudinal lane stripes anywhere. Keep all buildings, sky, lighting, railings, orange/yellow safety edge markings, camera, road width, horizon and floor panel seams precisely unchanged. Do not add anything. No characters, UI, text or new lines. This is a clean background texture; the real game will render its lane guides in correct perspective."
+    },
+    {
+      "assets": "mech-pulse/heavy/blade-motion-v29.png",
+      "prompt": "REFERENCE ROLE: attached image is the EXACT toy robot material, proportions, camera and lighting target. Create game sprite atlas exactly8columns by8rows equal square cells, 64 wholebody sprites, actual TRANSPARENT alpha. Rear view elevated15degrees facing AWAY toward top of image, not front. Feet at90% cell, fixed size and center each frame, 12% clear margins, no labels/gridlines. Rows1-4 basic armor: row1 eight-frame forward run stride, row2 stationary combat idle/breathing, row3 single RIGHT arm attack anticipation-discharge-recoil-recover (sword slash forblade), row4 rightward sidestep dodge and recover. Rows5-8 same actions with enhanced integrated equipment. Keep left arm natural balance, no two-arm fire. Soft coherent upper-left daylight, tactile chunky rounded painted plastic/metal, strong readable shapes, cyan/navy edges, no spiky humanoid Gundam aesthetic. No scenery, floor shadow, text, large baked flashes or free flying bullets. Each row smooth eight-frame animation, preserve 8x8 grid and character registration.",
+      "variants": {
+        "pulse": "Round compact white navy body, short dual antennae, rectangular tall cyan back pack, small right forearm cyan gun; enhanced thicker shoulders and capacitors",
+        "heavy": "Same family squat wide ivory/navy orange rectangular backpack, heavy right arm cannon with thermal fins; enhanced integrated heavy shells",
+        "blade": "Same compact round toy family white/navy violet rectangular backpack, right-hand energy sword; enhanced swept shoulders, never skinny humanoid"
+      }
+    },
+    {
+      "asset": "gate-v29.png",
+      "prompt": "Use attached reference as exact gate art target. Transparent runtime sprite atlas exactly4columns by2rows equal square cells. A PHYSICAL thick white/navy metal portal arch, cyan luminous inner doorway, beveled heavy pillars, visible feet, low ramp with directional chevrons pointing through door toward TOP of frame. Same elevated thirdperson camera as reference. Row1 reward portal cyan, row2 penalty portal warm red. Columns1 dormant,2 open bright swirling energy,3 passing/collected cyan particles,4 closing dim. Keep 10% margins eachcell fixed feet at85% cellheight and same scale. Clear rectangular doorway with perspective depth, not flat hologram sticker. No text, numbers, gifts or labels, no robots/scenery/ground backdrop. Actual transparent alpha."
+    },
+    {
+      "asset": "boss-furnace-v29.png",
+      "prompt": "Use attached reference as exact furnace BOSS target. Transparent production atlas exactly4columns by2rows, 8 complete wholebody sprites fixedregistration, same3D rounded toy metal style. Huge ROUND SPHERICAL ORANGE furnace body, circular OPEN glowing fire window in belly, round helmet with tiny gear emblem, two smokestacks, enormous articulated gray metal hands and stubby wide feet, orange shoulder shells. Frontview facingplayer slightly frombelow but grounded matchingreference. Row1 normal phase poses idle/charge/fire/recovery. Row2 sameposes with open segmented chest furnace and extended thermal vents, recognizable evolved silhouette. Perfect equalcells12% margins feet90%, sameheight. Actual alpha no floor/background/shadows/text/projectiles outsidecell. Not a skinny humanoid or flat rectangular torso."
+    },
+    {
+      "asset": "cockpit-v29.png",
+      "prompt": "Use attached reference as exact cockpit art target. Isolated fullwidth bottom mobile game cockpit console, landscape wide aspect4:1, transparent above silhouette. Premium dark navy brushed metal with ivory bevel rails, silver bolts and subtle orange corner accents. Two clean recessed dark DISPLAY WINDOWS at left20% and right80%, leave blank for real game values. Central circular cyan energy reactor button centered x50%, diameter26% of imagewidth; circular frame rises above side rails. Inside central button bright crisp WHITE diagonal energy bolt projectile glyph like reference, no words. Left window includes tiny red heart at its farleft, rightwindow tiny three white robot-head symbols farleft. Lower frame sturdy angular darknavy, small cyan HP lightstrip belowleftwindow. Coherent top-left light polished but not ornate, big simple readable shapes. No text or numeric stats. No glass octagonal jewel/crystal. Single console only fully insideframe no cut edges. True transparent alpha exterior, display recesses opaque darknavy."
+    },
+    {
+      "asset": "logo-v29.png",
+      "prompt": "Extract and recreate ONLY the original Chinese game title badge from the top left of reference, exact text 玩具城突围, bold ivory chunky beveled Chinese lettering, dark navy layered outline metallic angular backing, orange accent on bottom/right, compact horizontal badge2.7:1aspect, clean clear tiny-size readable. Actual transparent background around badge. No other UI, robots, extra captions, watermark, shadows outside badge or scenic background."
+    },
+    {
+      "asset": "mech-portraits-v29.png",
+      "prompt": "Create a transparent FRONT VIEW portrait atlas for the exact chunky round toy robot family in the attached reference. 8 columns by3rows equal square cells, 24 wholebody compact toy mechs, no grid/text/labels. Rear reference identity: ROUND helmet, short antennae, very short thick torso and legs, large simple forearms, white painted armor navy joints cyan glowing rectangular backpack; front has simple cyan visor and compact chest panel, NOT skinny Gundam humanoid. Row1 cyan pulse toy with right forearm gun. Row2 samefamily wider squat ivory/navy orange heavy toy with rightarm big cylindrical cannon. Row3 samefamily compact white/navy violet blade toy with right-hand energy sword. For each row eight equipment combinations lefttoright: base; weapon upgrade; armor shoulders upgrade; weapon+armor; reactor backpackfins; weapon+reactor; armor+reactor; allthree. Preserve round squat proportions at every upgrade, same silhouette height/scale/registration feet90% ofcell. Frontview slightly elevated toymodel rendering with upper-left sunlight, rich navy edges, bevels and tactile painted metal matching reference precisely. Entire robot inside eachcell with12% transparent margins, true transparent alpha, no floor/scene/shadows, no spiky high fantasy decorations, no extra weapons or captions."
+    }
+  ]
+}

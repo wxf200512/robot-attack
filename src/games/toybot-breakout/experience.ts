@@ -2,7 +2,7 @@ import type { GameState } from './simulation';
 import { getLevel } from './level';
 import { FUSIONS } from './operations';
 export type CombatReport = { dealt:number; bossDamage:number; taken:number; blocked:number; collisions:number; hostile:number; focus:number; focusReady:boolean; shots:number; focusLane:number; elites:number; bladeCombo:number; bladeReady:boolean; bladeVolley:number };
-export type CombatFeedback = { id:number;x:number;y:number;ticks:number;kind:'hit'|'armor'|'heavy'|'elite'|'boss'; };
+export type CombatFeedback = { boss?:boolean; id:number;x:number;y:number;ticks:number;kind:'hit'|'armor'|'heavy'|'elite'|'boss'; };
 export const newReport=():CombatReport=>({dealt:0,bossDamage:0,taken:0,blocked:0,collisions:0,hostile:0,focus:0,focusReady:false,shots:0,focusLane:-1,elites:0,bladeCombo:0,bladeReady:false,bladeVolley:-1});
 export function encounterBeat(progress:number,breather=0){
  if(breather>0)return {name:'回收整备',detail:'清理残余威胁，准备下一段推进',intensity:0};

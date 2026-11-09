@@ -1,7 +1,6 @@
 /* V28: AI raster art remains separate from collision and emitter geometry. */
 .toybot-shell .art-v28 .robot-player-art.toybot-v28-mech{aspect-ratio:1;filter:none;transition:none;overflow:visible}
-.toybot-shell .toybot-v28-body,.toybot-shell .toybot-v28-upper{position:absolute;inset:-14%;display:block;background-size:800% 800%;background-repeat:no-repeat;transform-origin:50% 76%;scale:var(--art-mirror,1) 1}
-.toybot-shell .toybot-v28-upper{opacity:0;mask-image:linear-gradient(#000 0 52%,transparent 74%);-webkit-mask-image:linear-gradient(#000 0 52%,transparent 74%)}
+.toybot-shell .toybot-v28-body{position:absolute;inset:-14%;display:block;background-size:800% 800%;background-repeat:no-repeat;transform-origin:50% 76%;scale:var(--art-mirror,1) 1}
 .toybot-shell .art-v28 .toybot-robot{filter:drop-shadow(-1px 2px 1px #07162f55)}
 .toybot-shell .art-v28 .toybot-robot:after,.toybot-shell .art-v28 .toybot-hazard:after{background:url('/games/toybot-breakout/optimized/props-v28.png') 33.333333% 100%/400% 200% no-repeat;width:112%;height:auto;aspect-ratio:1;border-radius:0;bottom:-31%;z-index:-1;opacity:.72}
 .toybot-shell .art-v28 .toybot-hazard:after{width:80%;bottom:-18%;opacity:.7}

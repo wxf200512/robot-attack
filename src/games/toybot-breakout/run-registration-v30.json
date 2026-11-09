@@ -1,0 +1,26 @@
+[
+  {
+    "targetCoreY": 0.53125,
+    "strideFrames": 16,
+    "maxCoreXErrorPx": 0.0,
+    "transparentFraction": 0.7557945251464844,
+    "class": "pulse",
+    "frames": 32
+  },
+  {
+    "targetCoreY": 0.546875,
+    "strideFrames": 16,
+    "maxCoreXErrorPx": 1.0,
+    "transparentFraction": 0.6814889907836914,
+    "class": "heavy",
+    "frames": 32
+  },
+  {
+    "targetCoreY": 0.5625,
+    "strideFrames": 16,
+    "maxCoreXErrorPx": 0.0,
+    "transparentFraction": 0.7372045516967773,
+    "class": "blade",
+    "frames": 32
+  }
+]

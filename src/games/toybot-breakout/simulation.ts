@@ -309,7 +309,7 @@ const recordImpact=(s:GameState,damage:number,target:Target,index:number,tier:nu
  const h=target==='hazard'?getLevel(s.levelIndex).hazards[index]:null;
  const killed=target==='hazard'?s.hazardHps[index]===0:target==='boss'?s.battleHp===0:target==='part'?s.ops.parts[index]?.hp===0:false;
  const kind:CombatFeedback['kind']=killed&&target==='boss'?'boss':killed&&(h?.eliteRole||target==='part')?'elite':h&&hazardArmorFor(s,index)>0?'armor':s.mechClass==='heavy'||tier>=4?'heavy':'hit';
- s.feedback=[...s.feedback,{id:++s.feedbackSequence,x:targetX(s,target,index),y:targetY(s,target,index),ticks:kind==='boss'?12:kind==='elite'?8:4,kind}].slice(-12);
+ s.feedback=[...s.feedback,{id:++s.feedbackSequence,boss:target==='boss',x:targetX(s,target,index),y:targetY(s,target,index),ticks:kind==='boss'?12:kind==='elite'?8:4,kind}].slice(-12);
  if(s.mechClass==='pulse'&&s.burstTicks<=0){const lane=targetLane(s,target,index);if(s.report.focusLane>=0&&s.report.focusLane!==lane){s.report.focus=0;s.report.focusReady=false;}s.report.focusLane=lane;s.report.focus++;if(s.report.focus>=6){s.report.focus=0;s.report.focusReady=true;}}
 };
 const damageTarget = (s: GameState, target: Target, index: number, raw: number, tier: number, lane: number, precise = false): number => {
@@ -787,7 +787,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
     const laneChoices=laneTargets.get(attackLane)!;
     const targets=s.burstTicks>0&&s.mechClass==='blade'?(laneChoices.length?laneChoices.slice(0,skill.cleave):[undefined]):s.mechClass==='blade'?choices.slice(0,finisher?3:2).filter((t,i)=>i===0||finisher||counter||t.target==='hazard'||t.target==='threat'):[s.burstTicks>0?laneChoices[0]:target];
     for(const aim of targets){
-      const y=aim?.y??freeShotEnd(s.levelIndex),duration=s.mechClass==='blade'?(s.burstTicks>0?5:finisher?4:3):flightTicks(origin.y,y)+(s.burstTicks>0&&s.mechClass==='heavy'?2:0);
+      const y=aim?.y??freeShotEnd(s.levelIndex),duration=s.mechClass==='blade'?(s.burstTicks>0?5:finisher?4:3):flightTicks(origin.y,y)+(!aim?3:0)+(s.burstTicks>0&&s.mechClass==='heavy'?2:0);
       s.pendingShots.push({id:++s.shotSequence,ticks:duration,duration,target:aim?.target??null,targetIndex:aim?.index??-1,
         finisher,volleyId:s.report.shots,bossSweepScale:s.burstTicks>0&&attackLane!==s.lane?.6:1,focused,fusion:s.ops.fusion,counter,arc:s.modules.arc,burn:s.modules.burn,burst:s.burstTicks>0,range:counterRange,attackStyle:s.mechClass,damage:(finisher?1.35:1)*(focused?1.15:1)*(counter?1.7:1)*(1+tier)*spec.power*s.garageDamageScale*(charged?3:1)*(s.overloadTicks>0?1.5:1)*(s.burstTicks>0?(aim?.target==='boss'?skill.bossDamage*(attackLane===s.lane?1:.6):skill.damage):1),count:origins.length,origins:[origin],weaponLevel:tier,lane:attackLane,y,charged,pierce:Math.max(focused?2:0,tier===2?1:0,s.burstTicks>0?skill.pierce:0,s.ops.fusion==='ion'?1:0),muzzle:s.mechClass!=='blade'});
     }

@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 import { canActivateBurst, canMove, canShoot, bossAttackLabel, bossWarningTicks, bossRecoveryTicks, BURST_TICKS, MODULES, type GameState, type RunModule } from './simulation';
 import { coreSkill, mechSpec } from './mechs';
 import { FUSIONS } from './operations';
-export const COCKPIT_ART='/games/toybot-breakout/optimized/cockpit-console-v22.png';
+export const COCKPIT_ART='/games/toybot-breakout/optimized/cockpit-v29.png';
 export const REACTOR_ART='/games/toybot-breakout/optimized/reactor-core-v22.png';
 export const CORE_EFFECT_ART='/games/toybot-breakout/optimized/core-effects-v22.png';
 export function Cockpit({game:s,blocked,onMove,onBurst}:{game:GameState;blocked:boolean;onMove:(lane:number)=>void;onBurst:()=>void}){
@@ -26,7 +26,7 @@ export function Cockpit({game:s,blocked,onMove,onBurst}:{game:GameState;blocked:
    <div className="cockpit-skill-title">{skill.name}<small>{active?skill.detail:ready?'点击核心 / 空格':'击破 · 闪避充能'}</small></div>
   </div>
   <div className="cockpit-module-rail" aria-label="战斗状态">{s.weaponLevel>=4&&<span>弹头 {s.charge}/4</span>}{s.chargedVolleys>0&&<span>强化×{s.chargedVolleys}</span>}{(Object.keys(MODULES) as RunModule[]).filter(k=>s.modules[k]>0).map(k=><span key={k}>{MODULES[k].icon} {MODULES[k].name}{s.modules[k]}</span>)}{s.ops.fusion&&<span>✧ {FUSIONS[s.ops.fusion].name}</span>}{s.ops.counterShots>0&&<span>反击×{s.ops.counterShots}</span>}{s.jamTicks>0&&<span>干扰 {Math.ceil(s.jamTicks/10)}s</span>}{s.overloadTicks>0&&<span>过载 {Math.ceil(s.overloadTicks/10)}s</span>}</div>
-  <div className="cockpit-steering" role="group" aria-label="选择机器人队列">{[0,1,2].map(lane=><button type="button" key={lane} disabled={disabled} aria-label={`切换到第 ${lane+1} 队列`} aria-pressed={s.lane===lane} onClick={()=>onMove(lane)}><i aria-hidden="true">{lane===0?'◁':lane===2?'▷':'◇'}</i><span>{['左轨','中轨','右轨'][lane]}</span><b>{lane+1}</b></button>)}</div>
+  <details className="cockpit-steering-access"><summary aria-label="展开换道按钮">⇆</summary><div className="cockpit-steering" role="group" aria-label="选择机器人队列">{[0,1,2].map(lane=><button type="button" key={lane} disabled={disabled} aria-label={`切换到第 ${lane+1} 队列`} aria-pressed={s.lane===lane} onClick={()=>onMove(lane)}><i aria-hidden="true">{lane===0?'◁':lane===2?'▷':'◇'}</i><span>{['左轨','中轨','右轨'][lane]}</span><b>{lane+1}</b></button>)}</div></details>
  </section>;
 }
 export function CoreBurstScreen({game:s,reduced}:{game:GameState;reduced:boolean}){

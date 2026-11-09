@@ -1,0 +1,35 @@
+[
+  {
+    "targetCoreY": 0.53125,
+    "frames": 64,
+    "transparentFraction": 0.7014093399047852,
+    "maxShiftPx": 16.0,
+    "minTemplateSimilarity": 0.33428044731261103,
+    "measuredFrames": 64.0,
+    "class": "pulse",
+    "maxCoreXErrorPx": 4.0,
+    "interpolatedFrames": 1.0
+  },
+  {
+    "targetCoreY": 0.546875,
+    "frames": 64,
+    "transparentFraction": 0.6765632629394531,
+    "maxShiftPx": 23.0,
+    "minTemplateSimilarity": 0.3791267274950846,
+    "measuredFrames": 64.0,
+    "class": "heavy",
+    "maxCoreXErrorPx": 5.0,
+    "interpolatedFrames": 0.0
+  },
+  {
+    "targetCoreY": 0.5625,
+    "frames": 64,
+    "transparentFraction": 0.7311344146728516,
+    "maxShiftPx": 16.0,
+    "minTemplateSimilarity": 0.36247172715448717,
+    "measuredFrames": 64.0,
+    "class": "blade",
+    "maxCoreXErrorPx": 3.0,
+    "interpolatedFrames": 0.0
+  }
+]

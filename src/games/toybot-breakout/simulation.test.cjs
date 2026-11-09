@@ -1855,12 +1855,12 @@ test('heavy stagger cannot extend a warning into a three-lane body trap on any s
   }
  }
 });
-test('V28 motion atlas runs eight frames and never runs in any boss phase',()=>{
+test('independent motion atlas runs sixteen frames and never runs in any boss phase',()=>{
  const art=load('visualArt'),s={...initial(),status:'running',roadTicks:0};
- const frames=new Set(Array.from({length:64},(_,i)=>art.artPose({...s,roadTicks:i/10}).frame));
- assert.equal(frames.size,8);assert.equal(art.artPose(s).row,0);
+ const frames=new Set(Array.from({length:128},(_,i)=>art.artPose({...s,roadTicks:i/10}).frame));
+ assert.equal(frames.size,16);assert.equal(art.artPose(s).row,0);
  for(const status of ['boss-intro','battle','boss-shift','boss-victory']){
-  const p=art.artPose({...s,status,fireCooldown:0});assert.equal(p.row,1);assert.equal(p.upperOpacity,0);
+  const p=art.artPose({...s,status,fireCooldown:0});assert.equal(p.row,1);assert.equal(p.sheet,'motion');
  }
  const advanced=art.artPose({...s,weaponLevel:2});assert.equal(advanced.row,4);
 });
@@ -1868,7 +1868,7 @@ test('V28 anticipation precedes launch and recovery reaches final frame without 
  const art=load('visualArt'),s={...battle(),mechClass:'heavy',bots:1},before=JSON.stringify(s),interval=sim.attackIntervalFor(s);
  assert.ok(art.artPose({...s,fireCooldown:1}).frame<3);
  assert.equal(art.artPose({...s,fireCooldown:interval}).frame,3);
- assert.equal(art.artPose({...s,fireCooldown:interval-3},.9).frame,7);
+ assert.equal(art.artPose({...s,fireCooldown:interval-3},.9).frame,6);assert.equal(art.artPose({...s,fireCooldown:interval-5},.1).frame,7);
  const dodge=art.artPose({...s,dodgeTicks:sim.DODGE_TICKS},0);assert.equal(dodge.row%4,3);assert.equal(dodge.frame,0);
  assert.equal(JSON.stringify(s),before);
 });
@@ -1897,3 +1897,59 @@ test('V28 production atlases are normalized RGBA PNGs with no missing frame cell
 });
 
 test('V28 portrait combinations reflect all equipped modules independently',()=>{const art=load('visualArt');for(const kind of ['pulse','heavy','blade']){const seen=new Set();for(let mask=0;mask<8;mask++)seen.add(art.equipmentCell(kind,Boolean(mask&1),Boolean(mask&2),Boolean(mask&4)));assert.equal(seen.size,8);}assert.equal(art.motionTier(1,0,0),4);});
+test('reference camera preserves ordered ground depth while separating the boss body anchor',()=>{
+ const cam=load('referenceCamera');let last=-Infinity;for(let y=30;y<=80;y+=.1){const n=cam.worldScreenY(y);assert.ok(n>last);last=n;}
+ assert.equal(cam.worldScreenY(59),68);assert.ok(cam.bossScreenY(40)<26);assert.ok(cam.worldScreenY(65.5)>77&&cam.worldScreenY(65.5)<79);
+});
+test('camera bullets start at each projected member, retain captured movement and end on their own target',()=>{
+ const cam=load('referenceCamera'),s={...battle(),bots:3,lane:1,battleLane:1};
+ for(const member of sim.formationFor(3,1)){
+  const shot=incoming(s,{count:3,origins:[member],target:'boss',ticks:4,duration:4});
+  const p=cam.cameraFlight(motion.projectileSample(s,shot,0),shot);assert.ok(Math.abs(p.x-cam.squadScreenX(member.x,sim.LANE_CENTERS[1],3))<1e-8);assert.equal(p.y,cam.worldScreenY(member.y));
+  const moved={...shot,origins:[{...member,x:member.x-3}]};assert.equal(cam.projectedMuzzleX(moved),cam.projectedMuzzleX(shot)-3);
+  const end=cam.cameraFlight(motion.projectileSample(s,{...shot,ticks:0},0),shot);assert.equal(end.x,sim.targetX(s,'boss',0));assert.equal(end.y,cam.bossScreenY(sim.targetY(s,'boss',0)));
+ }
+});
+test('reference camera projects a held gate and its actual threshold through the same ground mapping',()=>{
+ const cam=load('referenceCamera'),s=quietRoad(0),mark=levels.getLevel(0).gateMarks[0],option=s.gateChoices[0][0];s.gate=0;s.progress=mark-4;
+ const node={style:{setProperty(){}},querySelector(){return null;}},root={style:{setProperty(){}}};motion.paintMotion(root,s,0,[{node,kind:'gate',id:0}],true);
+ assert.equal(node.style.top,cam.worldScreenY(sim.gateGroundY(s.progress,mark))+'%');assert.equal(node.style.left,sim.laneXAt(option.lane,sim.gateGroundY(s.progress,mark)-5)+'%');
+});
+test('projected boss contact retains a captured body anchor after relocation and does not alter state',()=>{
+ const cam=load('referenceCamera'),s=battle(),before=JSON.stringify(s),node={dataset:{worldY:'40',worldBoss:'true'},style:{}},root={style:{setProperty(){}}};
+ motion.paintMotion(root,s,.5,[{node,kind:'world-decor',id:0}]);assert.equal(node.style.top,cam.bossScreenY(40)+'%');assert.equal(JSON.stringify(s),before);
+});
+test('reference art contains real RGBA atlases, compact gameplay backgrounds and no missing variants',()=>{
+ for(const [name,w,h]of [['boss-furnace',1024,512],['gate',1024,512],['cockpit',1536,512],['logo',512,190],['mech-portraits',1536,576],['mech-pulse-motion',1024,1024],['mech-heavy-motion',1024,1024],['mech-blade-motion',1024,1024]]){
+  const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',name+'-v29.png'));assert.equal(png.readUInt32BE(16),w);assert.equal(png.readUInt32BE(20),h);assert.equal(png[25],6);
+ }
+ for(let i=1;i<=5;i++){const jpg=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/map-'+i+'-v29.jpg'));assert.equal(jpg[0],255);assert.equal(jpg[1],216);assert.ok(jpg.length<350000);}
+});
+
+test('reference core activation retains the chunky upgraded body and eight-frame action family',()=>{const art=load('visualArt');for(const mechClass of ['pulse','heavy','blade']){const s={...initial(),status:'running',mechClass,burstTicks:50,weaponLevel:0};assert.equal(art.artPose(s).row,4);assert.equal(art.artPose({...s,status:'battle',fireCooldown:0}).row,5);}});
+
+test('untargeted reference tracers remain visible between volleys without changing cadence or dealing damage',()=>{let s={...quietRoad(0),mechClass:'pulse',bots:1,fireCooldown:0,gate:levels.getLevel(0).gateMarks.length};s.hazardHps=s.hazardHps.map(()=>-1);s=tick(s);assert.ok(s.pendingShots.length&&s.pendingShots.every(p=>!p.target&&p.duration>sim.attackIntervalFor(s)),JSON.stringify({shots:s.pendingShots,status:s.status,fire:s.fireCooldown,mech:s.mechClass}));assert.equal(s.fireCooldown,sim.attackIntervalFor(s));for(let i=1;i<16;i++)s=tick(s);assert.equal(s.report.dealt,0);assert.equal(s.report.shots,Math.ceil(16/sim.attackIntervalFor(s)));assert.ok(s.hazardHps.every(h=>h===-1));});
+test('each mech uses an independent motion module with class-correct attack phases',()=>{
+ const {MECH_ANIMATIONS,sampleMechMotion:sample}=load('animationModules');assert.notEqual(MECH_ANIMATIONS.pulse,MECH_ANIMATIONS.heavy);assert.notEqual(MECH_ANIMATIONS.heavy,MECH_ANIMATIONS.blade);
+ const values={};for(const mechClass of ['pulse','heavy','blade']){const s={...battle(),mechClass};values[mechClass]=sample({...s,fireCooldown:sim.attackIntervalFor(s)-2},.5);assert.equal(values[mechClass].classId,mechClass);}
+ assert.equal(values.pulse.action,'pulse-ready');assert.equal(values.heavy.action,'heavy-cannon');assert.equal(values.blade.action,'blade-cut');assert.equal(values.blade.frame,4);assert.ok(values.heavy.recoil>values.pulse.recoil);
+});
+test('ranged run aim keeps the stride continuous across all fire cooldowns',()=>{
+ const sample=load('animationModules').sampleMechMotion;
+ for(const mechClass of ['pulse','heavy']){const s={...quietRoad(0),mechClass,roadTicks:17};const frames=[];for(let fireCooldown=0;fireCooldown<=sim.attackIntervalFor(s);fireCooldown++){const p=sample({...s,fireCooldown},.45,1);assert.equal(p.row%4,0);frames.push(p.frame);}assert.equal(new Set(frames).size,1);}
+});
+test('blade contact follows melee flight and its longer finisher rather than gun recoil',()=>{
+ const sample=load('animationModules').sampleMechMotion,s={...battle(),mechClass:'blade'};s.pendingShots=[incoming(s,{attackStyle:'blade',duration:4,ticks:2,finisher:true})];
+ const before=sample({...s,fireCooldown:sim.attackIntervalFor(s)-3},.5);assert.equal(before.action,'blade-cut');assert.equal(before.frame,4);assert.equal(before.recoil,0);
+ const after=sample({...s,fireCooldown:sim.attackIntervalFor(s)-4},.2);assert.equal(after.frame,5);assert.equal(after.action,'blade-cut');
+});
+test('independent animation modules remain presentation-only and freeze for reduced motion',()=>{
+ const sample=load('animationModules').sampleMechMotion;
+ for(const mechClass of ['pulse','heavy','blade']){const s={...battle(),mechClass,dodgeTicks:3},before=JSON.stringify(s);for(const alpha of [0,.2,.5,.9]){const p=sample(s,alpha);assert.ok(p.frame>=0&&p.frame<8);assert.equal(p.row%4,3);}const stopped=sample(s,.5,0,true);assert.equal(stopped.frame,0);assert.equal(stopped.recoil,0);assert.equal(JSON.stringify(s),before);}
+});
+test('independent sprite atlases preserve transparency and calibrated action cells',()=>{
+ const meta=JSON.parse(fs.readFileSync(path.resolve(__dirname,'motion-registration-v30.json'),'utf8').replace(/^\uFEFF/,''));const hashes=new Set();
+ for(const m of meta){assert.equal(m.frames,64);assert.equal(m.measuredFrames,64);assert.ok(m.transparentFraction>.6);assert.ok(m.interpolatedFrames<=1);assert.ok(m.maxCoreXErrorPx<=5);const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/mech-'+m.class+'-motion-v30.png'));assert.equal(png.readUInt32BE(16),1024);assert.equal(png.readUInt32BE(20),1024);assert.equal(png[25],6);hashes.add(require('node:crypto').createHash('sha256').update(png).digest('hex'));}assert.equal(hashes.size,3);
+});
+
+test('all independent running cycles contain sixteen stable cells per equipment tier',()=>{const art=load('visualArt'),meta=JSON.parse(fs.readFileSync(path.resolve(__dirname,'run-registration-v30.json'),'utf8').replace(/^\uFEFF/,''));for(const m of meta){const s={...quietRoad(0),mechClass:m.class,fireCooldown:0};const poses=Array.from({length:200},(_,i)=>art.artPose({...s,roadTicks:i/10}));assert.equal(new Set(poses.map(p=>p.frame)).size,16);assert.ok(poses.every(p=>p.sheet==='run'));assert.equal(m.strideFrames,16);assert.ok(m.maxCoreXErrorPx<=1);const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/mech-'+m.class+'-run-v30.png'));assert.equal(png.readUInt32BE(16),1024);assert.equal(png.readUInt32BE(20),512);assert.equal(png[25],6);}});

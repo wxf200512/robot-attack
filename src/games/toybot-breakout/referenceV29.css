@@ -1,0 +1,97 @@
+/* Match the approved industrial toy-mecha reference in the actual battle view. */
+.toybot-page .reference-v29.has-cockpit .toybot-scene{bottom:0}
+.toybot-page .reference-v29.has-cockpit .toybot-world{transform:none}
+.toybot-page .reference-v29 .art-v28 .toybot-scene-background{filter:none;animation:none;transform:none;object-fit:fill}
+.reference-v29 .toybot-track-guides,.reference-v29 .toybot-road-flow,.reference-v29 .toybot-depth-layer,.reference-v29 .toybot-v28-foreground{display:none}
+.toybot-page .reference-v29 .toybot-scene.formation-1{--squad-size:68px}
+.toybot-page .reference-v29 .toybot-scene.formation-2{--squad-size:clamp(58px,20.55vw,82px)}
+.toybot-page .reference-v29 .toybot-scene.formation-3{--squad-size:clamp(27px,9.8vw,38px)}
+.toybot-page .reference-v29 .toybot-top{padding:5px 7px;gap:5px;align-items:flex-start}
+.reference-v29 .toybot-brand{width:30%;font-size:0;background:none;padding:0;flex-shrink:0}
+.reference-v29 .toybot-reference-logo{display:block;width:100%;height:auto;max-height:40px;object-fit:contain}
+.reference-v29 .toybot-brand>span{position:absolute;left:9px;top:45px;font-size:8px;line-height:12px;color:#f2f7fc;text-shadow:0 1px 3px #10253e}
+.toybot-page .reference-v29 .toybot-live-settings{margin-left:auto;width:26px;height:26px;padding:0;font-size:13px;background:#11263bbd;border:1px solid #aac4d566;border-radius:6px}
+.toybot-page .reference-v29 .toybot-pause{font-size:0;width:26px;min-width:26px;height:26px;min-height:26px;padding:0;border-radius:6px;background:#11263bbd}
+.toybot-page .reference-v29 .toybot-pause:after{content:'Ⅱ';font-size:13px}
+.toybot-page .reference-v29.has-cockpit .toybot-boss-top-hud{top:9px;left:33%;right:68px;padding:3px 5px;width:auto;min-height:20px;border:2px solid #243b55;border-radius:6px;background:#122338e8;box-shadow:0 1px 0 #c2cddd}
+.reference-v29 .toybot-boss-top-hud>small{position:absolute;left:0;top:26px;font-size:7px;white-space:nowrap;color:#ffedd3;text-shadow:0 1px 3px #173049}
+.reference-v29 .toybot-boss-top-hud .toybot-battle-meter{height:8px;margin:0;border:0;border-radius:2px}
+.reference-v29 .toybot-boss-top-hud .toybot-attack-name,.reference-v29 .toybot-half-hp-mark{display:none}
+.toybot-page .reference-v29.has-cockpit>.ops-mission-hud{top:59px;left:8px;right:auto;width:auto;max-width:62%;min-height:0;padding:3px 5px;border:1px solid #b5d2e844;border-radius:5px;background:#10274099;font-size:8px;box-shadow:none}
+.reference-v29>.ops-mission-hud .ops-art{width:18px;height:18px;flex-basis:18px}
+.reference-v29>.ops-mission-hud b{font-size:8px}.reference-v29>.ops-mission-hud small{display:none}
+.toybot-page .reference-v29.has-cockpit>.toybot-stats{top:32px;left:auto;right:9px;width:auto;display:flex;gap:6px}
+.reference-v29.has-cockpit>.toybot-stats .toybot-pill{padding:1px 4px;min-width:0;border:0;background:#10283d77;border-radius:3px;font-size:8px;box-shadow:none}
+.reference-v29.has-cockpit>.toybot-stats .toybot-pill small{display:none}
+.toybot-page .reference-v29.has-cockpit>.toybot-meter{top:53px;left:72%;right:9px;height:3px}
+.toybot-page .reference-v29.has-cockpit.in-boss-arena>.toybot-stats,.toybot-page .reference-v29.has-cockpit.in-boss-arena>.toybot-meter{display:none}
+.toybot-page .reference-v29 .toybot-gate-door{width:clamp(112px,34.5%,148px);filter:drop-shadow(-5px 8px 3px #06223f66)}
+.reference-v29 .toybot-gate-door b{font-size:21px;top:38%}.reference-v29 .toybot-gate-door strong{font-size:10px;top:13%;text-shadow:0 1px 3px #091923}
+.reference-v29 .toybot-boss-strike-lane{top:40%;height:36%;border-radius:4px;opacity:.85;transform:translateX(-50%) perspective(400px) rotateX(16deg);transform-origin:50% 100%}
+.reference-v29 .toybot-enemy-target{top:54%;height:16%}
+.reference-v29 .toybot-threat-landing{top:68%}
+.reference-v29 .toybot-storm-beam{top:35%;height:37%}
+.reference-v29 .toybot-furnace-zone{top:64%;height:10%}
+.reference-v29 .toybot-road-field,.reference-v29 .toybot-road-rail{top:45%;height:28%}
+.reference-v29 .toybot-squad-hit{top:63%}
+.reference-v29 .toybot-class-tactic{bottom:18%;font-size:8px;opacity:.8}
+.reference-v29 .toybot-combo{top:43%;right:3%;min-width:0}.reference-v29 .toybot-combo b{font-size:23px}.reference-v29 .toybot-combo span{display:none}
+.reference-v29 .robot-boss-sprite{filter:drop-shadow(-5px 9px 3px #172d4266)!important}
+.reference-v29 .toybot-boss-weakpoint{width:22%;top:54%;opacity:.35}
+.reference-v29 .toybot-v28-assembly{width:145px;z-index:595}
+.toybot-page .reference-v29 .cockpit-bottom{background:linear-gradient(transparent,#081b2b33 65%);padding-bottom:env(safe-area-inset-bottom,0px)}
+.reference-v29 .toybot-cockpit{padding:0;max-width:none}
+.reference-v29 .cockpit-console{height:auto;aspect-ratio:3/1;background-size:100% 100%;background-position:center;isolation:isolate}
+.reference-v29 .cockpit-screen{top:54%;height:39%;overflow:visible}
+.reference-v29 .screen-health{left:15%;width:19%}.reference-v29 .screen-squad{right:2%;width:17%}
+.reference-v29 .cockpit-screen small{display:none}
+.reference-v29 .cockpit-screen strong{font-size:clamp(12px,3.9vw,18px);line-height:23px;color:#eaf7ff;text-shadow:0 1px 3px #102437}
+.reference-v29 .cockpit-screen em{font-size:9px;color:#d1e7f4}
+.reference-v29 .screen-squad strong:before{content:'×';font-size:12px;padding-right:3px}
+.reference-v29 .screen-squad strong em{display:none}
+.reference-v29 .screen-squad>span{font-size:6px;line-height:9px;white-space:nowrap;color:#afcbdd;position:absolute;left:-26%;right:12%;top:26px}
+.reference-v29 .cockpit-hp-track{position:absolute;left:-37%;top:27px;width:128%;max-width:none;height:6px;margin:0;background:#0a2639;border-radius:4px;box-shadow:0 0 2px #102b3c}
+.reference-v29 .cockpit-hp-track i:not(.cockpit-hp-trail){background:#50f4f4;box-shadow:0 0 5px #32d9ef}
+.toybot-page .reference-v29 .cockpit-reactor{top:7%;width:28%;height:auto;aspect-ratio:1;border-radius:50%;z-index:3}
+.reference-v29 .cockpit-reactor img{display:none}
+.reference-v29 .reactor-meter{inset:12%;opacity:.8;mask:radial-gradient(transparent 92%,#000 94%)}
+.reference-v29 .cockpit-reactor b{bottom:15%;font-size:10px;background:#0b3244c7}
+.reference-v29 .cockpit-reactor.is-ready b{opacity:0}
+.reference-v29 .cockpit-reactor.is-ready{filter:drop-shadow(0 0 5px #4ff1ff55)}
+.reference-v29 .cockpit-reactor.is-active{box-shadow:0 0 22px #4df3ff88;background:#7bf3ff22}
+.reference-v29 .cockpit-readout{display:none}.reference-v29 .cockpit-readout.has-danger{position:absolute;bottom:100%;left:20%;right:20%;display:block;text-align:center;padding:0 0 3px;font-size:8px}
+.reference-v29 .cockpit-readout.has-danger span{display:none}.reference-v29 .cockpit-readout.has-danger b{color:#ffdea4;text-shadow:0 1px 3px #0a233b}
+.reference-v29 .cockpit-skill-title,.reference-v29 .cockpit-module-rail{display:none}
+.reference-v29 .cockpit-steering-access{position:absolute;inset:0;pointer-events:none;z-index:4}
+.reference-v29 .cockpit-steering-access>summary{list-style:none;position:absolute;right:0;bottom:0;width:44px;height:35px;display:grid;place-items:center;cursor:pointer;pointer-events:auto;color:#b1d2e5;font-size:13px}
+.reference-v29 .cockpit-steering-access>summary::-webkit-details-marker{display:none}
+.reference-v29 .cockpit-steering-access[open] .cockpit-steering{position:absolute;left:6px;right:6px;bottom:calc(100% + 7px);padding:5px;margin:0;background:#0b263ae8;border:1px solid #7cb8cf88;border-radius:8px;pointer-events:auto}
+.reference-v29 .cockpit-steering-access:not([open]) .cockpit-steering{display:none}
+@media(max-height:600px){.toybot-page .reference-v29 .toybot-gate-door{width:100px}.reference-v29 .cockpit-console{max-height:120px}}
+
+.toybot-page .toybot-shell.reference-v29 .toybot-brand{flex:0 0 29%;width:29%;max-width:29%;text-align:left}
+.toybot-page .toybot-shell.reference-v29.has-cockpit.in-boss-arena .toybot-boss-top-hud{top:9px;left:33%;right:68px;width:auto;padding:3px 5px;min-height:20px}
+.toybot-page .reference-v29 .cockpit-hp-track{top:68%;height:8px}
+.toybot-page .reference-v29 .toybot-pause{overflow:hidden;color:transparent;position:relative}
+.toybot-page .reference-v29 .toybot-pause:after{position:absolute;inset:0;display:grid;place-items:center;color:#dff4ff}
+
+.reference-v29 .toybot-skill-field{top:41%;height:32%}.reference-v29 .toybot-defeat-wreck{top:70%}.reference-v29 .toybot-defeat-impact{top:68%}
+
+.reference-v29 .toybot-reference-bolt{position:absolute;inset:-2px -3px;display:block;background:url('/games/toybot-breakout/optimized/plasma-bolt.png') center/contain no-repeat;filter:drop-shadow(0 0 4px #6bffff)}
+.reference-v29 .toybot-shot.in-flight:not(.weapon-powered):not(.weapon-heavy):not(.weapon-ultimate):not(.is-heavy-round):not(.is-core-burst-shot){width:12px;height:34px;border:0;background:none;box-shadow:none}
+
+.toybot-page .toybot-shell.reference-v29.has-cockpit .toybot-boss-top-hud{top:9px;left:32%;right:68px;width:auto;padding:3px 5px;min-height:20px}
+.toybot-page .toybot-shell.reference-v29.has-cockpit .toybot-scene{bottom:16px}
+.toybot-page .toybot-shell.reference-v29.has-cockpit>.toybot-stats{display:none}
+.reference-v29 .toybot-boss-top-hud>small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.reference-v29 .toybot-reference-lanes{position:absolute;inset:0;z-index:0;pointer-events:none}
+.reference-v29 .toybot-reference-lanes i{position:absolute;inset:0;background:#dce5e7;opacity:.78;clip-path:polygon(49.65% 30%,50% 30%,32.1% 100%,31.3% 100%)}
+.reference-v29 .toybot-reference-lanes i+i{clip-path:polygon(50% 30%,50.35% 30%,68.7% 100%,67.9% 100%)}
+
+.reference-v29 .is-reference-awakened .toybot-v28-body{filter:brightness(1.2) drop-shadow(0 0 7px #7bffff)}
+.reference-v29 .is-reference-awakened.class-heavy .toybot-v28-body{filter:brightness(1.2) drop-shadow(0 0 7px #ffc478)}
+.reference-v29 .is-reference-awakened.class-blade .toybot-v28-body{filter:brightness(1.2) drop-shadow(0 0 7px #d7abff)}
+
+.reference-v29 .toybot-obstacle.boss{filter:drop-shadow(-4px 8px 3px #15233944)}
+.reference-v29 .toybot-obstacle.boss.phase-shield:after{border:0;box-shadow:none;inset:auto;left:0;top:62%;width:100%;height:48%;border-radius:0}

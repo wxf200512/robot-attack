@@ -8,7 +8,7 @@ import './campaign.css';
 export function StoryRelay({game}:{game:CampaignState}){
  if(!relayVisible(game))return null;
  const n=game.narrative,y=gateGroundY(game.progress,n.relayMark),near=y>=61;
- return <div className={'campaign-relay '+(near?'is-near':'')} style={{left:laneXAt(n.relayLane,y)+'%',top:y+'%',zIndex:Math.round(y*10)-1,transform:`translate(-50%,-85%) scale(${Math.max(.5,(y-30)/34)})`}} role="img" aria-label={`剧情中继在第${n.relayLane+1}轨，驶过接取${n.route==='rescue'?'伙伴':'护盾'}`}>
+ return <div data-world-y={y} className={'campaign-relay '+(near?'is-near':'')} style={{left:laneXAt(n.relayLane,y)+'%',top:y+'%',zIndex:Math.round(y*10)-1,transform:`translate(-50%,-85%) scale(${Math.max(.5,(y-30)/34)})`}} role="img" aria-label={`剧情中继在第${n.relayLane+1}轨，驶过接取${n.route==='rescue'?'伙伴':'护盾'}`}>
   <span className="campaign-relay-ground"/><img src={RELAY_ART} alt="" draggable={false}/><b>{n.route==='rescue'?'伙伴 +1':'护盾 +1'}</b><small>{near?'驶过接通':'中继接应'}</small>
  </div>;
 }

@@ -1,4 +1,5 @@
-import { pulseFlightV33, pulseImpactV33 } from './pulseVfxV33';
+import { coreFlightV34 } from './signatureV34';
+import { pulseImpactV33 } from './pulseVfxV33';
 import { bossMotionV31, enemyMotionV31, BOSS_MOTION_V31, ENEMY_MOTION_V31 } from './hostileMotionV31';
 import { worldScreenY, bossScreenY, projectedMuzzleX, squadScreenX, actorPixels, cameraFlight, FURNACE_ART } from './referenceCamera';
 import { MOTION_ART, RUN_ART, artPose, atlasCell, bossArtFrame, BOSS_EVOLUTION_ART, materialSample, salvageSample } from './visualArt';
@@ -68,7 +69,7 @@ export function paintMotion(root:HTMLElement,s:GameState,alpha:number,entries:Mo
   else if(kind==='assembly'){place(node,LANE_CENTERS[s.lane],60);}
   else if(kind==='hazard'){const body=node.querySelector<HTMLElement>('.hostile-v31-body');if(body){const p=enemyMotionV31(s,id,t,reduced);paintHostile(body,p,ENEMY_MOTION_V31[p.kind],4);}const y=roadEnemyY(v,id);place(node,hazardVisualX(v,id),y);node.style.setProperty('--hazard-scale',String(.72+(y-39)/19*.34));}
   else if(kind==='core-pulse'){
-   const shot=shots.get(id);if(shot){const p=pulseFlightV33(projectileSample(s,shot,t,v),shot,t,size,reduced);node.style.left=p.x+'%';node.style.top=`calc(${p.y}% - ${p.lift}px)`;node.style.transform=`translate(-50%,-50%) rotate(${p.angle}deg) scale(${p.scale})`;node.style.opacity=String(p.opacity);const art=node.querySelector<HTMLElement>('.core-pulse-flight-art');if(art)art.style.backgroundPosition=atlasCell(p.frame,1,8,3);const vortex=node.querySelector<HTMLElement>('.core-pulse-vortex');if(vortex){vortex.style.backgroundPosition=atlasCell(1+p.frame%4,0,8,3);vortex.style.rotate=p.spin+'deg';}const wake=node.querySelector<HTMLElement>('.core-pulse-wake');if(wake)wake.style.backgroundPosition=atlasCell((p.frame+2)%8,1,8,3);}
+   const shot=shots.get(id);if(shot){const p=coreFlightV34(projectileSample(s,shot,t,v),shot,t,size,reduced);node.style.left=p.x+'%';node.style.top=`calc(${p.y}% - ${p.lift}px)`;node.style.transform=`translate(-50%,-50%) rotate(${p.angle}deg) scale(${p.scale})`;node.style.opacity=String(p.opacity);const art=node.querySelector<HTMLElement>('.core-pulse-flight-art');if(art)art.style.backgroundPosition=atlasCell(p.frame,1,8,3);const vortex=node.querySelector<HTMLElement>('.core-pulse-vortex');if(vortex){vortex.style.backgroundPosition=atlasCell(1+p.frame%4,0,8,3);vortex.style.rotate=p.spin+'deg';}const wake=node.querySelector<HTMLElement>('.core-pulse-wake');if(wake)wake.style.backgroundPosition=atlasCell((p.frame+2)%8,1,8,3);}
   }else if(kind==='core-pulse-muzzle'){
    const shot=shots.get(id);if(shot){node.style.left=projectedMuzzleX(shot)+'%';node.style.top=`calc(${worldScreenY(shot.origins[0].y)}% - ${actorPixels(shot.count,size.width)/4}px)`;const art=node.querySelector<HTMLElement>('.core-pulse-muzzle-art');if(art)art.style.backgroundPosition=atlasCell(reduced?2:Math.min(7,Math.floor((shot.duration-shot.ticks+t)*4)),0,8,3);}
   }else if(kind==='pulse-impact-ring'){

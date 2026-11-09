@@ -1,0 +1,32 @@
+[
+  {
+    "kind": "pulse",
+    "width": 1536,
+    "height": 576,
+    "columns": 8,
+    "rows": 3,
+    "frames": 24,
+    "transparentFraction": 0.7172297724971065,
+    "bytes": 648169
+  },
+  {
+    "kind": "heavy",
+    "width": 1536,
+    "height": 576,
+    "columns": 8,
+    "rows": 3,
+    "frames": 24,
+    "transparentFraction": 0.6169614438657407,
+    "bytes": 703141
+  },
+  {
+    "kind": "blade",
+    "width": 1536,
+    "height": 576,
+    "columns": 8,
+    "rows": 3,
+    "frames": 24,
+    "transparentFraction": 0.5308408383969907,
+    "bytes": 830693
+  }
+]

@@ -310,7 +310,7 @@ const recordImpact=(s:GameState,damage:number,target:Target,index:number,tier:nu
  const killed=target==='hazard'?s.hazardHps[index]===0:target==='boss'?s.battleHp===0:target==='part'?s.ops.parts[index]?.hp===0:false;
  if(target==='hazard'||target==='boss'||target==='threat'){const key=target==='boss'?'boss:0':target+':'+index;const previous=s.hostileReactions?.[key];if(!previous||previous.cooldown<=0)s.hostileReactions={...s.hostileReactions,[key]:{ticks:6,cooldown:14}};}
  const kind:CombatFeedback['kind']=killed&&target==='boss'?'boss':killed&&(h?.eliteRole||target==='part')?'elite':h&&hazardArmorFor(s,index)>0?'armor':s.mechClass==='heavy'||tier>=4?'heavy':'hit';
- s.feedback=[...s.feedback,{id:++s.feedbackSequence,pulseCore:s.burstTicks>0&&s.mechClass==='pulse',boss:target==='boss',x:targetX(s,target,index),y:targetY(s,target,index),ticks:kind==='boss'?12:kind==='elite'?8:4,kind}].slice(-12);
+ s.feedback=[...s.feedback,{id:++s.feedbackSequence,coreStyle:s.burstTicks>0?s.mechClass:undefined,pulseCore:s.burstTicks>0&&s.mechClass==='pulse',boss:target==='boss',x:targetX(s,target,index),y:targetY(s,target,index),ticks:kind==='boss'?12:kind==='elite'?8:4,kind}].slice(-12);
  if(s.mechClass==='pulse'&&s.burstTicks<=0){const lane=targetLane(s,target,index);if(s.report.focusLane>=0&&s.report.focusLane!==lane){s.report.focus=0;s.report.focusReady=false;}s.report.focusLane=lane;s.report.focus++;if(s.report.focus>=6){s.report.focus=0;s.report.focusReady=true;}}
 };
 const damageTarget = (s: GameState, target: Target, index: number, raw: number, tier: number, lane: number, precise = false): number => {

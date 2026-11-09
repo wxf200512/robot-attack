@@ -1,4 +1,5 @@
-import { PULSE_VFX_V33, pulseMuzzlesV33 } from './pulseVfxV33';
+import { CORE_FX_V34, coreMuzzlesV34, signatureShotV34 } from './signatureV34';
+import './signatureV34.css';
 import './pulseVfxV33.css';
 import { readableCoreImpacts } from './skillPresentationV32';
 import './skillClarityV32.css';
@@ -196,7 +197,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
     return()=>{document.removeEventListener('visibilitychange',visibility);window.removeEventListener('blur',suspend);window.removeEventListener('pagehide',suspend);};
   },[game.status]);
   const warmRoadAssets=game.status==='running';
-  useEffect(()=>{void preloadImages([PULSE_VFX_V33,RUN_ART[game.mechClass],MOTION_ART[game.mechClass],MATERIAL_ART,PROP_ART,PORTRAIT_ART,REFERENCE_LOGO],'high');},[game.mechClass]);
+  useEffect(()=>{void preloadImages([CORE_FX_V34[game.mechClass],RUN_ART[game.mechClass],MOTION_ART[game.mechClass],MATERIAL_ART,PROP_ART,PORTRAIT_ART,REFERENCE_LOGO],'high');},[game.mechClass]);
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages(Object.values(DEFENSE_ART));},[game.status]);
   useEffect(()=>{if(game.status==='home')void preloadImages([UI_MENU_ICONS,UI_MENU_ART.hangar,ART_V19,FUSION_ART_V19].filter(Boolean),'low');},[game.status]);
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages([CHAPTER_FILMS[game.levelIndex],RELAY_ART]);},[game.status,game.levelIndex]);
@@ -888,13 +889,13 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
                 {attack.phase === 'flight' && attack.kind === 'shockwave' && <div data-world-y={y} className="toybot-enemy-shockwave" style={{ left: laneXAt(attack.lane, y) + '%', top: y + '%', zIndex: Math.round((y + 5) * 10) + 4 }} aria-hidden="true" />}
               </React.Fragment>;
             })}
-            {pulseMuzzlesV33(game.pendingShots).map(shot=><span key={'core-muzzle-'+shot.id} data-motion="core-pulse-muzzle" data-motion-id={shot.id} className={'core-pulse-muzzle'+(shot.count>=5?' is-large-squad':'')} style={{left:shot.origins[0].x+'%',top:shot.origins[0].y+'%',zIndex:Math.round((shot.origins[0].y+7)*10)}} aria-hidden="true"><i className="core-pulse-muzzle-art" style={{backgroundImage:`url(${PULSE_VFX_V33})`,backgroundPosition:atlasCell(0,0,8,3)}}/></span>)}
+            {coreMuzzlesV34(game.pendingShots).map(shot=><span key={'core-muzzle-'+shot.id} data-motion="core-pulse-muzzle" data-motion-id={shot.id} className={'core-pulse-muzzle fx-'+shot.attackStyle+(signatureShotV34(shot)?' is-signature':'')+(shot.count>=5?' is-large-squad':'')} style={{left:shot.origins[0].x+'%',top:shot.origins[0].y+'%',zIndex:Math.round((shot.origins[0].y+7)*10)}} aria-hidden="true"><i className="core-pulse-muzzle-art" style={{backgroundImage:`url(${CORE_FX_V34[shot.attackStyle??game.mechClass]})`,backgroundPosition:atlasCell(0,0,8,3)}}/></span>)}
             {coreVisualShots(game.pendingShots).map((volley) => (
               <React.Fragment key={volley.id}>
                 {volley.origins.map((origin) => {
                   const size = volley.count <= 1 ? '68px' : volley.count <= 4 ? 'clamp(58px,20.55vw,82px)' : 'clamp(27px,9.8vw,38px)';
 
-                  if(volley.burst&&volley.attackStyle==='pulse')return <div key={origin.index} data-motion="core-pulse" data-motion-id={volley.id} className={'core-pulse-flight'+(volley.count>=5?' is-large-squad':'')} style={{left:origin.x+'%',top:origin.y+'%',zIndex:depthForPulse(volley)}} aria-hidden="true"><span className="core-pulse-flight-art" style={{backgroundImage:`url(${PULSE_VFX_V33})`,backgroundPosition:atlasCell(0,1,8,3)}}/><i className="core-pulse-vortex" style={{backgroundImage:`url(${PULSE_VFX_V33})`,backgroundPosition:atlasCell(0,0,8,3)}}/><i className="core-pulse-wake" style={{backgroundImage:`url(${PULSE_VFX_V33})`,backgroundPosition:atlasCell(0,1,8,3)}}/></div>;
+                  if(volley.burst)return <div key={origin.index} data-motion="core-pulse" data-motion-id={volley.id} className={'core-pulse-flight fx-'+volley.attackStyle+(signatureShotV34(volley)?' is-signature':'')+(volley.count>=5?' is-large-squad':'')} style={{left:origin.x+'%',top:origin.y+'%',zIndex:depthForPulse(volley)}} aria-hidden="true"><span className="core-pulse-flight-art" style={{backgroundImage:`url(${CORE_FX_V34[volley.attackStyle??game.mechClass]})`,backgroundPosition:atlasCell(0,1,8,3)}}/><i className="core-pulse-vortex" style={{backgroundImage:`url(${CORE_FX_V34[volley.attackStyle??game.mechClass]})`,backgroundPosition:atlasCell(0,0,8,3)}}/><i className="core-pulse-wake" style={{backgroundImage:`url(${CORE_FX_V34[volley.attackStyle??game.mechClass]})`,backgroundPosition:atlasCell(0,1,8,3)}}/></div>;
                   if (volley.attackStyle === 'blade'&&!volley.burst) {
                     if (!volley.target || game.lane !== volley.lane) return null;
                     const y = targetY(game, volley.target, volley.targetIndex);

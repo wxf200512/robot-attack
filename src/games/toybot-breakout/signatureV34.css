@@ -1,0 +1,25 @@
+.toybot-page .toybot-shell.reference-v29 .core-pulse-flight{width:48px;height:64px;filter:drop-shadow(0 2px 1px #062d3b66)}
+.toybot-page .toybot-shell.reference-v29 .core-pulse-flight.is-signature{width:94px;height:112px}
+.toybot-page .toybot-shell.reference-v29 .core-pulse-flight.fx-heavy{width:46px;height:68px}
+.toybot-page .toybot-shell.reference-v29 .core-pulse-flight.fx-heavy.is-signature{width:86px;height:112px}
+.toybot-page .toybot-shell.reference-v29 .core-pulse-flight.fx-blade{width:64px;height:60px}
+.toybot-page .toybot-shell.reference-v29 .core-pulse-flight.fx-blade.is-signature{width:112px;height:96px}
+.toybot-page .toybot-shell.reference-v29 .core-pulse-flight.is-large-squad{width:30px;height:42px}
+.toybot-page .toybot-shell.reference-v29 .core-pulse-flight.is-large-squad.is-signature{width:70px;height:84px}
+.core-pulse-flight:not(.is-signature) .core-pulse-flight-art{opacity:.75}
+.core-pulse-flight.is-signature .core-pulse-flight-art{opacity:.96}
+.core-pulse-flight.fx-heavy .core-pulse-vortex,.core-pulse-flight.fx-blade .core-pulse-vortex{display:none}
+.core-pulse-flight.fx-heavy .core-pulse-wake{opacity:.36;top:60%}
+.core-pulse-flight.fx-blade .core-pulse-wake{width:76%;left:12%;height:65%;opacity:.25}
+.toybot-page .toybot-shell.reference-v29 .core-pulse-muzzle{width:34px;height:34px}
+.toybot-page .toybot-shell.reference-v29 .core-pulse-muzzle.is-signature{width:68px;height:68px}
+.toybot-page .toybot-shell.reference-v29 .art-v28 .toybot-contact-vfx.contact-pulse-core{width:76px;height:76px}
+.toybot-page .toybot-shell.reference-v29 .art-v28 .toybot-contact-vfx.core-impact-heavy{width:100px;height:88px}
+.toybot-page .toybot-shell.reference-v29 .art-v28 .toybot-contact-vfx.core-impact-blade{width:90px;height:84px}
+.toybot-page .toybot-shell.reference-v29 .art-v28 .toybot-contact-vfx.contact-boss.contact-pulse-core{width:116px;height:116px}
+.toybot-page .toybot-shell.reference-v29 .core-impact-heavy .pulse-impact-ring{width:150%;height:75%;top:67%}
+.toybot-page .toybot-shell.reference-v29 .core-impact-blade .pulse-impact-ring{opacity:.4}
+@media(max-width:350px){.toybot-page .toybot-shell.reference-v29 .core-pulse-flight.is-signature{width:80px;height:94px}}
+
+/* Each atlas already contains its own orbiting fins and shock ring. */
+.core-pulse-flight .core-pulse-vortex,.contact-pulse-core .pulse-impact-ring{display:none}

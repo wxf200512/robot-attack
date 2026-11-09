@@ -1,3 +1,4 @@
+import { bossMotionV31, enemyMotionV31, BOSS_MOTION_V31, ENEMY_MOTION_V31 } from './hostileMotionV31';
 import { worldScreenY, bossScreenY, projectedMuzzleX, squadScreenX, actorPixels, cameraFlight, FURNACE_ART } from './referenceCamera';
 import { MOTION_ART, RUN_ART, artPose, atlasCell, bossArtFrame, BOSS_EVOLUTION_ART, materialSample, salvageSample } from './visualArt';
 import { STEP_MS, RUN_SPEED, roadStepFor, DODGE_TICKS, attackIntervalFor, playerFormation, roadEnemyX, roadEnemyY, targetX, targetY, bossX, bossY, isBossArena, gateGroundY, laneXAt, LANE_CENTERS, enemyThreatY, type GameState, type PendingShot } from './simulation';
@@ -28,6 +29,7 @@ export function projectileSample(s:GameState,shot:PendingShot,alpha:number,predi
  const endY=shot.target?targetY(v,shot.target,shot.targetIndex):shot.y,capturedLane=shot.target==='hazard'?hazardLaneAt(s.layoutIndex,shot.targetIndex,v.progress,s.levelIndex):shot.target==='boss'?s.battleLane:shot.lane,endX=shot.target?(capturedLane!==shot.lane?laneXAt(shot.lane,endY):shot.target==='hazard'?hazardVisualX(v,shot.targetIndex):targetX(v,shot.target,shot.targetIndex)):shot.targetIndex>=0||shot.burst?laneXAt(shot.lane,endY):50;
  return {progress,x:origin.x+(endX-origin.x)*progress,y:origin.y+(endY-origin.y)*progress-(shot.burst&&shot.attackStyle==='heavy'?Math.sin(progress*Math.PI)*Math.min(5,Math.max(0,origin.y-endY)*.2):0),angle:Math.atan2((endX-origin.x)*.56,Math.max(1,origin.y-endY))*180/Math.PI};
 }
+function paintHostile(body:HTMLElement,p:ReturnType<typeof bossMotionV31>,image:string,rows:number){body.style.backgroundImage=`url(${image})`;body.style.backgroundSize=`800% ${rows*100}%`;body.style.backgroundPosition=atlasCell(p.frame,p.row,8,rows);body.style.translate=`0 ${p.bob}px`;body.style.rotate=p.lean+'deg';body.style.setProperty('--hostile-flash',String(1+p.flash));body.dataset.hostileAction=p.action;body.dataset.hostileProfile=p.profile;}
 export type MotionEntry={node:HTMLElement;kind:string;id:number};
 export type SceneSize={width:number;height:number};
 export function coreBeamSample(s:GameState,shot:PendingShot,alpha:number,size:SceneSize,predicted?:GameState){
@@ -63,7 +65,7 @@ export function paintMotion(root:HTMLElement,s:GameState,alpha:number,entries:Mo
   else if(kind==='defense-contact'){place(node,LANE_CENTERS[s.damageLane],57);if(s.defenseFx)node.style.backgroundPosition=atlasCell(reduced?3:Math.min(7,Math.floor((1-(s.defenseFx.ticks-t)/8)*8)),s.defenseFx.kind==='shield'?1:2,8,4);}
   else if(kind==='salvage'){const e=s.killEffects.find(e=>e.id===id);if(e){const p=salvageSample(e.x,e.y,e.ticks,LANE_CENTERS[s.lane],t);place(node,p.x,p.y);node.style.opacity=String(p.opacity);node.style.scale=String(p.scale);}}
   else if(kind==='assembly'){place(node,LANE_CENTERS[s.lane],60);}
-  else if(kind==='hazard'){const y=roadEnemyY(v,id);place(node,hazardVisualX(v,id),y);node.style.setProperty('--hazard-scale',String(.72+(y-39)/19*.34));}
+  else if(kind==='hazard'){const body=node.querySelector<HTMLElement>('.hostile-v31-body');if(body){const p=enemyMotionV31(s,id,t,reduced);paintHostile(body,p,ENEMY_MOTION_V31[p.kind],4);}const y=roadEnemyY(v,id);place(node,hazardVisualX(v,id),y);node.style.setProperty('--hazard-scale',String(.72+(y-39)/19*.34));}
   else if(kind==='core-beam'){
    const shot=shots.get(id);if(shot){const end=projectileSample(s,{...shot,ticks:0},0,v),o=shot.origins[0],x=projectedMuzzleX(shot),lift=shot.muzzle?actorPixels(shot.count,size.width)/4:0,y=worldScreenY(o.y),endY=shot.target==='boss'?bossScreenY(end.y):worldScreenY(end.y),dx=(end.x-x)*size.width/100,dy=(y-endY)*size.height/100-lift,p={x,y,lift,length:Math.hypot(dx,dy),angle:Math.atan2(dx,dy)*180/Math.PI};node.style.left=p.x+'%';node.style.top=`calc(${p.y}% - ${p.lift}px)`;node.style.height=p.length+'px';node.style.transform=`translate(-50%,-100%) rotate(${p.angle}deg)`;node.style.opacity=String(.65+Math.sin((shot.duration-shot.ticks+t)*Math.PI)*.2);}
   }
@@ -79,14 +81,15 @@ export function paintMotion(root:HTMLElement,s:GameState,alpha:number,entries:Mo
   }else if(kind==='boss'){
    place(node,isBossArena(s)?bossX(v):50,bossY(v));node.style.top=bossScreenY(isBossArena(s)?bossY(v):40)+'%';
    const body=node.querySelector<HTMLElement>('.robot-boss-sprite');
-   if(body&&body.style.backgroundImage.includes(FURNACE_ART)){const f=bossArtFrame(s);body.style.backgroundPosition=atlasCell(f%4,Math.floor(f/4),4,2);}
+   if(body?.classList.contains('hostile-v31-body')){const p=bossMotionV31(s,t,reduced);paintHostile(body,p,BOSS_MOTION_V31[s.levelIndex],8);body.style.opacity=String(p.action==='destroyed'?Math.max(0,1-(s.bossPhaseTicks+t-8)/8):1);}
+   else if(body&&body.style.backgroundImage.includes(FURNACE_ART)){const f=bossArtFrame(s);body.style.backgroundPosition=atlasCell(f%4,Math.floor(f/4),4,2);}
    else if(body&&body.style.backgroundImage.includes(BOSS_EVOLUTION_ART)){body.style.backgroundPositionX=bossArtFrame(s)*100/7+'%';body.style.translate=reduced?'0 0':`0 ${Math.sin((s.battleTime+t)*.35)*.65}px`;}
 
    if(isBossArena(s))node.style.setProperty('--boss-scale',String(1.12*(1+Math.max(0,(bossY(v)-(s.mechClass==='blade'?51:40))/(59-(s.mechClass==='blade'?51:40)))*.25)));
   }else if(kind==='gate'){
    const mark=getLevel(s.levelIndex).gateMarks[s.gate],option=s.gateChoices[s.gate]?.[id];if(mark!==undefined&&option){const y=gateGroundY(v.progress,mark);place(node,laneXAt(option.lane,y-5),y);node.style.setProperty('--gate-scale',String(.85+clamp01((v.progress-mark+12)/14)*.3));}
   }else if(kind==='threat'){
-   const threat=s.threats.find(a=>a.id===id);if(threat){const predicted={...threat,ticks:Math.max(0,threat.ticks-t)},y=enemyThreatY(v,predicted);const progress=clamp01(1-predicted.ticks/predicted.duration),from=laneXAt(threat.fromLane,threat.originY??43);place(node,threat.kind==='shell'?from+(LANE_CENTERS[threat.lane]-from)*progress:laneXAt(threat.lane,y),y);if(threat.kind==='shell')node.style.top=(worldScreenY(y)-12*(1-progress))+'%';}
+   const threat=s.threats.find(a=>a.id===id);if(threat){const body=node.querySelector<HTMLElement>('.hostile-v31-body');if(body){const p=enemyMotionV31(s,id,t,reduced,'threat');paintHostile(body,p,ENEMY_MOTION_V31[p.kind],4);}const predicted={...threat,ticks:Math.max(0,threat.ticks-t)},y=enemyThreatY(v,predicted);const progress=clamp01(1-predicted.ticks/predicted.duration),from=laneXAt(threat.fromLane,threat.originY??43);place(node,threat.kind==='shell'?from+(LANE_CENTERS[threat.lane]-from)*progress:laneXAt(threat.lane,y),y);if(threat.kind==='shell')node.style.top=(worldScreenY(y)-12*(1-progress))+'%';}
   }else if(kind==='mission'||kind==='cargo'){
    const o=kind==='mission'?s.ops.mission:s.ops.event,y=fieldY(v,o);place(node,laneXAt(o.lane,y),y);
   }else if(kind==='prep'){const y=gateGroundY(v.progress,prepMark(s));place(node,laneXAt(id,y),y);}

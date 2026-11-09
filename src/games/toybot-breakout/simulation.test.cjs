@@ -1953,3 +1953,61 @@ test('independent sprite atlases preserve transparency and calibrated action cel
 });
 
 test('all independent running cycles contain sixteen stable cells per equipment tier',()=>{const art=load('visualArt'),meta=JSON.parse(fs.readFileSync(path.resolve(__dirname,'run-registration-v30.json'),'utf8').replace(/^\uFEFF/,''));for(const m of meta){const s={...quietRoad(0),mechClass:m.class,fireCooldown:0};const poses=Array.from({length:200},(_,i)=>art.artPose({...s,roadTicks:i/10}));assert.equal(new Set(poses.map(p=>p.frame)).size,16);assert.ok(poses.every(p=>p.sheet==='run'));assert.equal(m.strideFrames,16);assert.ok(m.maxCoreXErrorPx<=1);const png=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/mech-'+m.class+'-run-v30.png'));assert.equal(png.readUInt32BE(16),1024);assert.equal(png.readUInt32BE(20),512);assert.equal(png[25],6);}});
+
+test('five guardians own different animation assets and charge/move/attack/hit profiles',()=>{
+ const art=load('hostileMotionV31');assert.equal(new Set(art.BOSS_MOTION_V31).size,5);assert.equal(new Set(art.BOSS_MOTION_PROFILES.map(p=>p.id)).size,5);
+ for(let levelIndex=0;levelIndex<5;levelIndex++){
+  const s={...battle(),levelIndex,bossStage:1,bossStep:'warning',bossStepTicks:0};assert.equal(art.bossMotionV31(s).row,1);
+  const end=art.bossMotionV31({...s,bossStepTicks:sim.bossWarningTicks(s)-.01});assert.equal(end.frame,7);
+  const attack={...s,bossStep:'flight',battleTime:100,bossFiredTick:100};assert.equal(art.bossMotionV31(attack).action,'attack');assert.equal(art.bossMotionV31(attack).frame,0);
+  const hit={...s,bossStep:'recovery',bossMoveTicks:0,hostileReactions:{'boss:0':{ticks:4,cooldown:12}}};assert.equal(art.bossMotionV31(hit).row,3);assert.equal(art.bossMotionV31({...hit,bossStage:2}).row,7);
+  const move=art.bossMotionV31({...s,bossStep:'recovery',bossMoveTicks:3});assert.equal(move.action,'relocate');assert.equal(move.row,0);
+ }
+});
+test('boss attack follows real salvo timestamp and never loops while a hazard lingers',()=>{
+ const art=load('hostileMotionV31'),s={...battle(),bossStep:'flight',bossFiredTick:100,battleTime:100};
+ assert.equal(art.bossMotionV31(s).action,'attack');assert.equal(art.bossMotionV31({...s,battleTime:120}).action,'ready');assert.equal(art.bossMotionV31({...s,battleTime:120,bossFiredTick:120}).frame,0);
+ const rush={...s,bossStep:'rush',bossStepTicks:sim.RUSH_CONTACT_TICK-4};assert.equal(art.bossMotionV31(rush).action,'rush-move');assert.equal(art.bossMotionV31({...rush,bossStepTicks:sim.RUSH_CONTACT_TICK}).action,'rush-impact');
+});
+test('five small enemy types have independent eight-frame movement and attack strips',()=>{
+ const art=load('hostileMotionV31');assert.equal(new Set(Object.values(art.ENEMY_MOTION_V31)).size,7);
+ for(const kind of ['drone','swarm','sniper','bomber','medic']){
+  const levelIndex=levels.LEVELS.findIndex(l=>l.hazards.some(h=>h.kind===kind)),index=levels.getLevel(levelIndex).hazards.findIndex(h=>h.kind===kind);assert.ok(index>=0);const s={...quietRoad(levelIndex),enemyAttacks:[],hostileReactions:{}};
+  const frames=Array.from({length:160},(_,i)=>art.enemyMotionV31({...s,roadTicks:i/10},index));assert.equal(new Set(frames.map(p=>p.frame)).size,8);assert.ok(frames.every(p=>p.kind===kind));
+  const a={source:'hazard',sourceId:index,phase:'warning',duration:18,ticks:18};assert.equal(art.enemyMotionV31({...s,enemyAttacks:[a]},index).row,1);
+  assert.equal(art.enemyMotionV31({...s,enemyAttacks:[{...a,phase:'flight',duration:12,ticks:12}]},index).row,2);
+  assert.equal(art.enemyMotionV31({...s,hostileReactions:{['hazard:'+index]:{ticks:3,cooldown:10}}},index).row,3);
+ }
+});
+test('hit clips preserve telegraphs and single-source reactions do not leak to another enemy',()=>{
+ const art=load('hostileMotionV31'),s={...quietRoad(0),hostileReactions:{'hazard:0':{ticks:6,cooldown:14}}};assert.equal(art.enemyMotionV31(s,0).action,'hit');assert.notEqual(art.enemyMotionV31(s,1).action,'hit');
+ const a={source:'hazard',sourceId:0,phase:'warning',duration:12,ticks:6};const p=art.enemyMotionV31({...s,enemyAttacks:[a]},0,.5);assert.equal(p.action,'charge');assert.ok(p.flash>0);
+ const boss={...battle(),bossStep:'warning',hostileReactions:{'boss:0':{ticks:3,cooldown:11}}};assert.equal(art.bossMotionV31(boss).action,'charge');
+});
+test('boss-spawned robots sample their own source id and no longer use projectile frames',()=>{
+ const art=load('hostileMotionV31'),s={...battle(),threats:[{id:70,kind:'minion',hp:10},{id:71,kind:'barrier',hp:10}],hostileReactions:{'threat:70':{ticks:4,cooldown:12}}};
+ assert.equal(art.enemyMotionV31(s,70,0,false,'threat').kind,'minion');assert.equal(art.enemyMotionV31(s,70,0,false,'threat').action,'hit');assert.equal(art.enemyMotionV31(s,71,0,false,'threat').kind,'barrier');assert.equal(art.enemyMotionV31(s,71,0,false,'threat').action,'move');
+});
+test('medic repair animation requires a real healing event rather than free-running fake pulses',()=>{
+ const art=load('hostileMotionV31'),levelIndex=levels.LEVELS.findIndex(l=>l.hazards.some(h=>h.kind==='medic')),index=levels.getLevel(levelIndex).hazards.findIndex(h=>h.kind==='medic'),s={...quietRoad(levelIndex),roadTicks:28};assert.equal(art.enemyMotionV31(s,index).action,'move');assert.equal(art.enemyMotionV31({...s,hostileReactions:{['repair:'+index]:{ticks:6,cooldown:6}}},index).action,'repair-pulse');
+});
+test('real damage starts a bounded flinch, sustained hits cannot restart it on every bullet',()=>{
+ const s={...battle(),bossStep:'support',fireCooldown:10000};s.pendingShots=[incoming(s,{damage:1})];const before=JSON.stringify(s),first=tick(s);assert.equal(first.hostileReactions['boss:0'].ticks,6);assert.equal(JSON.stringify(s),before);
+ first.pendingShots=[incoming(first,{damage:1})];const second=tick(first);assert.equal(second.hostileReactions['boss:0'].ticks,5);assert.ok(second.report.dealt>first.report.dealt);assert.equal(first.hostileReactions['boss:0'].ticks,6);
+});
+test('reaction timers pause, expire, and cannot change combat damage or target selection',()=>{
+ const base={...quietRoad(0),hostileReactions:{'hazard:0':{ticks:6,cooldown:14}}},paused={...base,status:'paused',resumeStatus:'running'};assert.equal(tick(paused).hostileReactions['hazard:0'].ticks,6);
+ let a=base,b={...base,hostileReactions:{}};for(let i=0;i<16;i++){a=tick(a);b=tick(b);}assert.deepEqual(a.hostileReactions,{});assert.deepEqual(a.hazardHps,b.hazardHps);assert.equal(a.playerHp,b.playerHp);assert.deepEqual(a.report,b.report);
+});
+test('hostile motion samplers are pure and reduced motion freezes frame and procedural motion',()=>{
+ const art=load('hostileMotionV31'),s={...battle(),bossStep:'recovery',bossMoveTicks:3,hostileReactions:{'boss:0':{ticks:5,cooldown:13}}},before=JSON.stringify(s);const p=art.bossMotionV31(s,.7,true);assert.equal(p.frame,0);assert.equal(p.bob,0);assert.equal(p.lean,0);assert.equal(p.flash,0);assert.equal(JSON.stringify(s),before);assert.deepEqual(art.bossMotionV31(s,.3),art.bossMotionV31({...s,status:'paused',resumeStatus:'battle'},.3));
+});
+test('twelve hostile atlases are transparent independent normalized resources with all action rows',()=>{
+ const meta=JSON.parse(fs.readFileSync(path.resolve(__dirname,'hostile-registration-v31.json'),'utf8').replace(/^\uFEFF/,''));assert.equal(meta.length,12);const hashes=new Set();for(const m of meta){assert.equal(m.frames,m.group==='boss'?64:32);assert.ok(m.transparentFraction>.45);assert.ok(m.maxRegistrationShiftPx<=m.cellSize/16);const png=fs.readFileSync(m.group==='boss'?path.resolve(__dirname,'art-source/boss-'+m.id+'-atlas-v31.png'):path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/enemy-'+m.id+'-motion-v31.png'));if(m.group==='boss'){const runtime=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/boss-'+m.id+'-motion-v31.webp'));assert.equal(runtime.toString('ascii',0,4),'RIFF');assert.equal(runtime.toString('ascii',8,12),'WEBP');assert.ok(runtime.length<png.length/2);}assert.equal(png.readUInt32BE(16),m.cellSize*8);assert.equal(png.readUInt32BE(20),m.rows*m.cellSize);assert.equal(png[25],6);hashes.add(require('node:crypto').createHash('sha256').update(png).digest('hex'));}assert.equal(hashes.size,12);
+});
+
+
+test('guardian defeat keeps the same armor phase and single-body flinch family',()=>{const art=load('hostileMotionV31');for(let levelIndex=0;levelIndex<5;levelIndex++){const s={...battle(),levelIndex,status:'boss-victory',bossStage:2,bossPhaseTicks:9};const p=art.bossMotionV31(s);assert.equal(p.action,'destroyed');assert.equal(p.row,7);assert.ok(p.frame<=7);assert.ok(p.lean>0);}});
+
+test('ground roadblock settles once and the biped summon never samples drone or bee actions',()=>{const art=load('hostileMotionV31'),s={...battle(),enemyAttacks:[],threats:[{id:70,kind:'barrier',duration:36,ticks:36,hp:10},{id:71,kind:'minion',duration:32,ticks:32,hp:10}]};const start=art.enemyMotionV31(s,70,0,false,'threat');assert.equal(start.frame,0);const settled={...s,threats:s.threats.map(t=>({...t,ticks:t.duration-20}))};assert.equal(art.enemyMotionV31(settled,70,0,false,'threat').frame,7);assert.equal(art.enemyMotionV31(settled,70,.9,false,'threat').frame,7);const walker=art.enemyMotionV31(s,71,0,false,'threat');assert.equal(walker.profile,'minion-biped-pounce');assert.notEqual(art.ENEMY_MOTION_V31.minion,art.ENEMY_MOTION_V31.swarm);assert.notEqual(art.ENEMY_MOTION_V31.barrier,art.ENEMY_MOTION_V31.drone);});
+test('boss armor phase changes once at the unfold beat and never blends two body layers',()=>{const art=load('hostileMotionV31');for(let levelIndex=0;levelIndex<5;levelIndex++){const s={...battle(),levelIndex,status:'boss-shift',bossStage:2,bossPhaseTicks:4};assert.equal(art.bossMotionV31(s).row,0);assert.equal(art.bossMotionV31({...s,bossPhaseTicks:5}).row,4);assert.equal(art.bossMotionV31({...s,bossPhaseTicks:9}).row,4);}});

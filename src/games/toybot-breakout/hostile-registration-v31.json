@@ -1,0 +1,134 @@
+[
+  {
+    "maxRegistrationShiftPx": 16.0,
+    "rows": 8,
+    "transparentFraction": 0.48395228385925293,
+    "id": "furnace",
+    "minSimilarity": 0.35527948656431907,
+    "frames": 64.0,
+    "group": "boss",
+    "cellSize": 256,
+    "adjustedCells": 49.0
+  },
+  {
+    "maxRegistrationShiftPx": 16.0,
+    "rows": 8,
+    "transparentFraction": 0.5612277984619141,
+    "id": "queen",
+    "minSimilarity": 0.2092747589595011,
+    "frames": 64.0,
+    "group": "boss",
+    "cellSize": 256,
+    "adjustedCells": 48.0
+  },
+  {
+    "maxRegistrationShiftPx": 15.0,
+    "rows": 8,
+    "transparentFraction": 0.4998493194580078,
+    "id": "fortress",
+    "minSimilarity": 0.39005965466283965,
+    "frames": 64.0,
+    "group": "boss",
+    "cellSize": 256,
+    "adjustedCells": 54.0
+  },
+  {
+    "maxRegistrationShiftPx": 7.0,
+    "rows": 8,
+    "transparentFraction": 0.62565016746521,
+    "id": "oracle",
+    "minSimilarity": 0.007685467467336664,
+    "frames": 64.0,
+    "group": "boss",
+    "cellSize": 256,
+    "adjustedCells": 26.0
+  },
+  {
+    "maxRegistrationShiftPx": 16.0,
+    "rows": 8,
+    "transparentFraction": 0.5020239353179932,
+    "id": "emperor",
+    "minSimilarity": 0.21779020175546465,
+    "frames": 64.0,
+    "group": "boss",
+    "cellSize": 256,
+    "adjustedCells": 41.0
+  },
+  {
+    "maxRegistrationShiftPx": 5.0,
+    "rows": 4,
+    "transparentFraction": 0.7664108276367188,
+    "id": "drone",
+    "minSimilarity": 0.7577007577139168,
+    "frames": 32.0,
+    "group": "enemy",
+    "cellSize": 128,
+    "adjustedCells": 20.0
+  },
+  {
+    "maxRegistrationShiftPx": 8.0,
+    "rows": 4,
+    "transparentFraction": 0.8003501892089844,
+    "id": "swarm",
+    "minSimilarity": 0.3780235026773613,
+    "frames": 32.0,
+    "group": "enemy",
+    "cellSize": 128,
+    "adjustedCells": 25.0
+  },
+  {
+    "maxRegistrationShiftPx": 6.0,
+    "rows": 4,
+    "transparentFraction": 0.8115577697753906,
+    "id": "sniper",
+    "minSimilarity": 0.43976802326503234,
+    "frames": 32.0,
+    "group": "enemy",
+    "cellSize": 128,
+    "adjustedCells": 27.0
+  },
+  {
+    "maxRegistrationShiftPx": 8.0,
+    "rows": 4,
+    "transparentFraction": 0.7055187225341797,
+    "id": "bomber",
+    "minSimilarity": 0.28402219589207345,
+    "frames": 32.0,
+    "group": "enemy",
+    "cellSize": 128,
+    "adjustedCells": 23.0
+  },
+  {
+    "maxRegistrationShiftPx": 8.0,
+    "rows": 4,
+    "transparentFraction": 0.5881004333496094,
+    "id": "medic",
+    "minSimilarity": 0.32517375967362067,
+    "frames": 32.0,
+    "group": "enemy",
+    "cellSize": 128,
+    "adjustedCells": 24.0
+  },
+  {
+    "maxRegistrationShiftPx": 8.0,
+    "rows": 4,
+    "transparentFraction": 0.6885948181152344,
+    "id": "minion",
+    "minSimilarity": 0.5695358656447428,
+    "frames": 32.0,
+    "group": "enemy",
+    "cellSize": 128,
+    "adjustedCells": 25.0
+  },
+  {
+    "maxRegistrationShiftPx": 6.0,
+    "rows": 4,
+    "transparentFraction": 0.6633472442626953,
+    "id": "barrier",
+    "minSimilarity": 0.5493558006098149,
+    "frames": 32.0,
+    "group": "enemy",
+    "cellSize": 128,
+    "adjustedCells": 18.0
+  }
+]

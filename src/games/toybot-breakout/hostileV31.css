@@ -1,0 +1,6 @@
+/* A single atlas body owns the pose. No CSS flipbook or second silhouette. */
+.toybot-page .toybot-shell .toybot-scene .hostile-v31-body{animation:none!important;transition:none!important;background-repeat:no-repeat;backface-visibility:hidden;transform:none;transform-origin:50% 50%;filter:brightness(var(--hostile-flash,1)) drop-shadow(-1px 3px 2px #08203755)!important}
+.toybot-page .toybot-shell .toybot-scene .toybot-hazard{animation:none;transition:none}
+.toybot-page .toybot-shell .toybot-scene .toybot-hazard .hostile-v31-body{aspect-ratio:1;background-size:800% 400%}
+.toybot-page .toybot-shell .toybot-scene .toybot-obstacle.boss.is-relocating{transition:none}
+.toybot-page .toybot-shell .toybot-scene .toybot-boss-threat .hostile-v31-body{background-size:800% 400%}

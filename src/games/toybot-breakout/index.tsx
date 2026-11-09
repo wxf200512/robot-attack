@@ -1,7 +1,9 @@
+import { BOSS_MOTION_V31, ENEMY_MOTION_V31 } from './hostileMotionV31';
+import './hostileV31.css';
 import { REFERENCE_LOGO, FURNACE_ART, bossPixels } from './referenceCamera';
 import './referenceV29.css';
 import { ArtDetails, BattleWear } from './ArtDetails';
-import { RUN_ART, MOTION_ART, MATERIAL_ART, PROP_ART, PORTRAIT_ART, equipmentCell, BOSS_EVOLUTION_ART, motionTier, atlasCell, bossArtFrame } from './visualArt';
+import { RUN_ART, MOTION_ART, MATERIAL_ART, PROP_ART, PORTRAIT_ART, equipmentCell, motionTier, atlasCell } from './visualArt';
 import './artV28.css';
 import { ELITE_ATTACKS, roadEnemyName, frontlineStage, type ElitePattern } from './frontline';
 import { coreVisualShots } from './awakening';
@@ -45,10 +47,10 @@ import { hazardMaxHpFor, gateChoicesFor, guardSourceFor, commanderFor, eliteRole
 import { OBJECTIVE_NAMES, SPECIAL_LABELS } from './bossSkills';
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MAP_ART, BOSS_ART, BOSS_INTRO_ART, BOSS_STAGE2_ART, BOSS_DEFEAT_ART, GATE_ART, THREAT_ART, UI_HANGAR_ART, UI_RESULT_CRESTS, UI_MENU_ART, UI_MENU_ICONS, BLADE_SLASH_ART, ENEMY_ART, BOSS_OBJECTIVE_ART } from './art';
+import { MAP_ART, BOSS_ART, BOSS_DEFEAT_ART, GATE_ART, THREAT_ART, UI_HANGAR_ART, UI_RESULT_CRESTS, UI_MENU_ART, UI_MENU_ICONS, BLADE_SLASH_ART, BOSS_OBJECTIVE_ART } from './art';
 import { hazardArmorFor } from './simulation';
 import { getLevel, LEVELS, hazardLaneAt } from './level';
-import { createInitialState, bossHealthFor, effectiveWeapon, bossPhase, bossY, gateEffectDetail, LANE_CENTERS, STEP_MS, RUN_SPEED, laneXAt, targetY, bossFiring, gateGroundY, GATE_CONTACT_Y, isActiveStatus, canMove, canShoot, isBossArena, bossEnrage, BOSS_INTRO_TICKS, BOSS_VICTORY_TICKS, bossX, rushProgress, isRush, attackIntervalFor, bossAttackLabel, enemyThreatY, playerFormation, bossGuarded, roadEnemyY, roadEnemyX, targetX as targetWorldX } from './simulation';
+import { createInitialState, bossHealthFor, effectiveWeapon, bossPhase, bossY, gateEffectDetail, LANE_CENTERS, STEP_MS, RUN_SPEED, laneXAt, targetY, gateGroundY, GATE_CONTACT_Y, isActiveStatus, canMove, canShoot, isBossArena, bossEnrage, bossX, rushProgress, isRush, attackIntervalFor, bossAttackLabel, enemyThreatY, playerFormation, bossGuarded, roadEnemyY, roadEnemyX, targetX as targetWorldX } from './simulation';
 import { purchaseUpgrade, readGarage, saveGarage, toggleUpgrade, upgradeCost, UPGRADES, moduleLevel, garageStats, previewUpgrade, equipAllUpgrades, MODULE_MAX_LEVEL, canEnterLevel, recordLevelCompletion, type Garage, type UpgradeId } from './progression';
 
 import './playability.css';
@@ -193,12 +195,12 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages(Object.values(DEFENSE_ART));},[game.status]);
   useEffect(()=>{if(game.status==='home')void preloadImages([UI_MENU_ICONS,UI_MENU_ART.hangar,ART_V19,FUSION_ART_V19].filter(Boolean),'low');},[game.status]);
   useEffect(()=>{if(game.status==='home'||game.status==='running')void preloadImages([CHAPTER_FILMS[game.levelIndex],RELAY_ART]);},[game.status,game.levelIndex]);
-  useEffect(() => { if(warmRoadAssets)void preloadImages([ENEMY_ART]); },[warmRoadAssets]);
+  useEffect(() => { if(warmRoadAssets)void preloadImages(Object.values(ENEMY_MOTION_V31)); },[warmRoadAssets]);
   const warmBossAssets=game.status==='running'&&game.progress>=65;
   const warmCombatAssets=game.status==='running'&&game.progress>=35;
   const warmNextMap=game.status==='running'&&game.progress>=80;
   useEffect(() => { if(warmCombatAssets)void preloadImages([COCKPIT_ART,REACTOR_ART,CORE_EFFECT_ART,BOSS_OBJECTIVE_ART]); },[warmCombatAssets,game.mechClass]);
-  useEffect(() => { if(warmBossAssets)void preloadImages([BOSS_ART,BOSS_INTRO_ART,BOSS_STAGE2_ART,BOSS_DEFEAT_ART,BOSS_EVOLUTION_ART,FURNACE_ART,THREAT_ART]); },[warmBossAssets]);
+  useEffect(() => { if(warmBossAssets)void preloadImages([BOSS_MOTION_V31[game.levelIndex],BOSS_DEFEAT_ART,THREAT_ART]); },[warmBossAssets,game.levelIndex]);
   useEffect(() => { if(warmNextMap&&game.levelIndex<LEVELS.length-1)void preloadImages([MAP_ART[game.levelIndex+1]],'low'); },[warmNextMap,game.levelIndex]);
   const warmResult=game.status==='battle'&&game.battleHp<game.battleMaxHp*.3;
   useEffect(()=>{if(warmResult)void preloadImages([UI_MENU_ART.victory,UI_MENU_ART.medal],'low');},[warmResult]);
@@ -258,12 +260,6 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
   const bossHudMax=arena?game.battleMaxHp:bossHealthFor(game),bossHudHp=arena?game.battleHp:bossHudMax;
   const phase = bossPhase(game);
   const enrage = bossEnrage(game);
-  const bossBaseArt = displayStatus === 'boss-victory' ? BOSS_DEFEAT_ART : displayStatus === 'boss-intro' ? BOSS_INTRO_ART : displayStatus === 'battle' || displayStatus === 'boss-shift' ? BOSS_EVOLUTION_ART : game.bossStage === 2 ? BOSS_STAGE2_ART : BOSS_ART;
-  const bossArt=game.levelIndex===0&&displayStatus!=='boss-victory'?FURNACE_ART:bossBaseArt;
-  const bossFrame = bossArt===BOSS_EVOLUTION_ART||bossArt===FURNACE_ART ? bossArtFrame(game)
-    : displayStatus === 'boss-victory' ? Math.min(3, Math.floor(game.bossPhaseTicks * 4 / BOSS_VICTORY_TICKS))
-    : displayStatus === 'boss-intro' ? Math.min(3, Math.floor(game.bossPhaseTicks * 4 / BOSS_INTRO_TICKS))
-    : bossFiring(game) ? 2 : phase === 'warning' ? 1 : game.bossStep === 'recovery' ? 3 : 0;
   const gateY = nextGateProgress === undefined ? 43 : gateGroundY(game.progress, nextGateProgress);
   const weaponPhase = !canShoot(displayStatus ?? 'home') ? 0
     : game.mechClass !== 'pulse' ? Math.min(3, Math.max(0, attackInterval - game.fireCooldown)) : game.fireCooldown === attackInterval ? 2 : game.fireCooldown === attackInterval - 1 ? 3 : game.fireCooldown === 1 ? 1 : 0;
@@ -862,7 +858,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
             )}
             {visibleHazards.map(h => (
               <div key={h.index} data-motion="hazard" data-motion-id={h.index} className={`toybot-hazard enemy-kind-${h.kind ?? 'drone'} sector-enemy-${game.levelIndex} ${h.elite?'is-sector-elite':''} ${(game.roadImpacts[h.index]?.fracture??0)>0?'is-fractured':''} ${(game.roadImpacts[h.index]?.stun??0)>0?'is-staggered':''} ${h.horde?'is-horde':''} elite-${h.eliteRole??'none'} ${guardSourceFor(game,h.index)>=0?'is-guarded':''} ${commanderFor(game,h.index)>=0?'is-commanded':''} ${h.hp<hazardMaxHpFor(game,h.index)?'is-damaged':''} ${game.medicPulses.includes(h.index) ? 'is-repairing' : ''} ${h.armor ? 'is-armored' : ''} ${game.enemyAttacks.some(a => a.source === 'hazard' && a.sourceId === h.index && a.phase === 'warning') ? 'enemy-charging' : ''}`} style={{ left: h.x + '%', top: h.y + '%', '--enemy-offset': (h.slot??h.index)*-97+'ms', '--hazard-scale': .72 + (h.y - 39) / 19 * .34, zIndex: Math.round((h.y + 4) * 10) } as React.CSSProperties} role="img" aria-label={roadEnemyName(game.levelIndex,h)}>
-                <div className="toybot-drone-sprite" aria-hidden="true" />{h.eliteRole&&<small className="toybot-elite-tag">{h.elite?roadEnemyName(game.levelIndex,h):eliteRoleName(h.eliteRole)}</small>}{guardSourceFor(game,h.index)>=0&&<span className="toybot-guard-link" aria-label="护卫减伤35%">⬡</span>}
+                <div className="toybot-drone-sprite hostile-v31-body" style={{backgroundImage:`url(${ENEMY_MOTION_V31[h.kind??'drone']})`,backgroundSize:'800% 400%',backgroundPosition:'0% 0%'}} aria-hidden="true" />{h.eliteRole&&<small className="toybot-elite-tag">{h.elite?roadEnemyName(game.levelIndex,h):eliteRoleName(h.eliteRole)}</small>}{guardSourceFor(game,h.index)>=0&&<span className="toybot-guard-link" aria-label="护卫减伤35%">⬡</span>}
                 {h.kind && h.kind !== 'swarm' && !h.horde && !h.elite && <small className="toybot-enemy-role">{roadEnemyName(game.levelIndex,h)}</small>}
                 {h.kind === 'medic' && <span className="toybot-medic-pulse" aria-hidden="true">✚</span>}
                 {!!h.armor && <span className="toybot-enemy-armor" aria-label={`装甲 ${h.armor}`}>⬡{h.armor}</span>}
@@ -958,7 +954,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
               return <React.Fragment key={threat.id}>
                 <span data-world-y={59} className={`toybot-threat-landing ${threat.kind}`} style={{ left: toX + '%', top: '59%', opacity: .18 + progress * .52 }} aria-hidden="true" />
                 <div data-motion="threat" data-motion-id={threat.id} className={`toybot-boss-threat kind-${threat.kind} ${threat.kind === 'lava' && threat.ticks === 0 ? 'is-burning' : ''} ${game.enemyAttacks.some(a => a.source === 'threat' && a.sourceId === threat.id && a.phase === 'warning') ? 'enemy-charging' : ''} sector-${game.levelIndex}`} style={{ left: x + '%', top: y + '%', '--threat-scale': .58 + progress * .5, zIndex: Math.round((y + 5) * 10) + 3 } as React.CSSProperties} role="img" aria-label={threat.kind === 'lava' ? '熔岩炮，落地后持续灼烧' : threat.kind === 'shell' ? '首领炮弹，切换轨道躲避' : threat.kind === 'barrier' ? '可射击破坏的路障' : '可射击的小型机器人'}>
-                  <span className="toybot-threat-art" style={{ backgroundImage: `url(${THREAT_ART})`, backgroundPositionY: (row * 50) + '%' }} />
+                  {threat.kind==='minion'||threat.kind==='barrier'?<span className="toybot-threat-art hostile-v31-body" style={{backgroundImage:`url(${ENEMY_MOTION_V31[threat.kind==='barrier'?'barrier':'minion']})`,backgroundSize:'800% 400%',backgroundPosition:'0% 0%'}}/>:<span className="toybot-threat-art" style={{ backgroundImage: `url(${THREAT_ART})`, backgroundPositionY: (row * 50) + '%' }} />}
                   {threat.maxHp > 0 && <span className="toybot-threat-hp"><i style={{ width: threat.hp / threat.maxHp * 100 + '%' }} /></span>}
                 </div>
               </React.Fragment>;
@@ -969,7 +965,7 @@ const ToybotBreakout: React.FC<{previewFrozen?:boolean;previewState?:import('./s
             {showEncounter && (
               <>
                 <div data-motion="boss" className={`toybot-obstacle boss ${displayStatus === 'boss-victory' ? 'is-destroyed' : arena ? `fighting phase-${phase}` : 'phase-shield'} ${enrage > 0 ? 'is-enraged' : ''} ${game.bossStep === 'rush' ? 'is-rushing' : ''} ${game.bossMoveTicks > 0 ? 'is-relocating' : ''}`} style={{ left: bossX(game) + '%', top: `${bossTop}%`, width: `${bossPixels(game) * (rushVisual && game.bossAttack === 'sweep' ? 1.35 : 1)}px`, '--boss-scale': bossScale, zIndex: displayStatus==='running'?300:Math.round((bossTop + 7) * 10) } as React.CSSProperties}>
-                  <Robot index={game.levelIndex} weaponPhase={bossFrame} bossArt={bossArt} bossColumns={bossArt===BOSS_EVOLUTION_ART ? 8 : 4} enemy />
+                  <div className="robot-boss-sprite hostile-v31-body" style={{backgroundImage:`url(${BOSS_MOTION_V31[game.levelIndex]})`,backgroundSize:'800% 800%',backgroundPosition:'0% 0%'}} aria-hidden="true"/>
                   {bossGuarded(game)&&<span className="boss-linked-shield"><small>击破连接节点</small></span>}
                   {game.status === 'battle' && phase === 'weak' && <span className="toybot-boss-weakpoint" aria-label="弱点暴露" />}
                 </div>

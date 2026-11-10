@@ -1,3 +1,4 @@
+import { CREW_LIST_V45 } from './crewV45';
 import { CareerV44, ResultGradeV44, PilotFeedbackV44 } from './ReplayUIV44';
 import { recordMasteryV44, coatingUnlockedV44, type CoatingV44 } from './replayV44';
 import './finishV44.css';
@@ -234,7 +235,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
   useEffect(()=>{void preloadImages([REFERENCE_LOGO,PORTRAIT_ART],'high');},[]);
   useEffect(()=>{if(!loadStage.home)return;const timer=window.setTimeout(()=>{void preloadImages([MAP_ART[game.levelIndex],RUN_ART[game.mechClass]],'low');},800);return()=>window.clearTimeout(timer);},[loadStage.home,game.levelIndex,game.mechClass]);
   useEffect(()=>{if(loadStage.workshop)void preloadImages([UI_MENU_ICONS,ART_V19,FUSION_ART_V19],'low');},[loadStage.workshop]);
-  useEffect(()=>{if(loadStage.story)void preloadImages([CHAPTER_FILMS[game.levelIndex],RELAY_ART]);},[loadStage.story,game.levelIndex]);
+  useEffect(()=>{if(loadStage.story)void preloadImages([CHAPTER_FILMS[game.levelIndex],RELAY_ART,...CREW_LIST_V45.map(p=>p.art)]);},[loadStage.story,game.levelIndex]);
   useEffect(()=>{if(loadStage.combat)void preloadImages([ROAD_TILES_V37[game.levelIndex],RUN_ART[game.mechClass],MOTION_ART[game.mechClass],MATERIAL_ART,PROP_ART,COCKPIT_ART,...Object.values(DEFENSE_ART),CORE_FX_V34[game.mechClass]],'high');},[loadStage.combat,game.mechClass,game.levelIndex]);
   useEffect(()=>{if(loadStage.road)void preloadImages(Object.values(ENEMY_MOTION_V31));},[loadStage.road]);
   useEffect(()=>{if(loadStage.boss)void preloadImages([PART_DAMAGE_V38,ARENA_ART_V36[game.mechClass],...(game.mechClass==='blade'?[BLADE_ATTACK_V35]:[]),...(game.levelIndex===4?[EMPEROR_ART_V36]:[]),BOSS_MOTION_V31[game.levelIndex],BOSS_DEFEAT_ART,THREAT_ART,BOSS_OBJECTIVE_ART],'high');},[loadStage.boss,game.levelIndex,game.mechClass]);

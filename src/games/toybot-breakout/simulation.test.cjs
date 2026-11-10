@@ -2519,3 +2519,28 @@ test('V44 cannon-disabled branches are replaced before showing a new attack warn
 test('V44 successful image history is bounded even across all staged asset groups',async()=>{
  const old=global.Image;global.Image=class{set src(url){if(url)queueMicrotask(()=>this.onload?.());}decode(){return Promise.resolve();}};const images=load('loading'),release=images.retainImagePreloads();try{const result=await images.preloadImages(Array.from({length:145},(_,i)=>'bounded-44-'+i));assert.ok(result.every(r=>r.status==='fulfilled'));assert.equal(images.imageLoadingStatsV44().cached,128);assert.equal(images.imageLoadingStatsV44().active,0);assert.equal(images.imageLoadingStatsV44().queued,0);}finally{release();global.Image=old;}
 });
+
+test('V45 human crew are distinct adult original roles with transparent local portraits and preserved PNG sources',()=>{
+ const crew=load('crewV45');assert.equal(crew.CREW_LIST_V45.length,3);const urls=new Set();let total=0;
+ for(const person of crew.CREW_LIST_V45){assert.ok(person.age>=25);assert.ok(person.role&&person.bio&&person.quote);assert.ok(!urls.has(person.art));urls.add(person.art);const image=fs.readFileSync(path.resolve(__dirname,'../../../public',person.art.slice(1)));const info=imageInfo(image);assert.equal(info.alpha,true);assert.equal(info.width,768);assert.equal(info.height,768);assert.ok(image.length<150000);total+=image.length;assert.ok(fs.existsSync(path.join(__dirname,'art-source','crew-'+person.id+'-v45.png')));}
+ assert.ok(total<350000);assert.equal(crew.pilotV45('heavy'),'ethan');assert.equal(crew.pilotV45('pulse'),'maya');assert.equal(crew.pilotV45('blade'),'maya');
+});
+test('V45 scene participants keep mission control, player pilot, wingmate and guardian distinct in all five chapters',()=>{
+ const c=load('campaign'),crew=load('crewV45');for(let level=0;level<5;level++)for(const mechClass of ['pulse','heavy','blade']){
+  const base=c.createCampaign({...initial(level),mechClass});
+  for(const kind of ['briefing','confrontation','aftermath'])for(const step of [0,1]){const state={...base,narrative:{...base.narrative,scene:{kind,step,synced:0}}},before=JSON.stringify(state),copy=c.sceneCopy(state);assert.ok(copy.line.length>0&&copy.speaker.length>0);assert.equal(JSON.stringify(state),before);assert.equal(copy.character,crew.sceneSpeakerV45(kind,step,mechClass));if(kind==='confrontation'&&step===1)assert.ok(crew.PILOT_REPLIES_V45[crew.pilotV45(mechClass)].includes(copy.line));}
+ }
+});
+test('V45 prologue introduces the crew while preserving four pages, five districts and autonomous robot companions',()=>{
+ const story=load('story'),crew=load('crewV45');assert.equal(story.STORY_PAGES.length,4);assert.deepEqual(story.STORY_PAGES.map(p=>p.character),['nora','system','maya','ethan']);assert.equal(story.STORY_CHAPTERS.length,5);assert.ok(story.STORY_PAGES[2].caption.includes('远程驾驶'));assert.ok(crew.CREW_WORLD_V45.includes('自主意识'));assert.ok(crew.CREW_WORLD_V45.includes('米可'));
+});
+test('V45 radio identity matches the actual speaker and legacy untagged messages still resolve correctly',()=>{
+ const crew=load('crewV45');for(const [text,person]of [['玛雅：我来接应','maya'],['伊森：我来护航','ethan'],['诺拉：收到','nora'],['米可：维修完成','miko'],['先知：极性轮转','guardian'],['蜂后：归航名单','guardian'],['伙伴：已经跟上','spark'],['前方有中继','nora']])assert.equal(crew.radioSpeakerV45(text),person);
+ assert.equal(crew.cleanRadioV45('诺拉：链路正常。'),'链路正常。');assert.equal(crew.cleanRadioV45('等待回应'),'等待回应');
+});
+test('V45 briefing choice and skips keep the same support economy and do not add a blocking scene or alter combat',()=>{
+ const c=load('campaign');let s=campaignStart();s=c.campaignReducer(s,{type:'STORY_NEXT'});const before=JSON.stringify(s);const selected=c.campaignReducer(s,{type:'STORY_ROUTE',route:'signal'});assert.equal(JSON.stringify(s),before);assert.equal(selected.narrative.scene,null);assert.equal(selected.narrative.radio.speaker,'nora');assert.equal(selected.shieldCharges,s.shieldCharges);assert.equal(selected.bots,s.bots);assert.equal(selected.score,s.score);assert.equal(selected.narrative.objective,'pending');
+});
+test('V45 wingmate acknowledgement is non-blocking and selects the other pilot without granting rewards',()=>{
+ const c=load('campaign');for(const mechClass of ['pulse','heavy']){const base=c.createCampaign({...battle(),mechClass});base.narrative.scene={kind:'confrontation',step:1,synced:0};const next=c.campaignReducer(base,{type:'STORY_NEXT'});assert.equal(next.narrative.scene,null);assert.equal(next.narrative.radio.id,'crew-cover');assert.equal(next.narrative.radio.speaker,mechClass==='heavy'?'maya':'ethan');assert.equal(next.score,base.score);assert.equal(next.playerHp,base.playerHp);assert.equal(next.bots,base.bots);assert.equal(c.campaignReducer(next,{type:'STORY_DISMISS_RADIO'}).narrative.radio,null);}
+});

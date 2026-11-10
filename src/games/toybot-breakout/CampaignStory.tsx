@@ -1,3 +1,5 @@
+import { CrewPortraitV45 } from './CrewPortraitV45';
+import { speakerMetaV45, radioSpeakerV45, cleanRadioV45 } from './crewV45';
 import { useEffect, useRef, useState } from 'react';
 import { BOSS_NAMES } from './art';
 import { STORY_CHAPTERS } from './story';
@@ -15,7 +17,8 @@ export function StoryRelay({game}:{game:CampaignState}){
 export function StoryRadio({game,dispatch}:{game:CampaignState;dispatch:(action:CampaignAction)=>void}){
  const radio=game.narrative.radio;
  if(!radio||game.narrative.scene||!['running','battle'].includes(game.status))return null;
- return <aside className="campaign-radio" key={radio.id} aria-label="局内剧情通信"><div className="campaign-radio-label"><span>MIKO / 实时通信</span><button type="button" aria-label="关闭这条剧情通信" onClick={()=>dispatch({type:'STORY_DISMISS_RADIO'})}>×</button></div><p>{radio.text}</p><i style={{width:radio.ticks/75*100+'%'}}/></aside>;
+ const speaker=radio.speaker??radioSpeakerV45(radio.text),person=speakerMetaV45(speaker);
+ return <aside className="campaign-radio has-crew-v45" key={radio.id} aria-label="局内剧情通信"><CrewPortraitV45 speaker={speaker} level={game.levelIndex} variant="radio"/><div className="campaign-radio-label"><span>{speaker==='guardian'?BOSS_NAMES[game.levelIndex]:person.short} / {person.call}</span><button type="button" aria-label="关闭这条剧情通信" onClick={()=>dispatch({type:'STORY_DISMISS_RADIO'})}>×</button></div><p>{cleanRadioV45(radio.text)}</p><i style={{width:radio.ticks/75*100+'%'}}/></aside>;
 }
 export function StoryMission({game}:{game:CampaignState}){
  const n=game.narrative;
@@ -44,13 +47,13 @@ export default function CampaignStory({game,dispatch}:{game:CampaignState;dispat
  }}>
   <header><div><small>HOMECOMING / CHAPTER 0{game.levelIndex+1}</small><strong>{chapter.title}</strong></div><button type="button" onClick={()=>dispatch({type:'STORY_SKIP'})}>跳过演出 ›</button></header>
   <div className="campaign-scroll" ref={body} tabIndex={0} aria-label="剧情分镜与行动选择">
-   <div className={'campaign-film '+(scene.kind==='confrontation'?'is-guardian':'')} style={{aspectRatio:CHAPTER_FILM_RATIOS[game.levelIndex],width:`min(100%,${(scene.step===1?160:240)*CHAPTER_FILM_RATIOS[game.levelIndex]}px)`}} aria-label={scene.kind==='aftermath'?'城市灯光与守护者回收的连续分镜':'火花与米可的连续行动分镜'} role="img">
+   <div className={'campaign-film '+(scene.kind==='confrontation'?'is-guardian':'')} style={{aspectRatio:CHAPTER_FILM_RATIOS[game.levelIndex],width:`min(100%,${(scene.step===1?160:240)*CHAPTER_FILM_RATIOS[game.levelIndex]}px)`}} aria-label={scene.kind==='aftermath'?'城市灯光与守护者回收的连续分镜':'归航小队的玩具城行动分镜'} role="img">
     {!artFailed&&<><div className="campaign-film-frame" style={{backgroundImage:`url(${CHAPTER_FILMS[game.levelIndex]})`,backgroundPosition:`0% ${Math.floor(frame/2)*50}%`}}/><div className="campaign-film-frame campaign-film-reveal" style={{backgroundImage:`url(${CHAPTER_FILMS[game.levelIndex]})`,backgroundPosition:`100% ${Math.floor(frame/2)*50}%`,opacity:frame%2}}/></>}
     {artFailed&&<div className="campaign-film-unavailable">通信画面暂不可用<br/>文字与交互仍可继续</div>}
     <span className="campaign-film-tag">{scene.kind==='briefing'?'现场接入':scene.kind==='confrontation'?BOSS_NAMES[game.levelIndex]:'城市恢复记录'} <i/></span>
     <span className="campaign-film-corners"/>
    </div>
-   <div className="campaign-dialogue" key={sceneId}><small>{copy.speaker}</small><h2 id="campaign-title">{copy.title}</h2><p>{copy.line}</p>{copy.hint&&<div className="campaign-objective">{copy.hint}</div>}</div>
+   <div className="campaign-dialogue" key={sceneId}><div className="campaign-speaker-v45"><CrewPortraitV45 speaker={copy.character} level={game.levelIndex}/><div><small>{copy.speaker}</small><span>{speakerMetaV45(copy.character).role}</span><em>● LINK ONLINE</em></div></div><h2 id="campaign-title">{copy.title}</h2><p>{copy.line}</p>{copy.hint&&<div className="campaign-objective">{copy.hint}</div>}</div>
    {scene.kind==='briefing'&&scene.step===1&&<div className="campaign-choices" role="group" aria-label="选择支援任务">
     <button type="button" onClick={()=>dispatch({type:'STORY_ROUTE',route:'rescue'})}><b>接应失联伙伴</b><span>驶过中继 → 小队机甲 +1</span><small>“收到信号的伙伴，一个也不落下。”</small></button>
     <button type="button" onClick={()=>dispatch({type:'STORY_ROUTE',route:'signal'})}><b>同步维护航标</b><span>驶过中继 → 护盾 +1</span><small>“先把通往城市的路点亮。”</small></button>

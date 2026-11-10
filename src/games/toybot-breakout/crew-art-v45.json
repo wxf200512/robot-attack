@@ -1,0 +1,23 @@
+[
+  {
+    "id": "maya",
+    "width": 768,
+    "height": 768,
+    "bytes": 114230,
+    "alpha": true
+  },
+  {
+    "id": "ethan",
+    "width": 768,
+    "height": 768,
+    "bytes": 109104,
+    "alpha": true
+  },
+  {
+    "id": "nora",
+    "width": 768,
+    "height": 768,
+    "bytes": 85960,
+    "alpha": true
+  }
+]

@@ -1,3 +1,4 @@
+import { CREW_V45, pilotV45, wingmateV45, sceneSpeakerV45, speakerMetaV45, radioSpeakerV45, PILOT_REPLIES_V45, type SpeakerV45 } from './crewV45';
 import { recordUpgradeV41 } from './flowV41';
 import { sortieGoalV39 } from './sortiesV39';
 import { gameReducer, gateGroundY, playerLaneFor, GATE_CONTACT_Y, type GameState, type Action } from './simulation';
@@ -15,24 +16,26 @@ export const CHAPTER_DIALOGUE=[
  {intro:'米可在风暴里听见了求救声。先修复中继，再帮先知切断失控的放电回路。',boss:'极性冲突……归箱协议禁止中断……请接收维护信号。',reply:'收到你的信号。坚持住，我们来解除锁定。',lore:'先知一直在抵抗错误指令。预警是它留给我们的机会，沿空白轨道前进。',win:'能源航标恢复！先知送来了最终指令的地址：中央王座运载基地。'},
  {intro:'四区航标已亮。前面是横跨三路的王座要塞，把最后一次归航呼叫送到它的星核里。',boss:'安全回执不完整。全城玩具，立即归箱。',reply:'我们带来的不只是回执，是每一位伙伴的声音。',lore:'要塞把整座城当成了一个储物箱。三路都能命中机体，拆掉锁定部件，给核心留出通信窗口。',win:'五区归航信号完整！归箱指令撤销，王座要塞展开成巡游领航台。欢迎回家，所有伙伴。'},
 ];
-export const CHAPTER_BREAK_RADIO=['米可：安全锁断连，监工正在重新识别我们。','蜂后：归航名单……已收到。请停止回收同行机体。','米可：护盾锁已解除。把伙伴的名单送进核心。','先知：维护信号恢复。谢谢你听见了我。','米可：王座锁正在松开，给星核送上最后的归航信号。'];
-export const CHAPTER_TURN_RADIO=['米可：监工开启了备用炉膛。留出安全列再反击。','米可：蜂后展开翼巢。先看护卫的锁轨预警。','米可：堡垒启用第二道城门锁。先拆护盾链路。','先知：下一段极性即将变化。沿空白轨道移动。','米可：王座要塞进入最终校验。三路集中输出，别站进裁决预警。'];
+export const CHAPTER_BREAK_RADIO=['伊森：安全锁断连。玛雅，出口交给你，我来护航。','蜂后：归航名单……已收到。请停止回收同行机体。','玛雅：护盾锁已解除。伊森，带伙伴通过城门。','先知：维护信号恢复。谢谢你听见了我。','诺拉：王座锁正在松开。驾驶组，把最后的归航信号送进星核。'];
+export const CHAPTER_TURN_RADIO=['伊森：备用炉膛启动。别硬吃热区，等收招再反击。','玛雅：翼巢展开！护卫会变道，预警锁定后再闪。','伊森：第二道城门锁就位。玛雅，我来拆盾，你接应伙伴。','先知：下一段极性即将变化。沿空白轨道移动。','诺拉：最终校验开始。三路都能命中要塞，驾驶组避开裁决预警。'];
 export type SupportRoute='rescue'|'signal';
 export type NarrativeScene={kind:'briefing'|'confrontation'|'aftermath';step:0|1;synced:number};
-export type Narrative={scene:NarrativeScene|null;replay:boolean;route:SupportRoute|null;objective:'inactive'|'pending'|'collected'|'missed';relayLane:number;relayMark:number;radio:{id:string;text:string;ticks:number}|null;seen:string[]};
+export type Narrative={scene:NarrativeScene|null;replay:boolean;route:SupportRoute|null;objective:'inactive'|'pending'|'collected'|'missed';relayLane:number;relayMark:number;radio:{id:string;text:string;ticks:number;speaker?:SpeakerV45}|null;seen:string[]};
 export type CampaignState=GameState&{narrative:Narrative};
 export type CampaignAction=Action|{type:'STORY_NEXT'|'STORY_SKIP'|'STORY_DISMISS_RADIO'}|{type:'STORY_ROUTE';route:SupportRoute}|{type:'STORY_SYNC';index:number};
 export function freshNarrative():Narrative{return {scene:null,replay:false,route:null,objective:'inactive',relayLane:1,relayMark:24,radio:null,seen:[]};}
 export const createCampaign=(game:GameState):CampaignState=>({...game,narrative:freshNarrative()});
-const radio=(id:string,text:string):NonNullable<Narrative['radio']>=>({id,text,ticks:75});
+const radio=(id:string,text:string,speaker:SpeakerV45=radioSpeakerV45(text)):NonNullable<Narrative['radio']>=>({id,text,ticks:75,speaker});
 export const relayVisible=(state:CampaignState)=>state.status==='running'&&state.narrative.objective==='pending'&&state.progress>=state.narrative.relayMark-12;
 export function filmFrame(kind:NarrativeScene['kind'],step:number,clock:number,reduced=false){const base=kind==='briefing'?(step===0?0:2):kind==='confrontation'?2:4;return base+(reduced?0:Math.min(1,Math.floor(clock/900)));}
 export function sceneCopy(state:CampaignState){
  const scene=state.narrative.scene,chapter=STORY_CHAPTERS[state.levelIndex],lines=CHAPTER_DIALOGUE[state.levelIndex];
- if(!scene)return {speaker:'米可',title:chapter.title,line:'',hint:''};
- if(scene.kind==='briefing')return scene.step===0?{speaker:'米可 / MIKO',title:state.narrative.replay?chapter.title+' · 维修巡查':chapter.title,line:state.narrative.replay?'航标已经点亮。这次清理残留的回收作战壳，接应维修伙伴，为下一次归航巡游补齐零件。':lines.intro,hint:state.narrative.replay?'回收故障作战壳，复检'+chapter.permission:chapter.objective}:{speaker:'米可 / 支援频道',title:'选择这次行动的支援',line:'选定支援后，驶入发光中继所在轨道，接回伙伴或接通护盾。',hint:''};
- if(scene.kind==='confrontation')return {speaker:scene.step===0?(state.narrative.replay?'残留封锁信号':'守护者 / 接管中'):'火花 / SPK-01',title:scene.step===0?'封锁指令':'自主回应',line:scene.step===0?lines.boss:lines.reply,hint:scene.step===0?'只解除封锁部件，接回被错误指令困住的守护者。':chapter.tip};
- return {speaker:state.levelIndex===4?'归航中枢 / 通信恢复':'米可 / 回收频道',title:scene.step===0?(state.narrative.replay?chapter.permission+'复检完成':state.levelIndex===4?'归航巡游，重新出发':chapter.permission+'已恢复'):'同步城市维护记录',line:scene.step===0?(state.narrative.replay?'残留回收作战壳已拆解，航标保持在线。这次带回的零件，会让下一支归航队更安全。':lines.win):'依次接通三个维护节点，把这次行动传回城市网络。',hint:scene.step===0?(state.narrative.objective==='collected'?'你接通的中继已加入归航网络，伙伴正在返回航路。':'本区航标已点亮。遗漏的中继会交由维修队处理。'):'战斗胜利已确认；可以跳过同步演出，不影响奖励与解锁。'};
+ const character=scene?sceneSpeakerV45(scene.kind,scene.step,state.mechClass):'nora',person=speakerMetaV45(character),pilot=pilotV45(state.mechClass),wing=CREW_V45[wingmateV45(state.mechClass)];
+ const identity={character,speaker:person.short+' / '+person.english};
+ if(!scene)return {...identity,title:chapter.title,line:'',hint:''};
+ if(scene.kind==='briefing')return scene.step===0?{...identity,title:state.narrative.replay?chapter.title+' · 维修巡查':chapter.title,line:state.narrative.replay?'诺拉呼叫驾驶组：航标已在线，复检残留作战壳。米可负责回收，玛雅与伊森继续接应伙伴。':(state.levelIndex===0?'我是诺拉。玛雅、伊森的远程驾驶链路已连接；米可协助火花核心。我们把伙伴带回家。':'驾驶组，归航频道保持在线。')+lines.intro,hint:state.narrative.replay?'回收故障作战壳，复检'+chapter.permission:chapter.objective}:{...identity,title:'选择这次行动的支援',line:(pilot==='maya'?'我先进入前线，伊森负责护航。':'我来稳住护航线，玛雅接应失联伙伴。')+'诺拉，请米可把支援接到前方中继。',hint:'驶入发光中继所在轨道，接回伙伴或接通护盾。'};
+ if(scene.kind==='confrontation')return {...identity,speaker:scene.step===0?(state.narrative.replay?'残留封锁信号':'守护者 / 接管中'):identity.speaker,title:scene.step===0?'封锁指令':'驾驶员回应',line:scene.step===0?lines.boss:PILOT_REPLIES_V45[pilot as 'maya'|'ethan'][state.levelIndex],hint:scene.step===0?'诺拉：只解除封锁部件，守护者也是需要接回的伙伴。':chapter.tip};
+ return {...identity,title:scene.step===0?(state.narrative.replay?chapter.permission+'复检完成':state.levelIndex===4?'归航巡游，重新出发':chapter.permission+'已恢复'):'驾驶组回传维护记录',line:scene.step===0?(state.narrative.replay?'残留作战壳已回收。驾驶组，辛苦了；米可会把零件带回机库，下一次归航继续同行。':lines.win+(state.levelIndex===4?'玛雅、伊森、米可和火花，归航频道收到所有人的声音。':'')):(wing.id==='ethan'?'最后一位伙伴也跟上了。玛雅，干得漂亮。':'护航线安全，伊森。下一段路，我来探。')+'依次接通三个维护节点，把行动记录传给诺拉。',hint:scene.step===0?(state.narrative.objective==='collected'?'你接通的中继已加入归航网络，伙伴正在返回航路。':'本区航标已点亮。遗漏的中继会交由维修队处理。'):'战斗胜利已确认；可以跳过同步演出，不影响奖励与解锁。'};
 }
 export function campaignReducer(state:CampaignState,action:CampaignAction):CampaignState{
  const n=state.narrative;
@@ -47,9 +50,10 @@ export function campaignReducer(state:CampaignState,action:CampaignAction):Campa
   if(action.type==='STORY_NEXT'&&scene.kind==='aftermath'&&scene.synced<3)return state;
   if(action.type!=='STORY_NEXT'&&action.type!=='STORY_SKIP'&&action.type!=='STORY_ROUTE')return state;
   const route=action.type==='STORY_ROUTE'?action.route:n.route??'signal';
+  const wing=CREW_V45[wingmateV45(state.mechClass)];
   const blocked=getLevel(state.levelIndex).hazards.flatMap((h,i)=>Math.abs(h.progress-n.relayMark)<=5?[hazardLaneAt(state.layoutIndex,i,n.relayMark,state.levelIndex)]:[]);
   const lanes=[0,1,2].filter(lane=>!blocked.includes(lane));
-  return {...state,narrative:{...n,scene:null,...(scene.kind==='briefing'?{route,objective:'pending' as const,relayLane:lanes[(state.layoutIndex+state.levelIndex)%Math.max(1,lanes.length)]??1,radio:radio('support-brief',route==='rescue'?'已呼叫失联伙伴。前方中继处会合，驶入它所在的轨道。':'已请求维护护盾。前方中继处同步，驶入它所在的轨道。')}:{})}};
+  return {...state,narrative:{...n,scene:null,...(scene.kind==='briefing'?{route,objective:'pending' as const,relayLane:lanes[(state.layoutIndex+state.levelIndex)%Math.max(1,lanes.length)]??1,radio:radio('support-brief',route==='rescue'?'诺拉：失联伙伴已定位。玛雅与伊森保持驾驶链路，驶过前方中继接应。':'诺拉：米可正在接通维护护盾。驾驶组，驶过前方中继同步。')} : scene.kind==='confrontation'?{radio:radio('crew-cover',wing.short+'：'+(wing.id==='ethan'?'护航链路稳定。我看住侧翼，交战交给你。':'侧翼扫描完成。伊森，稳住机体，我来接应伙伴。'),wing.id)}:{})}};
  }
  if(n.scene&&(action.type==='TICK'||action.type==='MOVE_LANE'||action.type==='ACTIVATE_BURST'))return state;
  const next=gameReducer(state,action as Action);
@@ -69,8 +73,8 @@ export function campaignReducer(state:CampaignState,action:CampaignAction):Campa
   if(y>=GATE_CONTACT_Y&&previousY<=GATE_CONTACT_Y+3&&playerLaneFor(next)===n.relayLane){
    narrative.objective='collected';
    if(n.route==='rescue'){next.bots+=Number(next.bots<11);}else next.shieldCharges+=1;recordUpgradeV41(next,'剧情中继',n.route==='rescue'?'友军归队':'护盾+1');
-   narrative.radio=radio('support-done',n.route==='rescue'?'伙伴：收到归航呼叫！队伍里给我留个位置。〔机甲 +1〕':'米可：航标护盾接通，这一路我替你照看。〔护盾 +1〕');
-  }else if(y>GATE_CONTACT_Y+3){narrative.objective='missed';narrative.radio=radio('support-missed','米可：没能接上中继也没关系，维修队会接手。我们继续点亮归航航标。');}
+   narrative.radio=radio('support-done',n.route==='rescue'?'伙伴：收到归航呼叫！队伍里给我留个位置。〔机甲 +1〕':'米可：航标护盾接通。诺拉已确认信号，这一路我替你照看。〔护盾 +1〕');
+  }else if(y>GATE_CONTACT_Y+3){narrative.objective='missed';narrative.radio=radio('support-missed','诺拉：中继交由米可处理，驾驶组继续前进。别为一次遗漏停下归航。');}
  }
  if(next.status==='running'&&next.progress>=55&&!narrative.seen.includes('lore')){narrative.seen.push('lore');narrative.radio=radio('sector-lore',CHAPTER_DIALOGUE[next.levelIndex].lore);}
  if(next.status==='boss-intro'&&!narrative.seen.includes('confrontation')){narrative.seen.push('confrontation');narrative.radio=null;narrative.scene={kind:'confrontation',step:0,synced:0};}

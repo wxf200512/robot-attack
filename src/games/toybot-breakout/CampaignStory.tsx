@@ -53,7 +53,7 @@ export default function CampaignStory({game,dispatch}:{game:CampaignState;dispat
     <span className="campaign-film-tag">{scene.kind==='briefing'?'现场接入':scene.kind==='confrontation'?BOSS_NAMES[game.levelIndex]:'城市恢复记录'} <i/></span>
     <span className="campaign-film-corners"/>
    </div>
-   <div className="campaign-dialogue" key={sceneId}><div className="campaign-speaker-v45"><CrewPortraitV45 speaker={copy.character} level={game.levelIndex}/><div><small>{copy.speaker}</small><span>{speakerMetaV45(copy.character).role}</span><em>● LINK ONLINE</em></div></div><h2 id="campaign-title">{copy.title}</h2><p>{copy.line}</p>{copy.hint&&<div className="campaign-objective">{copy.hint}</div>}</div>
+   <div className="campaign-dialogue" key={sceneId}><div className="campaign-speaker-v45"><CrewPortraitV45 speaker={copy.character} level={game.levelIndex}/><div><small>{copy.speaker}</small><span>{speakerMetaV45(copy.character).role}</span><em>● LINK ONLINE</em></div></div><div className="campaign-copy-v46"><h2 id="campaign-title">{copy.title}</h2><p>{copy.line}</p>{copy.hint&&<div className="campaign-objective">{copy.hint}</div>}</div></div>
    {scene.kind==='briefing'&&scene.step===1&&<div className="campaign-choices" role="group" aria-label="选择支援任务">
     <button type="button" onClick={()=>dispatch({type:'STORY_ROUTE',route:'rescue'})}><b>接应失联伙伴</b><span>驶过中继 → 小队机甲 +1</span><small>“收到信号的伙伴，一个也不落下。”</small></button>
     <button type="button" onClick={()=>dispatch({type:'STORY_ROUTE',route:'signal'})}><b>同步维护航标</b><span>驶过中继 → 护盾 +1</span><small>“先把通往城市的路点亮。”</small></button>

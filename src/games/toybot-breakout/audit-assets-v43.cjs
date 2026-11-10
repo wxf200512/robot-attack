@@ -12,4 +12,4 @@ for(const name of fs.readdirSync(__dirname).filter(n=>/\.(?:tsx?|css)$/.test(n))
 }}
 const missing=[...urls].filter(url=>!fs.existsSync(path.resolve(__dirname,'../../../public',url.slice(1))));
 if(missing.length)throw Error('Missing runtime assets: '+missing.join(', '));
-console.log(JSON.stringify({runtimeAssetUrls:urls.size,missing:0}));
+console.log(JSON.stringify({runtimeAssetUrls:urls.size,missing:0,...(process.argv.includes('--list')?{urls:[...urls]}:{})}));

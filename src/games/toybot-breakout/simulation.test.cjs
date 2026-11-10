@@ -6,7 +6,9 @@ const path = require('node:path');
 const ts = require('typescript');
 
 const migrationV43=JSON.parse(fs.readFileSync(path.join(__dirname,'asset-migration-v43.json'),'utf8'));
-function fixturePath(file){if(fs.existsSync(file))return file;const normalized=String(file).replaceAll('\\','/');if(normalized.includes('/optimized/')){const item=migrationV43.converted.find(m=>m.from===path.basename(file));if(item)return path.join(path.dirname(file),item.to);}if(normalized.includes('/art-source/')&&String(file).endsWith('.webp'))return String(file).replace(/\.webp$/,'.png');return file;}
+const retiredV46=JSON.parse(fs.readFileSync(path.join(__dirname,'asset-retirement-v46.json'),'utf8'));
+function retiredFixture(file){const row=retiredV46.files.find(r=>r.file===path.basename(file));return row?.historicalFixture?path.resolve(__dirname,row.historicalFixture):file;}
+function fixturePath(file){if(fs.existsSync(file))return file;const normalized=String(file).replaceAll('\\','/');if(normalized.includes('/optimized/')){const item=migrationV43.converted.find(m=>m.from===path.basename(file));if(item)return retiredFixture(path.join(path.dirname(file),item.to));}if(normalized.includes('/art-source/')&&String(file).endsWith('.webp'))return String(file).replace(/\.webp$/,'.png');return file;}
 const readFixture=(file,...args)=>fs.readFileSync(fixturePath(file),...args);
 const fixtureExists=file=>fs.existsSync(fixturePath(file));
 function imageInfo(b){
@@ -2447,7 +2449,7 @@ test('V43 asset phases leave boss and battle sheets out of home entry and warm o
 });
 test('V43 lossless migration keeps every runtime counterpart and removes only enumerated unused assets',()=>{
  const root=path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized');assert.equal(migrationV43.converted.length,76);
- for(const row of migrationV43.converted){assert.equal(fs.existsSync(path.join(root,row.from)),false);const buffer=fs.readFileSync(path.join(root,row.to));assert.ok(imageInfo(buffer).width>0);assert.equal(buffer.length,row.after);assert.ok(row.after<row.before);}
+ for(const row of migrationV43.converted){assert.equal(fs.existsSync(path.join(root,row.from)),false);const buffer=fs.readFileSync(retiredFixture(path.join(root,row.to)));assert.ok(imageInfo(buffer).width>0);assert.equal(buffer.length,row.after);assert.ok(row.after<row.before);}
  for(const row of migrationV43.deletedUnused)assert.equal(fs.existsSync(path.join(root,row.file)),false);
  assert.ok(migrationV43.savedBytes>24*1048576);
 });
@@ -2543,4 +2545,15 @@ test('V45 briefing choice and skips keep the same support economy and do not add
 });
 test('V45 wingmate acknowledgement is non-blocking and selects the other pilot without granting rewards',()=>{
  const c=load('campaign');for(const mechClass of ['pulse','heavy']){const base=c.createCampaign({...battle(),mechClass});base.narrative.scene={kind:'confrontation',step:1,synced:0};const next=c.campaignReducer(base,{type:'STORY_NEXT'});assert.equal(next.narrative.scene,null);assert.equal(next.narrative.radio.id,'crew-cover');assert.equal(next.narrative.radio.speaker,mechClass==='heavy'?'maya':'ethan');assert.equal(next.score,base.score);assert.equal(next.playerHp,base.playerHp);assert.equal(next.bots,base.bots);assert.equal(c.campaignReducer(next,{type:'STORY_DISMISS_RADIO'}).narrative.radio,null);}
+});
+
+test('V46 retired deployment art stays absent, preserves originals and exact historical motion fixtures',()=>{
+ const crypto=require('node:crypto'),root=path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized');
+ assert.equal(retiredV46.files.length,20);let bytes=0;
+ for(const row of retiredV46.files){assert.equal(fs.existsSync(path.join(root,row.file)),false,row.file);assert.ok(fs.existsSync(path.join(root,row.replacement)),row.replacement);assert.ok(fs.existsSync(path.resolve(__dirname,row.original)),row.original);bytes+=row.bytes;
+  if(row.historicalFixture){const data=fs.readFileSync(path.resolve(__dirname,row.historicalFixture));assert.equal(crypto.createHash('sha256').update(data).digest('hex'),row.sha256);assert.equal(imageInfo(data).alpha,true);}
+ }
+ assert.equal(bytes,retiredV46.removedRuntimeBytes);assert.ok(bytes>10*1048576);
+ const audit=JSON.parse(require('node:child_process').execFileSync(process.execPath,[path.join(__dirname,'audit-assets-v43.cjs'),'--list'],{encoding:'utf8'}));
+ assert.equal(audit.missing,0);for(const row of retiredV46.files)assert.ok(!audit.urls.includes('/games/toybot-breakout/optimized/'+row.file));
 });

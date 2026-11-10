@@ -1,0 +1,152 @@
+{
+  "reason": "Superseded runtime copies. Original artwork retained; exact historical motion fixtures are outside the public bundle.",
+  "removedRuntimeBytes": 11087406,
+  "files": [
+    {
+      "file": "mech-blade-motion-v28.webp",
+      "bytes": 960624,
+      "sha256": "49cae4e8c52fb153a037af539414b7de41200b91bd96c5508bb54306696951e9",
+      "replacement": "mech-blade-motion-v30.webp",
+      "original": "art-source/mech-blade-motion-v28.png",
+      "historicalFixture": "art-source/runtime-retired-v46/mech-blade-motion-v28.webp"
+    },
+    {
+      "file": "mech-heavy-motion-v28.webp",
+      "bytes": 1516336,
+      "sha256": "10bd5d7578d093b9c978354246456a9bf8277629004fb5bfe02b690c73ef551e",
+      "replacement": "mech-heavy-motion-v30.webp",
+      "original": "art-source/mech-heavy-motion-v28.png",
+      "historicalFixture": "art-source/runtime-retired-v46/mech-heavy-motion-v28.webp"
+    },
+    {
+      "file": "mech-pulse-motion-v28.webp",
+      "bytes": 1002598,
+      "sha256": "28bfd9394e324a60dc8149f3f2344af5b74f77157a2d27d1a2a26aa85dd6056a",
+      "replacement": "mech-pulse-motion-v30.webp",
+      "original": "art-source/mech-pulse-motion-v28.png",
+      "historicalFixture": "art-source/runtime-retired-v46/mech-pulse-motion-v28.webp"
+    },
+    {
+      "file": "mech-blade-motion-v29.webp",
+      "bytes": 992408,
+      "sha256": "4d508e9431b2e0dbd7f7f2410c672c1c1c3afa4f586a8d024e08d4272bac6e30",
+      "replacement": "mech-blade-motion-v30.webp",
+      "original": "art-source/mech-blade-motion-v29.png",
+      "historicalFixture": "art-source/runtime-retired-v46/mech-blade-motion-v29.webp"
+    },
+    {
+      "file": "mech-heavy-motion-v29.webp",
+      "bytes": 1520004,
+      "sha256": "10342f53b827bb9a55fd964e77ed3fb7b6c33f20d19b4a400171f37d09465542",
+      "replacement": "mech-heavy-motion-v30.webp",
+      "original": "art-source/mech-heavy-motion-v29.png",
+      "historicalFixture": "art-source/runtime-retired-v46/mech-heavy-motion-v29.webp"
+    },
+    {
+      "file": "mech-pulse-motion-v29.webp",
+      "bytes": 920844,
+      "sha256": "77a4bf2c43c13ad6dd5c20366649e2c931281ee8a2945eee50b87a7f1a8ab074",
+      "replacement": "mech-pulse-motion-v30.webp",
+      "original": "art-source/mech-pulse-motion-v29.png",
+      "historicalFixture": "art-source/runtime-retired-v46/mech-pulse-motion-v29.webp"
+    },
+    {
+      "file": "chapter-film-1-v12.jpg",
+      "bytes": 601021,
+      "sha256": "bdcab53321a229049ff709f14ac3229701956c475ffcf8ce86d8215d86c366e7",
+      "replacement": "chapter-film-1-v38.jpg",
+      "original": "art-source/chapter-film-1-v12.png"
+    },
+    {
+      "file": "chapter-film-2-v12.jpg",
+      "bytes": 572213,
+      "sha256": "f1cb03bcdcf0d8c201a7e2f751aa2ce63a980fb61530203e801118ea9963e7ef",
+      "replacement": "chapter-film-2-v38.jpg",
+      "original": "art-source/chapter-film-2-v12.png"
+    },
+    {
+      "file": "chapter-film-3-v12.jpg",
+      "bytes": 546759,
+      "sha256": "d7d04aba328c29775715406a6f8b0a7d0e8ae6eaf02edf8de7a13d30318c4f92",
+      "replacement": "chapter-film-3-v38.jpg",
+      "original": "art-source/chapter-film-3-v12.png"
+    },
+    {
+      "file": "chapter-film-4-v12.jpg",
+      "bytes": 290092,
+      "sha256": "b37741c360881a7e3fbd6d770ee79a0c1f0fd76a97dc5e5751909679e973e289",
+      "replacement": "chapter-film-4-v38.jpg",
+      "original": "art-source/chapter-film-4-v12.png"
+    },
+    {
+      "file": "chapter-film-5-v12.jpg",
+      "bytes": 309255,
+      "sha256": "61a2b4a673165def02966f36a6edba5246693d3e4a110df25d099c13b1422caf",
+      "replacement": "chapter-film-5-v38.jpg",
+      "original": "art-source/chapter-film-5-v12.png"
+    },
+    {
+      "file": "story-comic-1-v11.jpg",
+      "bytes": 313323,
+      "sha256": "269128b399ba3571ecd21e576a149f68997b5a6b150374302ef9265601ee5a0b",
+      "replacement": "story-comic-1-v38.jpg",
+      "original": "art-source/story-comic-1-v11.png"
+    },
+    {
+      "file": "story-comic-2-v11.jpg",
+      "bytes": 294678,
+      "sha256": "6e7847921601bc8d2ce923933d4863670c0f462bda7c5bc3855a090086e8273b",
+      "replacement": "story-comic-2-v38.jpg",
+      "original": "art-source/story-comic-2-v11.png"
+    },
+    {
+      "file": "story-comic-3-v11.jpg",
+      "bytes": 278799,
+      "sha256": "5b1fb25408d7b48f3cbe022c7bfbca251b69c68bc4e1d6f9e8312a97a9273a18",
+      "replacement": "story-comic-3-v38.jpg",
+      "original": "art-source/story-comic-3-v11.png"
+    },
+    {
+      "file": "story-comic-4-v11.jpg",
+      "bytes": 288701,
+      "sha256": "e2ecbaabe0b9124f2952bf871c7a8f1fe829edec96b0e3c97c8f2a312c35fb33",
+      "replacement": "story-comic-4-v38.jpg",
+      "original": "art-source/story-comic-4-v11.png"
+    },
+    {
+      "file": "map-1-ai-v2.jpg",
+      "bytes": 136092,
+      "sha256": "e7e8b5b03005d8af71cc46e4518fb1ae602363b04cb5ed6cbe29be6512265db9",
+      "replacement": "map-1-v29.jpg",
+      "original": "art-source/map-1-ai-v2.png"
+    },
+    {
+      "file": "map-2-ai-v2.jpg",
+      "bytes": 130003,
+      "sha256": "50efeebf7782ea3073a51144756c1b4e1575d45480df4f23131badc1bd7b0d06",
+      "replacement": "map-2-v29.jpg",
+      "original": "art-source/map-2-ai-v2.png"
+    },
+    {
+      "file": "map-3-ai-v2.jpg",
+      "bytes": 146073,
+      "sha256": "72cdbfdcccaf22ccdcc37f3702c2c56f169f71dca3da99eeb74b42c2187d059d",
+      "replacement": "map-3-v29.jpg",
+      "original": "art-source/map-3-ai-v2.png"
+    },
+    {
+      "file": "map-4-ai-v2.jpg",
+      "bytes": 127530,
+      "sha256": "977eeec852732aef51cd4ad52a74b2ecdeaa39a11211dd39aa69f02ecf537a95",
+      "replacement": "map-4-v29.jpg",
+      "original": "art-source/map-4-ai-v2.png"
+    },
+    {
+      "file": "map-5-ai-v2.jpg",
+      "bytes": 140053,
+      "sha256": "22940365d16bf5e4566eb0659878919384a10cc1bccc24ba1016c258cb78b5dd",
+      "replacement": "map-5-v29.jpg",
+      "original": "art-source/map-5-ai-v2.png"
+    }
+  ]
+}

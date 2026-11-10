@@ -32,7 +32,7 @@ function load(name) {
   return module.exports;
 }
 const sim = load('simulation'), levels = load('level'), progression = load('progression');
-const garage = { completedLevels: [true,true,true,true,false], tutorialCompleted: true, parts: 0, runs: 4, wins: 4, bestScore: 0, coreLevel: 0, unlockedLevel: 4, unlocked: { weapon: false, armor: false, core: false }, equipped: { weapon: false, armor: false, core: false } };
+const garage = { sortieClears:['4:0','4:1','4:2','4:3','4:4'],completedLevels: [true,true,true,true,false], tutorialCompleted: true, parts: 0, runs: 4, wins: 4, bestScore: 0, coreLevel: 0, unlockedLevel: 4, unlocked: { weapon: false, armor: false, core: false }, equipped: { weapon: false, armor: false, core: false } };
 const initial = (level = 0) => ({ ...sim.createInitialState(garage, level, 0), bossRandomSeed: 42 });
 const tick = s => sim.gameReducer(s, { type: 'TICK' });
 
@@ -209,7 +209,7 @@ test('five levels are selectable only after unlock; next level resets combat, lo
   let s = sim.gameReducer(initial(), { type: 'SELECT_LEVEL', garage: locked, levelIndex: 4 });
   assert.equal(s.levelIndex, 0);
   s = sim.gameReducer({ ...s, status: 'result', won: true, bossDefeated: true, progress:100 }, { type: 'NEXT_LEVEL', garage: locked });
-  assert.equal(s.levelIndex, 1); assert.equal(s.progress, 0); assert.equal(s.status, 'running');
+  assert.equal(s.levelIndex, 1); assert.equal(s.progress, 0); assert.equal(s.status, 'home');
   assert.equal(s.bots, 1); assert.equal(s.pendingShots.length, 0);
   assert.equal(progression.readGarage().unlockedLevel, 0);
 });
@@ -676,7 +676,7 @@ test('locked selection, forged start and premature next-level actions cannot ent
   assert.equal(sim.createInitialState(g,4).levelIndex,0);
   assert.equal(sim.gameReducer({...s,levelIndex:4},{type:'START',garage:g}).levelIndex,0);
   const invalid={...s,status:'result',won:true,progress:100,bossDefeated:false};assert.equal(sim.gameReducer(invalid,{type:'NEXT_LEVEL',garage:g}),invalid);
-  const complete={...invalid,bossDefeated:true};const next=sim.gameReducer(complete,{type:'NEXT_LEVEL',garage:g});assert.equal(next.status,'running');assert.equal(next.levelIndex,1);
+  const complete={...invalid,bossDefeated:true};const next=sim.gameReducer(complete,{type:'NEXT_LEVEL',garage:g});assert.equal(next.status,'home');assert.equal(next.levelIndex,1);
   const bad={...complete,levelIndex:3};assert.equal(sim.gameReducer(bad,{type:'NEXT_LEVEL',garage:g}),bad);
 });
 test('campaign save migration rejects development unlocks and noncontiguous clear records', () => {
@@ -2165,27 +2165,27 @@ test('collected and missed gates leave the scene on the resolution tick while th
  const miss=tick({...base,lane:2});assert.equal(miss.gateCollected,false);assert.equal(sorties.gateVisibleV39(miss,mark),false);assert.equal(miss.weaponLevel,base.weaponLevel);
  assert.equal(sorties.gateVisibleV39({...base,status:'paused',resumeStatus:'running'},mark),true);assert.equal(sorties.gateVisibleV39({...hit,status:'paused',resumeStatus:'running'},mark),false);
 });
-test('ten short missions have two sequential objectives in each unlocked district and tolerate corrupt old saves',()=>{
- const g=progression.normalizeGarage({tutorialCompleted:true});assert.equal(sorties.SORTIES_V39.length+levels.LEVELS.length,15);assert.equal(sorties.canEnterSortieV39(g,'0:0'),true);assert.equal(sorties.canEnterSortieV39(g,'0:1'),false);assert.equal(sorties.canEnterSortieV39(g,'1:0'),false);
+test('twenty-five short missions have five sequential objectives in each unlocked district and tolerate corrupt old saves',()=>{
+ const g=progression.normalizeGarage({tutorialCompleted:true});assert.equal(sorties.SORTIES_V39.length+levels.LEVELS.length,30);assert.equal(sorties.canEnterSortieV39(g,'0:0'),true);assert.equal(sorties.canEnterSortieV39(g,'0:1'),false);assert.equal(sorties.canEnterSortieV39(g,'1:0'),false);
  const corrupt=progression.normalizeGarage({...g,sortieClears:['0:1','0:1','../x','4:0']});assert.deepEqual(corrupt.sortieClears,[]);assert.equal(sorties.canEnterSortieV39(g,'missing'),false);
 });
 test('short mission completion awards once per ledger without granting a main story clear or free next district',()=>{
- const g=progression.normalizeGarage({tutorialCompleted:true});let s=sim.gameReducer(initial(),{type:'START_SORTIE',key:'0:0',garage:g});assert.equal(s.bots,1);assert.equal(s.progress,12);assert.equal(s.sortie.key,'0:0');assert.equal(s.bossDefeated,false);
+ const g=progression.normalizeGarage({tutorialCompleted:true});let s=sim.gameReducer(initial(),{type:'START_SORTIE',key:'0:0',garage:g});assert.equal(s.bots,1);assert.equal(s.progress,0);assert.equal(s.sortie.key,'0:0');assert.equal(s.bossDefeated,false);
  const old=JSON.stringify(s);const paused=sim.gameReducer(s,{type:'PAUSE'});assert.deepEqual(tick(paused),paused);assert.equal(JSON.stringify(s),old);
  s=tick({...s,progress:s.sortie.end-sim.RUN_SPEED/2,kills:s.sortie.target,fireCooldown:1000,hazardHps:s.hazardHps.map(()=>-1)});assert.equal(s.status,'result');assert.equal(s.won,true);assert.equal(s.pendingShots.length,0);assert.equal(s.enemyAttacks.length,0);assert.equal(sorties.runProgressV39(s),100);
  const updated=sorties.recordSortieV39(g,s);assert.deepEqual(updated.sortieClears,['0:0']);assert.deepEqual(sorties.recordSortieV39(updated,s).sortieClears,['0:0']);assert.equal(sorties.canEnterSortieV39(updated,'0:1'),true);assert.equal(updated.unlockedLevel,0);assert.ok(updated.completedLevels.every(x=>!x));assert.equal(playability.rewardLedger(s).total<=4,true);assert.equal(sim.gameReducer(s,{type:'NEXT_LEVEL',garage:updated}),s);
- const replay=sim.gameReducer(s,{type:'RESTART',garage:updated});assert.equal(replay.sortie.key,s.sortie.key);assert.equal(replay.progress,12);assert.equal(replay.kills,0);assert.equal(replay.sortie.firstClear,false);
+ const replay=sim.gameReducer(s,{type:'RESTART',garage:updated});assert.equal(replay.sortie.key,s.sortie.key);assert.equal(replay.progress,0);assert.equal(replay.kills,0);assert.equal(replay.sortie.firstClear,false);
  const failed=tick({...replay,progress:replay.sortie.end-sim.RUN_SPEED/2,kills:0,fireCooldown:1000,hazardHps:replay.hazardHps.map(()=>-1)});assert.equal(failed.won,false);assert.deepEqual(sorties.recordSortieV39(g,failed).sortieClears,[]);
 });
 test('short mission wrapper skips boss story scenes and restart keeps its own objective',()=>{
  const g=progression.normalizeGarage({tutorialCompleted:true}),base=campaign.createCampaign(initial());const started=campaign.campaignReducer(base,{type:'START_SORTIE',key:'0:0',garage:g});assert.equal(started.narrative.scene,null);assert.equal(started.narrative.radio.id,'sortie-brief');assert.equal(started.narrative.objective,'inactive');
  const won={...started,status:'result',won:true,progress:43,kills:20,bossDefeated:false};const restart=campaign.campaignReducer(won,{type:'RESTART',garage:g});assert.equal(restart.sortie.key,'0:0');assert.equal(restart.narrative.scene,null);
 });
-test('all ten short mission recipes can be finished with an ordinary acquired squad across all three mech classes',()=>{
+test('all twenty-five short mission recipes can be finished with an ordinary acquired squad across all three mech classes',()=>{
  const samples=[];for(const spec of sorties.SORTIES_V39)for(const mechClass of ['pulse','heavy','blade']){
   const g=progression.normalizeGarage({tutorialCompleted:true,completedLevels:[true,true,true,true,true],sortieClears:sorties.SORTIES_V39.filter(x=>x.slot===0).map(x=>x.key),mechClass});let s=sim.gameReducer({...initial(spec.level),status:'home'},{type:'START_SORTIE',key:spec.key,garage:g});
   s={...s,bots:3,weaponLevel:2,playerHp:1000,playerMaxHp:1000};let count=0;
-  while(sim.isActiveStatus(s.status)&&count++<1400){const l=levels.getLevel(s.levelIndex),live=l.hazards.flatMap((h,i)=>s.hazardHps[i]>0&&s.progress>=h.progress-14&&s.progress<h.progress?[i]:[]);const targets=live.sort((a,b)=>Number(!!l.hazards[b].elite)-Number(!!l.hazards[a].elite)||l.hazards[a].progress-l.hazards[b].progress);let lane=targets.length?sim.roadEnemyLane(s,targets[0]):s.lane;const gate=s.gateChoices[s.gate]?.[0];if(gate&&!s.gateResolved&&gate.polarity==='reward'&&Math.abs(l.gateMarks[s.gate]-s.progress)<2)lane=gate.lane;s=sim.gameReducer(s,{type:'MOVE_LANE',lane});if(sim.canActivateBurst(s))s=sim.gameReducer(s,{type:'ACTIVATE_BURST'});s=tick(s);}
+  while(sim.isActiveStatus(s.status)&&count++<1400){const l=levels.getLevel(s.levelIndex,s.sortie?.key),live=l.hazards.flatMap((h,i)=>s.hazardHps[i]>0&&s.progress>=h.progress-14&&s.progress<h.progress?[i]:[]);const targets=live.sort((a,b)=>Number(!!l.hazards[b].elite)-Number(!!l.hazards[a].elite)||l.hazards[a].progress-l.hazards[b].progress);let lane=targets.length?sim.roadEnemyLane(s,targets[0]):s.lane;const gate=s.gateChoices[s.gate]?.[0];if(gate&&!s.gateResolved&&gate.polarity==='reward'&&Math.abs(l.gateMarks[s.gate]-s.progress)<2)lane=gate.lane;s=sim.gameReducer(s,{type:'MOVE_LANE',lane});if(sim.canActivateBurst(s))s=sim.gameReducer(s,{type:'ACTIVATE_BURST'});s=tick(s);}
   assert.equal(s.status,'result',spec.key+' '+mechClass);assert.equal(s.won,true,spec.key+' '+mechClass+' count '+sorties.sortieCountV39(s));assert.equal(s.bossDefeated,false);assert.ok(count<1400);samples.push(spec.key+' '+mechClass+':'+(count/10).toFixed(1));
  }console.log('Short mission balance seconds: '+samples.join(', '));
 });

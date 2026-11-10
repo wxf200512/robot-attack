@@ -1,3 +1,4 @@
+import { buildPreludeLevelV53 } from './preludeLevelsV53';
 import { populateFrontline, type ElitePattern } from './frontline';
 export type EnemyKind = 'drone' | 'swarm' | 'sniper' | 'bomber' | 'medic';
 export const ENEMY_NAMES: Record<EnemyKind, string> = { drone: '巡逻机', swarm: '突击蜂', sniper: '狙击哨', bomber: '轰炸机', medic: '维修机' };
@@ -45,9 +46,15 @@ LEVELS.forEach((level, sector) => {
   });
 });
 LEVELS.forEach(populateFrontline);
-export const getLevel = (index: number): LevelSpec => LEVELS[Math.max(0, Math.min(LEVELS.length - 1, index))];
-export const hazardLaneAt = (layout: number, index: number, progress: number, levelIndex = 0): number => {
-  const hazard = getLevel(levelIndex).hazards[index];
+const preludeLevelsV53=new Map<string,LevelSpec>();
+export const getLevel = (index:number,sortieKey?:string):LevelSpec => {
+ const base=LEVELS[Math.max(0,Math.min(LEVELS.length-1,index))];
+ if(!sortieKey||sortieKey[0]!==String(index)||!/^[0-4]:[0-4]$/.test(sortieKey))return base;
+ if(!preludeLevelsV53.has(sortieKey))preludeLevelsV53.set(sortieKey,buildPreludeLevelV53(base,sortieKey));
+ return preludeLevelsV53.get(sortieKey)!;
+};
+export const hazardLaneAt = (layout: number, index: number, progress: number, levelIndex = 0,sortieKey?:string): number => {
+  const hazard = getLevel(levelIndex,sortieKey).hazards[index];
   if (!hazard) return 1;
   return (hazard.lane + layout + (hazard.moving && progress >= hazard.progress - 8 ? 1 : 0)) % 3;
 };

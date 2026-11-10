@@ -22,9 +22,9 @@ export function dangerWindowsV42(s:GameState,extra:EnemyAttack[]=[],bossWindup=0
   if(['minion','barrier','pylon','seal','orb','tether','wall'].includes(t.kind))continue; // Their actual strike must first obtain a warning slot.
   add(t.lane,t.ticks-1,t.ticks+1,t.kind);
  }
- if(s.status==='running')getLevel(s.levelIndex).hazards.forEach((h,i)=>{
+ if(s.status==='running')getLevel(s.levelIndex,s.sortie?.key).hazards.forEach((h,i)=>{
   if(s.hazardHps[i]<=0||h.progress<s.progress||attacks.some(a=>a.source==='hazard'&&a.sourceId===i&&(a.kind==='charge'||a.kind==='pounce')))return;
-  const eta=Math.ceil((h.progress-s.progress)/.08);if(eta<=60)add(hazardLaneAt(s.layoutIndex,i,h.progress,s.levelIndex),eta-1,eta+1,'body');
+  const eta=Math.ceil((h.progress-s.progress)/.08);if(eta<=60)add(hazardLaneAt(s.layoutIndex,i,h.progress,s.levelIndex,s.sortie?.key),eta-1,eta+1,'body');
  });
  if(s.status==='battle'&&s.bossStep==='rush'&&!s.bossRushHit)s.bossAttackLanes.forEach(lane=>add(lane,10-s.bossStepTicks-1,10-s.bossStepTicks+1,'boss-rush'));
  if(s.status==='battle'&&s.bossStep==='warning'&&bossWindup>0){

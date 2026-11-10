@@ -35,7 +35,7 @@ export function createOperations(levelIndex:number,layout:number):Operations{
 }
 export const fieldY=(s:GameState,object:FieldObjective)=>Math.max(30,Math.min(64,59-(object.mark-s.progress)*1.8));
 export const fieldVisible=(s:GameState,object:FieldObjective)=>s.status==='running'&&object.status==='pending'&&s.progress>=object.mark-12&&s.progress<object.mark;
-export const prepMark=(s:GameState)=>getLevel(s.levelIndex).encounters[0].progress-6;
+export const prepMark=(s:GameState)=>getLevel(s.levelIndex,s.sortie?.key).encounters[0].progress-6;
 export const copyOperations=(ops:Operations):Operations=>({...ops,parts:ops.parts.map(p=>({...p})),mission:{...ops.mission},event:{...ops.event}});
 export function makeBossParts(s:GameState):BossPart[]{return (['cannon','shield','engine'] as const).map((kind,lane)=>{
  let hp=Math.max(12,Math.round(s.battleMaxHp*.025));

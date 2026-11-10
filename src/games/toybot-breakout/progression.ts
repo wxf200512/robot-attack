@@ -33,8 +33,13 @@ export const normalizeGarage = (value: unknown): Garage => {
   for (let i=0;i<5;i++) { contiguous = contiguous && (Array.isArray(p.completedLevels) ? p.completedLevels[i] === true : i < legacyClears); completedLevels.push(contiguous); }
   const unlockedLevel = Math.min(4,completedLevels.filter(Boolean).length);
   const unlocked = { weapon: levels.weapon > 0, armor: levels.armor > 0, core: levels.core > 0 };
-  const validSorties=Array.isArray(p.sortieClears)?[...new Set(p.sortieClears.filter(key=>typeof key==='string'&&/^[0-4]:[01]$/.test(key)&&Number(key[0])<=unlockedLevel))]:[];
-  const sortieClears=validSorties.filter(key=>key.endsWith(':0')||validSorties.includes(key[0]+':0'));
+  const validSorties=Array.isArray(p.sortieClears)?[...new Set(p.sortieClears.filter(key=>typeof key==='string'&&/^[0-4]:[0-4]$/.test(key)&&Number(key[0])<=unlockedLevel))]:[];
+  // Completed legacy districts keep their access; uncompleted districts retain
+  // only a valid contiguous prefix of their old/new short-mission records.
+  const sortieClears:string[]=[];
+  for(let district=0;district<=unlockedLevel;district++)for(let slot=0;slot<5;slot++){
+   const key=district+':'+slot;if(completedLevels[district]||validSorties.includes(key)&&(slot===0||sortieClears.includes(district+':'+(slot-1))))sortieClears.push(key);
+  }
   const trialClears=Array.isArray(p.trialClears)?[...new Set(p.trialClears.filter(x=>typeof x==='string'&&/^[0-4]:(clean|speed|signature)$/.test(x)&&completedLevels[Number(x[0])]))]:[];
   const trialBadge=typeof p.trialBadge==='string'&&trialClears.includes(p.trialBadge)?p.trialBadge:undefined;
   const enemyLessons=Array.isArray(p.enemyLessons)?[...new Set(p.enemyLessons.filter(k=>typeof k==='string'&&LESSON_KEYS_V41.includes(k)))]:integer(p.wins)>0?[...LESSON_KEYS_V41]:[];
@@ -79,6 +84,7 @@ export const toggleUpgrade = (garage: Garage, id: UpgradeId): Garage => {
 export const equipAllUpgrades = (garage: Garage): Garage => normalizeGarage({ ...garage, equipped: { weapon: moduleLevel(garage,'weapon') > 0, armor: moduleLevel(garage,'armor') > 0, core: moduleLevel(garage,'core') > 0 } });
 
 export const canEnterLevel = (garage: Partial<Garage>, index: number): boolean => Number.isInteger(index) && index >= 0 && index < 5 && index <= normalizeGarage(garage).unlockedLevel;
+export const canChallengeBossV53=(garage:Partial<Garage>,index:number)=>{const g=normalizeGarage(garage);return canEnterLevel(g,index)&&Array.from({length:5},(_,slot)=>index+':'+slot).every(key=>(g.sortieClears??[]).includes(key));};
 export const recordLevelCompletion = (garage: Garage, result: { status: string; won: boolean; bossDefeated: boolean; progress: number; levelIndex: number; protocol?:string }): Garage => {
   const base = normalizeGarage(garage);
   if (result.status !== 'result' || !result.won || !result.bossDefeated || result.progress !== 100 || !canEnterLevel(base,result.levelIndex)) return base;

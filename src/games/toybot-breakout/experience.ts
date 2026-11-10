@@ -18,7 +18,7 @@ export function runDebrief(s:GameState){
  const modules=Object.entries(s.modules).filter(([,v])=>v>0).map(([k])=>({arc:'电弧',burn:'燃烧',recycle:'回能'}[k]));
  const build=s.ops.fusion?FUSIONS[s.ops.fusion].name:modules.join(' · ')||CLASS_TACTICS[s.mechClass].name;
  const bossSeen=s.battleMaxHp>0,remaining=bossSeen?Math.max(0,Math.ceil(s.battleHp/s.battleMaxHp*100)):null;
- const gap=s.won?'区域已解放':bossSeen?`首领剩余 ${remaining}% 耐久`:`距首领还有 ${Math.max(0,Math.ceil(getLevel(s.levelIndex).encounters[0].progress-s.progress))}% 路程`;
+ const gap=s.won?'区域已解放':bossSeen?`首领剩余 ${remaining}% 耐久`:`距首领还有 ${Math.max(0,Math.ceil(getLevel(s.levelIndex,s.sortie?.key).encounters[0].progress-s.progress))}% 路程`;
  const cause=s.report.taken===0?'本局未损失核心生命':s.report.collisions>s.report.hostile?'主要损伤：道路碰撞':'主要损伤：敌方技能';
  const tip=s.report.collisions>s.report.hostile?'优先改装装甲；密集怪潮保留一条撤离路线。':bossSeen&&s.ops.broken<2?'先击破首领外置部件，再在收招窗口集中输出。':s.burstSequence===0?'核心充满后主动释放，清场与闪避都能回能。':s.mechClass==='blade'?'进入刀距后输出，预警出现时侧闪并反击。':'升级武器与动力，利用收招窗口追击首领。';
  return {build,gap,cause,tip:!s.won&&s.flow.lastHit?s.flow.lastHit.tip:tip,remaining};

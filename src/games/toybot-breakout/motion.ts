@@ -18,7 +18,7 @@ export function visualState(s:GameState,alpha:number):GameState{
  return {...s,progress:s.progress+(status==='running'?roadStepFor(s,true)*t:0),dodgeTicks:Math.max(0,s.dodgeTicks-t),bossMoveTicks:Math.max(0,s.bossMoveTicks-t),bossStepTicks:s.bossStepTicks+t,enemyAttacks:s.enemyAttacks.map(a=>a.phase==='flight'?{...a,ticks:Math.max(0,a.ticks-t)}:a)};
 }
 export function hazardVisualX(s:GameState,index:number){
- const h=getLevel(s.levelIndex).hazards[index],x=roadEnemyX(s,index);
+ const h=getLevel(s.levelIndex,s.sortie?.key).hazards[index],x=roadEnemyX(s,index);
  if(!h.moving||s.enemyAttacks.some(a=>a.source==='hazard'&&a.sourceId===index&&a.kind==='charge'&&a.phase==='flight'))return x;
  const p=clamp01((s.progress-h.progress+8)/(RUN_SPEED*2));
  if(s.progress<h.progress-8||p===1)return x;
@@ -100,7 +100,7 @@ export function paintMotion(root:HTMLElement,s:GameState,alpha:number,entries:Mo
 
    if(isBossArena(s))node.style.setProperty('--boss-scale',String(s.levelIndex===4?1.02:1.12*(1+Math.max(0,(bossY(v)-(s.mechClass==='blade'?51:40))/(59-(s.mechClass==='blade'?51:40)))*.25)));
   }else if(kind==='gate'){
-   const mark=getLevel(s.levelIndex).gateMarks[s.gate],option=s.gateChoices[s.gate]?.[id];if(mark!==undefined&&option){const y=gateGroundY(v.progress,mark);place(node,laneXAt(option.lane,y-5),y);node.style.setProperty('--gate-scale',String(.85+clamp01((v.progress-mark+12)/14)*.3));}
+   const mark=getLevel(s.levelIndex,s.sortie?.key).gateMarks[s.gate],option=s.gateChoices[s.gate]?.[id];if(mark!==undefined&&option){const y=gateGroundY(v.progress,mark);place(node,laneXAt(option.lane,y-5),y);node.style.setProperty('--gate-scale',String(.85+clamp01((v.progress-mark+12)/14)*.3));}
   }else if(kind==='threat'){
    const threat=s.threats.find(a=>a.id===id);if(threat){const body=node.querySelector<HTMLElement>('.hostile-v31-body');if(body){const p=enemyMotionV31(s,id,t,reduced,'threat');paintHostile(body,p,ENEMY_MOTION_V31[p.kind],4);}const predicted={...threat,ticks:Math.max(0,threat.ticks-t)},y=enemyThreatY(v,predicted);const progress=clamp01(1-predicted.ticks/predicted.duration),from=laneXAt(threat.fromLane,threat.originY??43);place(node,threat.kind==='shell'?from+(LANE_CENTERS[threat.lane]-from)*progress:enemyThreatX(v,predicted),y);if(threat.kind==='shell')node.style.top=(worldScreenY(y)-12*(1-progress))+'%';}
   }else if(kind==='mission'||kind==='cargo'){

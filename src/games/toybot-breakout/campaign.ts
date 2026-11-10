@@ -51,23 +51,27 @@ export function campaignReducer(state:CampaignState,action:CampaignAction):Campa
   if(action.type!=='STORY_NEXT'&&action.type!=='STORY_SKIP'&&action.type!=='STORY_ROUTE')return state;
   const route=action.type==='STORY_ROUTE'?action.route:n.route??'signal';
   const wing=CREW_V45[wingmateV45(state.mechClass)];
-  const blocked=getLevel(state.levelIndex).hazards.flatMap((h,i)=>Math.abs(h.progress-n.relayMark)<=5?[hazardLaneAt(state.layoutIndex,i,n.relayMark,state.levelIndex)]:[]);
+  const blocked=getLevel(state.levelIndex,state.sortie?.key).hazards.flatMap((h,i)=>Math.abs(h.progress-n.relayMark)<=5?[hazardLaneAt(state.layoutIndex,i,n.relayMark,state.levelIndex,state.sortie?.key)]:[]);
   const lanes=[0,1,2].filter(lane=>!blocked.includes(lane));
   return {...state,narrative:{...n,scene:null,...(scene.kind==='briefing'?{route,objective:'pending' as const,relayLane:lanes[(state.layoutIndex+state.levelIndex)%Math.max(1,lanes.length)]??1,radio:radio('support-brief',route==='rescue'?'诺拉：失联伙伴已定位。玛雅与伊森保持驾驶链路，驶过前方中继接应。':'诺拉：米可正在接通维护护盾。驾驶组，驶过前方中继同步。')} : scene.kind==='confrontation'?{radio:radio('crew-cover',wing.short+'：'+(wing.id==='ethan'?'护航链路稳定。我看住侧翼，交战交给你。':'侧翼扫描完成。伊森，稳住机体，我来接应伙伴。'),wing.id)}:{})}};
  }
  if(n.scene&&(action.type==='TICK'||action.type==='MOVE_LANE'||action.type==='ACTIVATE_BURST'))return state;
  const next=gameReducer(state,action as Action);
  if(next===state)return state;
- if('garage' in action){const narrative=freshNarrative();if(next.sortie){narrative.radio=radio('sortie-brief',next.sortie.name+'：'+sortieGoalV39(next.sortie)+'，抵达终点后结算。');return {...next,narrative};}narrative.replay=normalizeGarage(action.garage).completedLevels[next.levelIndex]===true;if(next.status==='running'){
+ if('garage' in action){const narrative=freshNarrative();if(next.sortie){narrative.radio=radio('sortie-brief',next.sortie.intro);return {...next,narrative};}narrative.replay=normalizeGarage(action.garage).completedLevels[next.levelIndex]===true;if(next.status==='running'){
  if(action.type==='RESTART'&&n.seen.includes('briefing')){
   narrative.seen=n.seen.filter(key=>['briefing','confrontation','lore','supply-story','aftermath'].includes(key));narrative.route=n.route??'signal';narrative.objective='pending';
-  const blocked=getLevel(next.levelIndex).hazards.flatMap((h,i)=>Math.abs(h.progress-narrative.relayMark)<=5?[hazardLaneAt(next.layoutIndex,i,narrative.relayMark,next.levelIndex)]:[]);
+  const blocked=getLevel(next.levelIndex).hazards.flatMap((h,i)=>Math.abs(h.progress-narrative.relayMark)<=5?[hazardLaneAt(next.layoutIndex,i,narrative.relayMark,next.levelIndex,next.sortie?.key)]:[]);
   narrative.relayLane=[0,1,2].find(lane=>!blocked.includes(lane))??1;
  }else{narrative.scene={kind:'briefing',step:0,synced:0};narrative.seen=['briefing'];}
  }return {...next,narrative};}
  if(action.type!=='TICK')return {...next,...(action.type==='RESUME'&&n.scene?{finish:{...next.finish,resumeTicks:0}}:{}),narrative:n};
  const narrative:Narrative={...n,seen:[...n.seen],radio:n.radio&&n.radio.ticks>1?{...n.radio,ticks:n.radio.ticks-1}:null};
- if(next.sortie)return {...next,narrative:{...narrative,radio:next.status==='result'||next.status==='defeat'?null:narrative.radio}};
+ if(next.sortie){
+  if(next.status==='running'&&next.progress>=next.sortie.end*.45&&!narrative.seen.includes('prelude-mid')){narrative.seen.push('prelude-mid');narrative.radio=radio('prelude-mid',next.sortie.mid);}
+  if(next.status==='running'&&next.progress>=next.sortie.end*.8&&!narrative.seen.includes('prelude-exit')){narrative.seen.push('prelude-exit');narrative.radio=radio('prelude-exit','诺拉：抵达接应点前继续清障，当前目标 '+sortieGoalV39(next.sortie)+'。');}
+  return {...next,narrative:{...narrative,radio:next.status==='result'||next.status==='defeat'?null:narrative.radio}};
+ }
  if(next.status==='running'&&n.objective==='pending'){
   const previousY=gateGroundY(state.progress,n.relayMark),y=gateGroundY(next.progress,n.relayMark);
   if(y>=GATE_CONTACT_Y&&previousY<=GATE_CONTACT_Y+3&&playerLaneFor(next)===n.relayLane){

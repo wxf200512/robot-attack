@@ -4,3 +4,15 @@
 .sortie-picker-v39 small{display:block;font-size:7px;color:#8bb4c4;line-height:10px}.sortie-picker-v39 button:disabled{opacity:.4;cursor:default}
 .toybot-page .reference-v29>.sortie-hud-v39 small{display:block!important;font-size:8px}
 .sortie-result-v39{padding:8px;border:1px solid #84b6c84d;border-radius:7px;color:#cde7ee;font-size:11px;margin:8px 0}
+
+/* V53: the actual five-stage route is visible on the home screen. */
+.prelude-route-v53{min-width:0;text-align:left;margin:8px 0}
+.prelude-route-v53>header{display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#d9e8ef}
+.prelude-route-v53>header span{color:#7fe4df;margin-left:4px}.prelude-route-v53>header small{font-size:9px;color:#a3bdcb}
+.prelude-route-v53 .sortie-picker-v39{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:5px 0}
+.toybot-page .toybot-shell .prelude-route-v53 button{display:flex;align-items:center;gap:4px;min-height:44px;padding:5px;text-align:left;font-size:10px;border-radius:5px;min-width:0}
+.prelude-route-v53 button>b{flex:0 0 19px;color:#7de6e8;font-size:15px}.prelude-route-v53 button>span{min-width:0;overflow-wrap:anywhere;line-height:13px}.prelude-route-v53 small{font-size:8px;line-height:11px}
+.prelude-route-v53 .prelude-boss-v53>b{color:#ffcd6b}.prelude-route-v53 .prelude-boss-v53[aria-pressed=true]{border-color:#ffcd6b;background:#3e361f}
+.prelude-story-v53{margin:8px 0;padding:9px 11px;background:#0b2c3a;border-left:2px solid #75e3df;color:#d5eeeb;text-align:left;font-size:12px;line-height:1.6}.prelude-story-v53 small{display:block;color:#95bbca;font-size:10px}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-home:not(.is-workshop) .toybot-home-hero{min-height:240px;flex-basis:240px;max-height:300px}
+@media(max-height:740px){.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-home:not(.is-workshop) .toybot-home-hero{min-height:140px;flex-basis:140px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-home-content{min-height:100%;height:auto;overflow:visible}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-home:not(.is-workshop){overflow-y:auto}}

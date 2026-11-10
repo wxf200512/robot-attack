@@ -49,7 +49,7 @@ export function bossMotionV31(s:GameState,alpha=0,reduced=false){
  return out(0,p.hover>0?clock/p.stride%8:0,'ready',0,Math.sin(clock*.55)*p.hover);
 }
 export function enemyMotionV31(s:GameState,index:number,alpha=0,reduced=false,source:'hazard'|'threat'='hazard'){
- const t=reduced?0:clamp(alpha),h=source==='hazard'?getLevel(s.levelIndex).hazards[index]:undefined;
+ const t=reduced?0:clamp(alpha),h=source==='hazard'?getLevel(s.levelIndex,s.sortie?.key).hazards[index]:undefined;
  const kind:HostileKind=source==='threat'?(s.threats.find(a=>a.id===index)?.kind==='barrier'?'barrier':'minion'):h?.kind??'drone',p=ENEMY_MOTION_PROFILES[kind];
  const clock=(source==='hazard'?s.roadTicks:s.battleTime)+t,hit=reaction(s,hostileReactionKey(source,index),t),flash=hit.active?Math.sin(hit.age*Math.PI)*.35:0;
  const out=(row:number,frame:number,action:string)=>({...pose(p,row,frame,action,reduced,flash,0,row===0?Math.sin((clock+index*.8)*.65)*p.hover:0),kind});

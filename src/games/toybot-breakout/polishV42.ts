@@ -20,7 +20,7 @@ export function skillOpportunityV42(s:GameState):string|null{
  }
  if(s.mechClass==='heavy'){
   if(s.status==='battle'&&s.ops.parts.some(p=>p.kind==='shield'&&p.hp>0))return '护盾部件 · 双倍破拆';
-  const targets=getLevel(s.levelIndex).hazards.filter((h,i)=>s.hazardHps[i]>0&&enemyVisibleV41(s,h)&&((h.armor??0)>0||s.enemyAttacks.some(a=>a.source==='hazard'&&a.sourceId===i&&a.phase==='warning')));
+  const targets=getLevel(s.levelIndex,s.sortie?.key).hazards.filter((h,i)=>s.hazardHps[i]>0&&enemyVisibleV41(s,h)&&((h.armor??0)>0||s.enemyAttacks.some(a=>a.source==='hazard'&&a.sourceId===i&&a.phase==='warning')));
   return targets.length>=2?'可破甲压制 ×'+targets.length:null;
  }
  const incoming=dangerWindowsV42(s).some(w=>w.kind!=='body'&&w.from>0&&w.from<=8&&w.lane===s.lane&&!['field','lava','storm-orb','heat-mine'].includes(w.kind));

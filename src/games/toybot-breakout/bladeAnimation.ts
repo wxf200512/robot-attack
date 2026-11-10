@@ -1,3 +1,4 @@
+import { roadStrideFrameV50 } from './runStrideV50';
 import { bladeStrikeV35 } from './bladeMotionV35';
 import { motionPose, type MotionContext } from './animationTypes';
 // A sword has wind-up, impact and follow-through, rather than gun recoil.
@@ -8,5 +9,5 @@ export function bladeAnimation(c:MotionContext){
  if(c.armed&&c.remaining<=windup)return bladeStrikeV35(c,windup,hit);
  if(c.armed&&c.elapsed<hit+Math.min(1.6,Math.max(.3,c.interval-windup-hit)))return bladeStrikeV35(c,windup,hit);
  if(c.arena&&c.armed)return motionPose(c,1,0,'blade-guard');
- return c.arena?motionPose(c,1,(c.s.battleTime+c.t)/2.8%8,'blade-guard'):motionPose(c,0,(c.s.roadTicks+c.t+c.index*.8)/.35%16,'blade-run',0,16);
+ return c.arena?motionPose(c,1,(c.s.battleTime+c.t)/2.8%8,'blade-guard'):motionPose(c,0,roadStrideFrameV50(c),'blade-run',0,16);
 }

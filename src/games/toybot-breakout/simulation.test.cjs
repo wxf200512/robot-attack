@@ -1873,7 +1873,7 @@ test('heavy stagger cannot extend a warning into a three-lane body trap on any s
 });
 test('independent motion atlas runs sixteen frames and never runs in any boss phase',()=>{
  const art=load('visualArt'),s={...initial(),status:'running',roadTicks:0};
- const frames=new Set(Array.from({length:128},(_,i)=>art.artPose({...s,roadTicks:i/10}).frame));
+ const frames=new Set(Array.from({length:128},(_,i)=>art.artPose({...s,progress:i/10*sim.RUN_SPEED}).frame));
  assert.equal(frames.size,16);assert.equal(art.artPose(s).row,0);
  for(const status of ['boss-intro','battle','boss-shift','boss-victory']){
   const p=art.artPose({...s,status,fireCooldown:0});assert.equal(p.row,0);assert.equal(p.sheet,'arena');
@@ -1968,7 +1968,7 @@ test('independent sprite atlases preserve transparency and calibrated action cel
  for(const m of meta){assert.equal(m.frames,64);assert.equal(m.measuredFrames,64);assert.ok(m.transparentFraction>.6);assert.ok(m.interpolatedFrames<=1);assert.ok(m.maxCoreXErrorPx<=5);const png=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/mech-'+m.class+'-motion-v30.png'));assert.equal(imageInfo(png).width,1024);assert.equal(imageInfo(png).height,1024);assert.equal(imageInfo(png).alpha,true);hashes.add(require('node:crypto').createHash('sha256').update(png).digest('hex'));}assert.equal(hashes.size,3);
 });
 
-test('all independent running cycles contain sixteen stable cells per equipment tier',()=>{const art=load('visualArt'),meta=JSON.parse(readFixture(path.resolve(__dirname,'run-registration-v30.json'),'utf8').replace(/^\uFEFF/,''));for(const m of meta){const s={...quietRoad(0),mechClass:m.class,fireCooldown:0};const poses=Array.from({length:200},(_,i)=>art.artPose({...s,roadTicks:i/10}));assert.equal(new Set(poses.map(p=>p.frame)).size,16);assert.ok(poses.every(p=>p.sheet==='run'));assert.equal(m.strideFrames,16);assert.ok(m.maxCoreXErrorPx<=1);const png=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/mech-'+m.class+'-run-v30.png'));assert.equal(imageInfo(png).width,1024);assert.equal(imageInfo(png).height,512);assert.equal(imageInfo(png).alpha,true);}});
+test('all independent running cycles contain sixteen stable cells per equipment tier',()=>{const art=load('visualArt'),meta=JSON.parse(readFixture(path.resolve(__dirname,'run-registration-v30.json'),'utf8').replace(/^\uFEFF/,''));for(const m of meta){const s={...quietRoad(0),mechClass:m.class,fireCooldown:0};const poses=Array.from({length:200},(_,i)=>art.artPose({...s,progress:s.progress+i/10*sim.RUN_SPEED}));assert.equal(new Set(poses.map(p=>p.frame)).size,16);assert.ok(poses.every(p=>p.sheet==='run'));assert.equal(m.strideFrames,16);assert.ok(m.maxCoreXErrorPx<=1);const png=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/mech-'+m.class+'-run-v30.png'));assert.equal(imageInfo(png).width,1024);assert.equal(imageInfo(png).height,512);assert.equal(imageInfo(png).alpha,true);}});
 
 test('five guardians own different animation assets and charge/move/attack/hit profiles',()=>{
  const art=load('hostileMotionV31');assert.equal(new Set(art.BOSS_MOTION_V31).size,5);assert.equal(new Set(art.BOSS_MOTION_PROFILES.map(p=>p.id)).size,5);
@@ -2585,4 +2585,27 @@ test('V48 scene repaint uses independent new art for each class without changing
   renderer.paintMotion(root,s,.5,[{node,kind:'robot',id:0}],false,{width:390,height:750});
   assert.ok(body.style.backgroundImage.includes('combat-'+(arena?'arena-':'run-')+kind+'-v48.webp'));assert.ok(!body.dataset.mechAction.includes(arena?'run':'side-step'));assert.equal(JSON.stringify(s),before);
  }
+});
+
+
+test('V50 road strides follow traveled distance and do not restart for firing or road tick drift',()=>{
+ const sample=load('animationModules').sampleMechMotion,profiles=load('runStrideV50');
+ for(const mechClass of ['pulse','heavy','blade']){
+  const base={...quietRoad(0),mechClass,fireCooldown:0,progress:10};const before=JSON.stringify(base),frames=new Set();
+  for(let i=0;i<160;i++){const s={...base,progress:i*sim.RUN_SPEED*profiles.STRIDE_TICKS_V50[mechClass]/160};frames.add(sample(s).frame);}
+  assert.equal(frames.size,16);assert.equal(sample(base,.3).frame,sample({...base,roadTicks:9999},.3).frame);
+  assert.deepEqual(sample(base,.3),sample({...base,status:'paused',resumeStatus:'running'},.3));
+  assert.equal(sample(base,.8,0,true).frame,0);assert.equal(JSON.stringify(base),before);
+ }
+ for(const mechClass of ['pulse','heavy'])for(const fireCooldown of [0,1,3,10,1000]){const p=sample({...quietRoad(0),mechClass,progress:10,fireCooldown},.7);assert.equal(p.recoil,0);assert.equal(p.sheet,'run');}
+});
+
+test('V50 calibrated run anchors use bounded full-body translation and unchanged V48 artwork',()=>{
+ const x=load('runStrideV50'),report=JSON.parse(fs.readFileSync(path.join(__dirname,'run-registration-analysis-v50.json'),'utf8'));
+ for(const row of report){assert.ok(row.selectedMean<=row.oldMean+.01);assert.ok(row.selectedPeak<=row.oldPeak+.01);assert.equal(new Set(row.order).size,16);const file=path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/combat-run-'+row.kind+'-v48.webp');assert.equal(require('node:crypto').createHash('sha256').update(fs.readFileSync(file)).digest('hex'),row.sha256);for(let frame=0;frame<16;frame++){const v=x.roadBodyRegistrationV50(row.kind,row.tier,frame);assert.ok(Math.abs(v.x)<=1000/192&&Math.abs(v.y)<=1000/192);}}
+});
+
+test('V50 slow-road recovery slows stride progression while squad members keep distinct phases',()=>{
+ const sample=load('animationModules').sampleMechMotion;
+ for(const mechClass of ['pulse','heavy','blade']){const s={...quietRoad(0),mechClass,fireCooldown:0,progress:0},normal=new Set(),slow=new Set();for(let i=0;i<80;i++){normal.add(sample({...s,progress:i*.01}).frame);slow.add(sample({...s,progress:i*.0035,breatherTicks:25}).frame);}assert.ok(normal.size>slow.size);const members=[0,1,2].map(i=>sample({...s,progress:10},.2,i).frame);assert.equal(new Set(members).size,3);}
 });

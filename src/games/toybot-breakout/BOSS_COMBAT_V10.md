@@ -1,3 +1,5 @@
+> 文档状态：历史设计与验收记录。当前玩法、素材和交付状态请先阅读 [CURRENT_REQUIREMENTS.md](./CURRENT_REQUIREMENTS.md) 与 [ACCEPTANCE_STATUS.md](./ACCEPTANCE_STATUS.md)。本页测试数量、资源路径及“尚未完成”仅描述对应历史版本；被后续版本替代的规则不作为当前缺项。
+
 # 首领技能与八帧战斗动作（2026-11-05）
 
 本版以 bossSkills.ts 的三技能组为准，替换旧的炮击/冲撞循环。BOSS_FLOW.md 中早期技能顺序作为历史记录。

@@ -1,3 +1,5 @@
+> 当前规则总览：[CURRENT_REQUIREMENTS.md](./CURRENT_REQUIREMENTS.md)；交付与待验收项：[ACCEPTANCE_STATUS.md](./ACCEPTANCE_STATUS.md)。
+
 # V52 双腿交替奔跑
 
 替代V50的旧帧排序与运行时锚点补偿，撤销V51整机正弦起伏、透视倾斜和落脚尘。V48原跑图在脉冲等机型中缺乏左右腿交换姿势；增加整体摇摆不能修复单腿跳。

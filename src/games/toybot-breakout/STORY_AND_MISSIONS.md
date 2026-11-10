@@ -1,3 +1,5 @@
+> 文档状态：历史设计与验收记录。当前玩法、素材和交付状态请先阅读 [CURRENT_REQUIREMENTS.md](./CURRENT_REQUIREMENTS.md) 与 [ACCEPTANCE_STATUS.md](./ACCEPTANCE_STATUS.md)。本页测试数量、资源路径及“尚未完成”仅描述对应历史版本；被后续版本替代的规则不作为当前缺项。
+
 # 玩具城突围剧情与主线任务设计
 
 主线名称：黎明重启（Dawn Reboot）。游戏名继续使用《玩具城突围 / Toybot Breakout》。玩家从一台机甲出发，穿过失控的城市防线，恢复五个管理区的权限，让整座玩具城重新运转。

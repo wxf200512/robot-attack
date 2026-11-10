@@ -1,3 +1,5 @@
+> 文档状态：历史设计与验收记录。当前玩法、素材和交付状态请先阅读 [CURRENT_REQUIREMENTS.md](./CURRENT_REQUIREMENTS.md) 与 [ACCEPTANCE_STATUS.md](./ACCEPTANCE_STATUS.md)。本页测试数量、资源路径及“尚未完成”仅描述对应历史版本；被后续版本替代的规则不作为当前缺项。
+
 > v24：每关前线约两分钟，首领约三分钟，当前时长样本与敌群见 [ENEMY_WAVES.md](./ENEMY_WAVES.md)。以下早期样本不再代表当前耐久。
 
 > 当前技能和动作说明已更新：[首领战V10](./BOSS_COMBAT_V10.md)。下文早期炮击/冲撞方案为历史记录。

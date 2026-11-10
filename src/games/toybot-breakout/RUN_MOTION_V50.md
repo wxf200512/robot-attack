@@ -1,3 +1,5 @@
+> 文档状态：历史设计与验收记录。当前玩法、素材和交付状态请先阅读 [CURRENT_REQUIREMENTS.md](./CURRENT_REQUIREMENTS.md) 与 [ACCEPTANCE_STATUS.md](./ACCEPTANCE_STATUS.md)。本页测试数量、资源路径及“尚未完成”仅描述对应历史版本；被后续版本替代的规则不作为当前缺项。
+
 # V50 跑动小范围调整
 
 保持V48三类机甲、两档装备与全部图片字节不变。本轮不接入此前撤回的V49素材，不改界面、存档、射速、队形、碰撞或首领动作。

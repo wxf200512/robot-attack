@@ -1,3 +1,5 @@
+> 文档状态：历史设计与验收记录。当前玩法、素材和交付状态请先阅读 [CURRENT_REQUIREMENTS.md](./CURRENT_REQUIREMENTS.md) 与 [ACCEPTANCE_STATUS.md](./ACCEPTANCE_STATUS.md)。本页测试数量、资源路径及“尚未完成”仅描述对应历史版本；被后续版本替代的规则不作为当前缺项。
+
 > v27已取消按队伍与武器增加首领耐久，并加入精英击破后的回收缓冲；当前规则见 [PLAYABILITY_V27.md](./PLAYABILITY_V27.md)。下方v24数据保留作历史参考。
 
 # 五分钟关卡与主题前线（v24，2026-11-06）

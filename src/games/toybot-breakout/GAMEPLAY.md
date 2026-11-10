@@ -1,3 +1,5 @@
+> 当前规则总览：[CURRENT_REQUIREMENTS.md](./CURRENT_REQUIREMENTS.md)；交付与待验收项：[ACCEPTANCE_STATUS.md](./ACCEPTANCE_STATUS.md)。
+
 > V53 当前章节流程：每区先完成5个无首领前置小关，再进入原有守护者行动。共25小关＋5首领行动。每个小关独立出击/结算，不把它们算进原单局约5分钟目标；详见 [PRELUDE_CAMPAIGN_V53.md](./PRELUDE_CAMPAIGN_V53.md)。
 
 > v27成长与体验规则以 [PLAYABILITY_V27.md](./PLAYABILITY_V27.md) 为准：首领按关卡固定耐久，强化允许更快通关。

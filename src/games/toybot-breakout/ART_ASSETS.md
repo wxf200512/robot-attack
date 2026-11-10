@@ -1,3 +1,5 @@
+> 文档状态：历史设计与验收记录。当前玩法、素材和交付状态请先阅读 [CURRENT_REQUIREMENTS.md](./CURRENT_REQUIREMENTS.md) 与 [ACCEPTANCE_STATUS.md](./ACCEPTANCE_STATUS.md)。本页测试数量、资源路径及“尚未完成”仅描述对应历史版本；被后续版本替代的规则不作为当前缺项。
+
 # 游戏美术约定与 AI 素材
 
 用户偏好：图片相关的角色、装备、弹体和特效素材优先使用 AI 生图。升级需要改变装备结构和图片动画帧，不以 SVG 图形、简单加粗或变色代替正式美术。

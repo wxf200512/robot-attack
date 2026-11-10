@@ -2609,3 +2609,28 @@ test('V50 slow-road recovery slows stride progression while squad members keep d
  const sample=load('animationModules').sampleMechMotion;
  for(const mechClass of ['pulse','heavy','blade']){const s={...quietRoad(0),mechClass,fireCooldown:0,progress:0},normal=new Set(),slow=new Set();for(let i=0;i<80;i++){normal.add(sample({...s,progress:i*.01}).frame);slow.add(sample({...s,progress:i*.0035,breatherTicks:25}).frame);}assert.ok(normal.size>slow.size);const members=[0,1,2].map(i=>sample({...s,progress:10},.2,i).frame);assert.equal(new Set(members).size,3);}
 });
+
+
+test('V51 running has a continuous forward push and backward recovery on the distance clock',()=>{
+ const stride=load('runStrideV50');
+ for(const mechClass of ['pulse','heavy','blade']){
+  const s={...quietRoad(0),mechClass,progress:10},before=JSON.stringify(s),cycle=sim.RUN_SPEED*stride.STRIDE_TICKS_V50[mechClass];
+  const poses=Array.from({length:64},(_,i)=>stride.roadWeightShiftV51({...s,progress:cycle*i/64}));
+  assert.ok(Math.min(...poses.map(p=>p.forward))<-1.9);assert.ok(Math.max(...poses.map(p=>p.forward))>1.5);
+  assert.ok(poses.every(p=>Math.abs(p.forward)<4.3&&p.pitch>=1&&p.pitch<=6&&p.contact>=0&&p.contact<=.28));
+  const first=stride.roadWeightShiftV51(s,.35,1),wrapped=stride.roadWeightShiftV51({...s,progress:s.progress+cycle},.35,1);
+  assert.ok(Math.abs(first.forward-wrapped.forward)<1e-9);assert.ok(Math.abs(first.pitch-wrapped.pitch)<1e-9);
+  assert.deepEqual(first,stride.roadWeightShiftV51({...s,status:'paused',resumeStatus:'running'},.35,1));
+  assert.deepEqual(first,stride.roadWeightShiftV51({...s,roadTicks:99999},.35,1));
+  for(const stopped of [{...s,status:'battle'},{...s,status:'boss-intro'}])assert.deepEqual(stride.roadWeightShiftV51(stopped,.3),{forward:0,pitch:0,contact:0,dustX:0});
+  assert.deepEqual(stride.roadWeightShiftV51(s,.3,0,true),{forward:0,pitch:0,contact:0,dustX:0});assert.equal(JSON.stringify(s),before);
+ }
+});
+
+test('V51 rendered weight shift is single-body and clears completely for boss combat and low motion',()=>{
+ const body={style:{},dataset:{}},dust={style:{}},node={style:{},dataset:{},querySelector:selector=>selector==='.toybot-v28-body'?body:selector==='.toybot-v28-footdust'?dust:null},root={style:{setProperty(){}}};
+ const entries=[{node,kind:'robot',id:0}],s={...quietRoad(0),progress:10,fireCooldown:0},before=JSON.stringify(s);
+ motion.paintMotion(root,s,.3,entries);assert.match(body.style.transform,/rotateX/);assert.match(body.style.backgroundImage,/combat-run-pulse-v48/);assert.ok(Number(dust.style.opacity)>=0&&Number(dust.style.opacity)<=.28);
+ motion.paintMotion(root,{...battle(),fireCooldown:0},.3,entries);assert.equal(body.style.transform,'none');assert.equal(dust.style.opacity,'0');assert.match(body.style.backgroundImage,/combat-arena-pulse-v48/);
+ motion.paintMotion(root,s,.3,entries,true);assert.equal(body.style.transform,'none');assert.equal(dust.style.opacity,'0');assert.equal(JSON.stringify(s),before);
+});

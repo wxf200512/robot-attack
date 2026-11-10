@@ -1,4 +1,4 @@
-import { roadBodyRegistrationV50 } from './runStrideV50';
+import { roadBodyRegistrationV50, roadWeightShiftV51 } from './runStrideV50';
 import { partDamageV38 } from './partDamageV38';
 import { roadOffsetV37 } from './roadMotionV37';
 import { ARENA_ART_V36, EMPEROR_ART_V36 } from './arenaMotionV36';
@@ -59,10 +59,10 @@ export function paintMotion(root:HTMLElement,s:GameState,alpha:number,entries:Mo
  for(const {node,kind,id}of entries){
   if(kind==='robot'){
    const p=formation[id];if(p)place(node,squadScreenX(p.x,formation[0]?.x??50,s.bots),p.y);
-   const art=artPose(s,t,id,reduced),body=node.querySelector<HTMLElement>('.toybot-v28-body');
-   if(body){body.style.backgroundImage=`url(${art.sheet==='arena'?ARENA_ART_V36[s.mechClass]:art.sheet==='blade'?BLADE_ATTACK_V35:(art.sheet==='run'?RUN_ART:MOTION_ART)[s.mechClass]})`;body.style.backgroundSize=art.sheet==='arena'?'800% 600%':art.sheet==='run'||art.sheet==='blade'?'800% 400%':'800% 800%';body.style.backgroundPosition=art.sheet==='run'?atlasCell(art.frame%8,(art.row>=4?2:0)+Math.floor(art.frame/8),8,4):atlasCell(art.frame,art.row,8,art.sheet==='arena'?6:art.sheet==='blade'?4:8);body.dataset.mechAction=art.action;body.style.scale=isBossArena(s)?'1':'var(--art-mirror,1) 1';body.style.rotate=art.lean+'deg';body.style.translate='0 '+art.recoil+'px';if(art.sheet==='run'){const registration=roadBodyRegistrationV50(s.mechClass,art.row>=4?1:0,art.frame);body.style.translate=registration.x+'% '+registration.y+'%';}}
+   const art=artPose(s,t,id,reduced),body=node.querySelector<HTMLElement>('.toybot-v28-body'),stride=roadWeightShiftV51(s,t,id,reduced);
+   if(body){body.style.backgroundImage=`url(${art.sheet==='arena'?ARENA_ART_V36[s.mechClass]:art.sheet==='blade'?BLADE_ATTACK_V35:(art.sheet==='run'?RUN_ART:MOTION_ART)[s.mechClass]})`;body.style.backgroundSize=art.sheet==='arena'?'800% 600%':art.sheet==='run'||art.sheet==='blade'?'800% 400%':'800% 800%';body.style.backgroundPosition=art.sheet==='run'?atlasCell(art.frame%8,(art.row>=4?2:0)+Math.floor(art.frame/8),8,4):atlasCell(art.frame,art.row,8,art.sheet==='arena'?6:art.sheet==='blade'?4:8);body.dataset.mechAction=art.action;body.style.scale=isBossArena(s)?'1':'var(--art-mirror,1) 1';body.style.rotate=art.lean+'deg';body.style.translate='0 '+art.recoil+'px';body.style.transform='none';if(art.sheet==='run'){const registration=roadBodyRegistrationV50(s.mechClass,art.row>=4?1:0,art.frame);body.style.translate=registration.x+'% '+(registration.y+stride.forward)+'%';body.style.transform=reduced?'none':'perspective(240px) rotateX('+stride.pitch+'deg)';}}
 
-   const dust=node.querySelector<HTMLElement>('.toybot-v28-footdust');if(dust){dust.style.opacity=String(reduced||isBossArena(s)?0:Math.max(0,Math.sin((s.roadTicks+t+id*.8)*Math.PI/3.2))*.28);dust.style.translate=(art.frame<4?'-20%':'0')+' 0';}
+   const dust=node.querySelector<HTMLElement>('.toybot-v28-footdust');if(dust){dust.style.opacity=String(art.sheet==='run'?stride.contact:0);dust.style.translate=stride.dustX+'% 0';}
 
 
   }

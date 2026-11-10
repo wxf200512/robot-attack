@@ -1,3 +1,4 @@
+import { COMBAT_UI_V48 } from './combatArtV48';
 const ROOT = '/games/toybot-breakout/optimized/';
 export const MAP_ART = [1, 2, 3, 4, 5].map(n => `${ROOT}map-${n}-v29.jpg`);
 export const BOSS_ART = `${ROOT}boss-roster-ai-v2.webp`;
@@ -5,7 +6,7 @@ export const BOSS_INTRO_ART = `${ROOT}boss-intro-ai-v4.webp`;
 export const BOSS_STAGE2_ART = `${ROOT}boss-stage2-ai-v4.webp`;
 export const BOSS_DEFEAT_ART = `${ROOT}boss-defeat-ai-v3.webp`;
 export const BOSS_RUSH_ART = `${ROOT}boss-rush-ai-v5.webp`;
-export const GATE_ART = `${ROOT}gate-v29.webp`;
+export const GATE_ART = COMBAT_UI_V48.gate;
 export const PLAYER_ART = `${ROOT}player-evolution-ai-v2.webp`;
 export const THREAT_ART = `${ROOT}boss-threats-ai-v2.webp`;
 export const ENEMY_ART = `${ROOT}enemy-roster-ai-v9.webp`;

@@ -2567,3 +2567,22 @@ test('V47 production showcase atlases provide eight distinct equipment cells for
  for(const [key,url]of Object.entries(art.INTERFACE_V47)){const b=fs.readFileSync(path.resolve(__dirname,'../../../public',url.slice(1)));if(key==='hangar'){assert.equal(b[0],255);assert.equal(b[1],216);}else{const info=imageInfo(b);assert.ok(info.width>=512);assert.equal(info.alpha,true);}}
  const manifest=JSON.parse(fs.readFileSync(path.join(__dirname,'interface-art-v47.json'),'utf8'));assert.equal(manifest.length,9);assert.ok(manifest.reduce((n,row)=>n+row.bytes,0)<3*1048576);
 });
+
+test('V48 active combat assets share the new three class art and retain all run, arena and blade phases',()=>{
+ const art=load('combatArtV48'),visual=load('visualArt'),arena=load('arenaMotionV36'),blade=load('bladeMotionV35');
+ const manifest=JSON.parse(fs.readFileSync(path.join(__dirname,'combat-art-v48.json'),'utf8'));assert.equal(manifest.length,16);assert.ok(manifest.reduce((n,r)=>n+r.bytes,0)<6*1048576);
+ for(const kind of ['pulse','heavy','blade']){assert.equal(visual.RUN_ART[kind],art.COMBAT_RUN_V48[kind]);assert.equal(arena.ARENA_ART_V36[kind],art.COMBAT_ARENA_V48[kind]);
+  for(const clip of ['run','arena']){const row=manifest.find(r=>r.file==='combat-'+clip+'-'+kind+'-v48.webp');assert.equal(row.columns,8);assert.equal(row.frames,clip==='run'?32:48);assert.equal(row.distinctFrames,row.frames);const info=imageInfo(fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',row.file)));assert.equal(info.width,1536);assert.equal(info.height,clip==='run'?768:1152);assert.equal(info.alpha,true);}
+ }
+ assert.equal(blade.BLADE_ATTACK_V35,art.COMBAT_BLADE_V48);assert.equal(load('art').GATE_ART,art.COMBAT_UI_V48.gate);assert.equal(load('roadMotionV37').ROAD_TILES_V37.length,5);assert.equal(new Set(art.COMBAT_ROADS_V48).size,5);
+ for(const row of manifest)assert.ok(fs.existsSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',row.file)));
+});
+test('V48 scene repaint uses independent new art for each class without changing simulation state or muzzle projection',()=>{
+ const renderer=load('motion');
+ for(const kind of ['pulse','heavy','blade'])for(const arena of [false,true]){
+  const s={...(arena?battle():quietRoad(0)),mechClass:kind,bots:3,fireCooldown:0,weaponLevel:0};const before=JSON.stringify(s);
+  const body={style:{},dataset:{}},node={style:{},querySelector:()=>body},root={style:{setProperty(){}}};
+  renderer.paintMotion(root,s,.5,[{node,kind:'robot',id:0}],false,{width:390,height:750});
+  assert.ok(body.style.backgroundImage.includes('combat-'+(arena?'arena-':'run-')+kind+'-v48.webp'));assert.ok(!body.dataset.mechAction.includes(arena?'run':'side-step'));assert.equal(JSON.stringify(s),before);
+ }
+});

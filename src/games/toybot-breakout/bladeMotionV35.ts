@@ -1,5 +1,6 @@
+import { COMBAT_BLADE_V48 } from './combatArtV48';
 import { motionPose, type MotionContext } from './animationTypes';
-export const BLADE_ATTACK_V35='/games/toybot-breakout/optimized/mech-blade-attack-v35.webp';
+export const BLADE_ATTACK_V35=COMBAT_BLADE_V48;
 // One wind-up -> contact -> follow-through clip, sampled against the real volley.
 // No crossfade: exactly one opaque body is rendered at every point in the cycle.
 export function bladeStrikeV35(c:MotionContext,windup:number,contact:number){

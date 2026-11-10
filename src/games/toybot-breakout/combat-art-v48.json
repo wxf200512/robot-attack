@@ -1,0 +1,131 @@
+[
+  {
+    "file": "combat-run-pulse-v48.webp",
+    "width": 1536,
+    "height": 768,
+    "columns": 8,
+    "rows": 4,
+    "frames": 32,
+    "distinctFrames": 32,
+    "bytes": 437132
+  },
+  {
+    "file": "combat-arena-pulse-v48.webp",
+    "width": 1536,
+    "height": 1152,
+    "columns": 8,
+    "rows": 6,
+    "frames": 48,
+    "distinctFrames": 48,
+    "bytes": 1001030
+  },
+  {
+    "file": "combat-run-heavy-v48.webp",
+    "width": 1536,
+    "height": 768,
+    "columns": 8,
+    "rows": 4,
+    "frames": 32,
+    "distinctFrames": 32,
+    "bytes": 725946
+  },
+  {
+    "file": "combat-arena-heavy-v48.webp",
+    "width": 1536,
+    "height": 1152,
+    "columns": 8,
+    "rows": 6,
+    "frames": 48,
+    "distinctFrames": 48,
+    "bytes": 777278
+  },
+  {
+    "file": "combat-run-blade-v48.webp",
+    "width": 1536,
+    "height": 768,
+    "columns": 8,
+    "rows": 4,
+    "frames": 32,
+    "distinctFrames": 32,
+    "bytes": 511336
+  },
+  {
+    "file": "combat-arena-blade-v48.webp",
+    "width": 1536,
+    "height": 1152,
+    "columns": 8,
+    "rows": 6,
+    "frames": 48,
+    "distinctFrames": 48,
+    "bytes": 994148
+  },
+  {
+    "file": "combat-blade-strike-v48.webp",
+    "width": 1536,
+    "height": 768,
+    "columns": 8,
+    "rows": 4,
+    "frames": 32,
+    "distinctFrames": 32,
+    "bytes": 595328
+  },
+  {
+    "file": "combat-gate-v48.webp",
+    "width": 1024,
+    "height": 512,
+    "columns": 4,
+    "rows": 2,
+    "frames": 8,
+    "distinctFrames": 8,
+    "bytes": 262388
+  },
+  {
+    "file": "combat-cockpit-v48.webp",
+    "width": 1536,
+    "height": 512,
+    "bytes": 152338
+  },
+  {
+    "file": "combat-reactor-v48.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 23054
+  },
+  {
+    "file": "combat-road-1-v48.webp",
+    "width": 512,
+    "height": 512,
+    "bytes": 31364
+  },
+  {
+    "file": "combat-road-2-v48.webp",
+    "width": 512,
+    "height": 512,
+    "bytes": 25798
+  },
+  {
+    "file": "combat-road-3-v48.webp",
+    "width": 512,
+    "height": 512,
+    "bytes": 22514
+  },
+  {
+    "file": "combat-road-4-v48.webp",
+    "width": 512,
+    "height": 512,
+    "bytes": 30030
+  },
+  {
+    "file": "combat-road-5-v48.webp",
+    "width": 512,
+    "height": 512,
+    "bytes": 19712
+  },
+  {
+    "file": "combat-boss-icons-v48.webp",
+    "width": 480,
+    "height": 96,
+    "frames": 5,
+    "bytes": 46518
+  }
+]

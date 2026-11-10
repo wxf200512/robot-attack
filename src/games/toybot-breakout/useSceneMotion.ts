@@ -14,7 +14,7 @@ export function useSceneMotion(root:RefObject<HTMLDivElement>,state:GameState,en
  useLayoutEffect(()=>{
   const node=root.current;if(!node||typeof ResizeObserver==='undefined')return;
   const observer=new ResizeObserver(([entry])=>{if(entry.contentRect.width>0&&entry.contentRect.height>0){size.current={width:entry.contentRect.width,height:entry.contentRect.height};paintMotion(node,latest.current,phase.current,entries.current,reduced,size.current);}});
-  observer.observe(node);return()=>observer.disconnect();
+  observer.observe(node.querySelector<HTMLElement>('.toybot-world')??node);return()=>observer.disconnect();
  },[root,hasScene,reduced]);
  useEffect(()=>{
   const node=root.current;if(!node||!enabled||reduced)return;

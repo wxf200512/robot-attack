@@ -1,6 +1,7 @@
+import { COMBAT_ARENA_V48 } from './combatArtV48';
 import type { MotionContext } from './animationTypes';
 import type { MechClass } from './mechs';
-export const ARENA_ART_V36:Record<MechClass,string>={pulse:'/games/toybot-breakout/optimized/mech-pulse-arena-v36.webp',heavy:'/games/toybot-breakout/optimized/mech-heavy-arena-v36.webp',blade:'/games/toybot-breakout/optimized/mech-blade-arena-v36.webp'};
+export const ARENA_ART_V36:Record<MechClass,string>=COMBAT_ARENA_V48;
 export const EMPEROR_ART_V36='/games/toybot-breakout/optimized/boss-emperor-wide-v36.webp';
 export function arenaPoseV36<T extends {sheet:string;row:number;frame:number;recoil:number;lean:number}>(c:MotionContext,p:T):Omit<T,'sheet'> & {sheet:T['sheet']|'arena'}{
  if(!c.arena||p.sheet==='blade')return p;

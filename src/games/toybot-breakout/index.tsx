@@ -1,3 +1,4 @@
+import { COMBAT_UI_V48 } from './combatArtV48';
 import { SHOWCASE_V47, INTERFACE_V47, showcaseCellV47, equipmentIconV47, iconCellV47 } from './interfaceArtV47';
 import { CREW_LIST_V45 } from './crewV45';
 import { CareerV44, ResultGradeV44, PilotFeedbackV44 } from './ReplayUIV44';
@@ -75,7 +76,7 @@ import { hazardMaxHpFor, gateChoicesFor, guardSourceFor, commanderFor, eliteRole
 import { OBJECTIVE_NAMES, SPECIAL_LABELS } from './bossSkills';
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MAP_ART, BOSS_ART, BOSS_DEFEAT_ART, GATE_ART, THREAT_ART, UI_RESULT_CRESTS, UI_MENU_ART,  BLADE_SLASH_ART, BOSS_OBJECTIVE_ART } from './art';
+import { MAP_ART, BOSS_NAMES, BOSS_ART, BOSS_DEFEAT_ART, GATE_ART, THREAT_ART, UI_RESULT_CRESTS, UI_MENU_ART,  BLADE_SLASH_ART, BOSS_OBJECTIVE_ART } from './art';
 import { hazardArmorFor } from './simulation';
 import { getLevel, LEVELS, hazardLaneAt } from './level';
 import { createInitialState, bossHealthFor, effectiveWeapon, bossPhase, bossY, gateEffectDetail, LANE_CENTERS, STEP_MS, RUN_SPEED, laneXAt, targetY, gateGroundY, GATE_CONTACT_Y, isActiveStatus, canMove, canShoot, isBossArena, bossEnrage, bossX, rushProgress, isRush, attackIntervalFor, bossAttackLabel, enemyThreatX, enemyThreatY, playerFormation, bossGuarded, roadEnemyY, roadEnemyX, targetX as targetWorldX } from './simulation';
@@ -85,6 +86,7 @@ import './playability.css';
 import './clarityV43.css';
 import './uiV46.css';
 import './uiV47.css';
+import './combatV48.css';
 
 const depthForPulse=(shot:import('./simulation').PendingShot)=>Math.round((shot.origins[0].y+(shot.y-shot.origins[0].y)*(1-shot.ticks/shot.duration)+6)*10)+3;
 function ProjectileArt({ level, heavy = false }: { level: number; heavy?: boolean }) {
@@ -97,10 +99,10 @@ function Robot({ awakened=false, index, small = false, enemy = false, firing = f
   if (enemy&&bossArt===FURNACE_ART) return <div className="robot-boss-sprite" style={{backgroundImage:`url(${FURNACE_ART})`,backgroundSize:'400% 200%',backgroundPosition:atlasCell(weaponPhase%4,Math.floor(weaponPhase/4),4,2)}} aria-hidden="true"/>;
   if (enemy) return <div className="robot-boss-sprite" style={{ backgroundImage: `url(${bossArt})`, backgroundSize:(bossColumns*100)+'% 500%', backgroundPosition: (weaponPhase * 100 / (bossColumns-1)) + '% ' + (index * 25) + '%' }} aria-hidden="true" />;
 
-  const tier=awakened?4:motionTier(weaponLevel,armorLevel,coreLevel),row=tier+(combat?(dodging?3:attacking?2:1):0);
+  const tier=awakened?4:motionTier(weaponLevel,armorLevel,coreLevel),row=combat?(tier?3:0)+(dodging?2:attacking?1:0):(tier?2:0);
   return <div className={`robot-player-art toybot-v28-mech class-${mechClass}${awakened?' is-reference-awakened':''}${small?' robot-small':''}${firing?' is-firing':''}`} style={{'--art-mirror':combat&&dodging&&dodgeDirection<0?-1:1} as React.CSSProperties} aria-hidden="true">
     <span className="toybot-v28-footdust"/>
-    <span className="toybot-v28-body" style={{backgroundImage:`url(${MOTION_ART[mechClass]})`,backgroundPosition:atlasCell(motionFrame,row)}}/>
+    <span className="toybot-v28-body" style={{backgroundImage:`url(${combat?ARENA_ART_V36[mechClass]:RUN_ART[mechClass]})`,backgroundSize:combat?'800% 600%':'800% 400%',backgroundPosition:atlasCell(motionFrame,row,8,combat?6:4)}}/>
 
   </div>;
 }
@@ -897,7 +899,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
                     role="img"
                   >
 
-                    <i className="gate-sign-v46" aria-hidden="true">{option.polarity==='reward'?'+':'−'}</i><b>{option.icon}</b>
+                    <i className="gate-sign-v46" aria-hidden="true">{option.polarity==='reward'?'+':'−'}</i><b className="gate-symbol-v48">{option.polarity==='reward'?'↟':'!'}</b>
                     <strong>{option.title}</strong>{option.effect==='riskyWeapon'&&<small className="gate-cost-v40">下批6敌耐久+50%</small>}
                   </div>
                 ))}
@@ -1079,8 +1081,8 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
         </div>
 
         {showEncounter && (arena||displayStatus==='running') && displayStatus !== 'result' && (
-                    <div className="toybot-battle-banner toybot-boss-top-hud" aria-label="首领耐久">
-                      <small>{phase === 'shield' ? '⬡' : phase === 'weak' ? '◉' : '⚠'} {Math.ceil(bossHudHp)}/{bossHudMax} · {game.bossStage === 1 ? 'Ⅰ' : 'Ⅱ'} · {Math.floor(game.battleTime / 600)}:{String(Math.floor(game.battleTime / 10) % 60).padStart(2, '0')}{enrage > 0 ? ` · ⚡${enrage}` : ''}</small>
+                    <div className="toybot-battle-banner toybot-boss-top-hud" aria-label="首领耐久"><span className="boss-icon-v48" aria-hidden="true" style={{backgroundImage:`url(${COMBAT_UI_V48.bossIcons})`,backgroundPosition:`${game.levelIndex*25}% 0%`}}/><b className="boss-name-v48">{BOSS_NAMES[game.levelIndex]} · {game.bossStage===1?'Ⅰ':'Ⅱ'}</b>
+                      <small><span className="boss-health-v48">{phase === 'shield' ? '⬡' : phase === 'weak' ? '◉' : '⚠'} {Math.ceil(bossHudHp)}/{bossHudMax}</span><span className="boss-meta-v48"> · {Math.floor(game.battleTime / 600)}:{String(Math.floor(game.battleTime / 10) % 60).padStart(2, '0')}{enrage > 0 ? ` · ⚡${enrage}` : ''}</span></small>
                       {displayStatus==='battle'&&game.tactics.windowTicks>0&&<b className="boss-window-v40">规避成功 · 易伤 +65% · {(game.tactics.windowTicks/10).toFixed(1)}s</b>}{displayStatus === 'battle' && phase === 'warning' && <b className="toybot-attack-name">{bossAttackLabel(game)}</b>}
                       <div className="toybot-battle-meter"><i className="toybot-half-hp-mark" /><span style={{ width: `${bossHudMax ? (bossHudHp / bossHudMax) * 100 : 0}%` }} /></div>
                     </div>

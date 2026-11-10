@@ -1,0 +1,87 @@
+/* V48 combat composition shares the V47 ivory/navy/cyan art direction. */
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29.has-cockpit .toybot-top{top:0;height:62px;padding:0;z-index:1600;background:linear-gradient(#071b2de8,#071b2dba 72%,transparent);pointer-events:none}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-top .toybot-brand{position:absolute;left:10px;top:9px;width:82px;max-width:82px;pointer-events:none}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-top .toybot-reference-logo{width:82px;height:auto;filter:drop-shadow(0 2px 2px #0009)}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-brand>span{display:block;font-size:8px;line-height:1.4;max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;color:#e2eff8}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-top .toybot-live-settings,.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-top .toybot-pause{pointer-events:auto;top:9px;width:44px;height:44px;border:7px solid transparent;border-image:url('/games/toybot-breakout/optimized/interface-steel-v47.webp') 80 fill / 7px stretch;background:none;border-radius:0;box-shadow:none;color:#d0e7f0}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-top .toybot-live-settings{right:59px;font-size:17px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-top .toybot-pause{right:10px}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29.has-cockpit .toybot-battle-banner.toybot-boss-top-hud{position:absolute;z-index:1601;left:120px;right:111px;top:8px;height:44px;min-height:44px;padding:0;display:block;border:6px solid transparent;border-image:url('/games/toybot-breakout/optimized/interface-steel-v47.webp') 80 fill / 6px stretch;background:none;box-shadow:none;overflow:visible}
+.boss-icon-v48{position:absolute;left:-31px;top:-2px;width:32px;height:36px;background-size:500% 100%;background-repeat:no-repeat;filter:drop-shadow(0 2px 2px #000a)}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .boss-name-v48{position:absolute;left:7px;right:5px;top:0;color:#f4dfab;font-size:9px;line-height:12px;font-weight:700;text-align:left;white-space:nowrap}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-boss-top-hud>.toybot-battle-meter{position:absolute;left:7px;right:7px;top:13px;height:8px;margin:0;border:0;border-radius:2px;background:#101b2c;box-shadow:inset 0 1px 3px #0009}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-boss-top-hud .toybot-battle-meter>span{background:linear-gradient(90deg,#f05250,#ffab61);box-shadow:none}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-boss-top-hud>small{position:absolute;top:24px;bottom:auto;left:7px;right:5px;font-size:7px;line-height:10px;white-space:nowrap;text-shadow:0 1px #06101a;color:#b7cdda;max-width:100%;overflow:hidden}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-boss-top-hud .boss-window-v40{position:absolute;top:44px;left:0;right:0;font-size:8px;line-height:1.25;padding:3px 4px;border:1px solid #74cdbd55;background:#10394af0;border-radius:4px;color:#c6f8dd;max-width:none;z-index:2;white-space:normal}
+/* Compact communication stays inside the top safe zone instead of crossing the boss. */
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-story-top,.toybot-page .toybot-shell.toybot-menu-system.reference-v29.has-story-radio .toybot-story-top{position:absolute;top:63px;left:10px;right:10px;z-index:1610;max-height:64px;overflow:visible;pointer-events:none}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-story-top .campaign-mission{display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;width:auto;max-width:67%;margin:0;padding:4px 8px;border:1px solid #4f8b9a;border-left:3px solid #72d9df;border-radius:5px;background:#09273be8;color:#c8e7ee;box-shadow:0 3px 6px #02132155}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-story-top .campaign-mission b,.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-story-top .campaign-mission span{font-size:9px;line-height:1.35;color:#cce4ed;white-space:normal}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29.has-story-radio .toybot-story-top .campaign-mission{display:none}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-story-top .campaign-radio.has-crew-v45{display:grid;grid-template-columns:36px minmax(0,1fr);gap:0 7px;height:58px;max-height:58px;overflow:hidden;padding:5px 8px;border:1px solid #668d9f;border-radius:7px;background:#0b263bef;box-shadow:0 3px 7px #04162366}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .campaign-radio.has-crew-v45 .crew-portrait-v45{width:35px;height:46px;border:0;border-radius:4px;background:#143b50}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .campaign-radio.has-crew-v45 .campaign-radio-label{height:13px;line-height:13px;font-size:8px;color:#eddaab;padding-right:27px}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .campaign-radio.has-crew-v45 p{font-size:10px;line-height:1.35;margin:1px 24px 0 0;padding:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;color:#d3e5ef}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .campaign-radio-label button{position:absolute;right:2px;top:4px;width:32px;height:40px;min-height:40px;font-size:20px;background:none;color:#b3d6e5;border:0}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29>.ops-mission-hud{top:103px;left:10px;right:auto;max-width:160px;font-size:9px;z-index:1500;background:#0a2539dc;border-color:#5a8799;padding:4px 7px;border-radius:4px}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29.has-story-radio>.ops-mission-hud{display:none}
+/* Surface runs from progress via existing authoritative motion clock. */
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .art-v28 .toybot-scene-background{filter:saturate(.76) brightness(.88) contrast(1.03)}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-road-world-v37{top:29%;opacity:.96;mask-image:linear-gradient(transparent,#000 15%,#000)}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-road-surface-v37{background-size:100% 256px;filter:none}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .road-divider-v37{background:#b7dae78c;filter:drop-shadow(0 0 2px #8bd5e522)}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .robot-boss-sprite.hostile-v31-body{filter:contrast(1.08) saturate(.93) drop-shadow(0 7px 4px #05182b66);image-rendering:auto}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-v28-body{image-rendering:auto;backface-visibility:hidden}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .is-reference-awakened .toybot-v28-body{filter:brightness(1.08) drop-shadow(0 0 3px #79e1ed88)}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .is-reference-awakened.class-heavy .toybot-v28-body{filter:brightness(1.08) drop-shadow(0 0 3px #b587ed88)}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .is-reference-awakened.class-blade .toybot-v28-body{filter:brightness(1.08) drop-shadow(0 0 3px #64daca88)}
+/* Gates retain exactly the same world anchor and threshold/contact timing. */
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .art-v28 .toybot-gate-door{filter:drop-shadow(0 5px 3px #04182777);background-size:400% 200%;isolation:isolate}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-gate-door .gate-symbol-v48{color:#e8ffff;font-size:25px;font-weight:900;text-shadow:0 0 3px #186e81;opacity:.9}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-gate-door.penalty .gate-symbol-v48{color:#fff0d9;text-shadow:0 0 3px #983d1d}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-gate-door>strong{color:#edfafe;font-size:11px;padding:3px 7px;border:1px solid #77a7b9;border-radius:5px;background:#0b2f45ec;text-shadow:0 1px #071a2c;box-shadow:0 2px 5px #04172b55}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-gate-door.penalty>strong{border-color:#d3a078;background:#573328ec;color:#fff2dc}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-gate-door .gate-sign-v46{display:none}
+/* Shared ivory hardware console, with real DOM readouts inside the empty displays. */
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-bottom{padding:0 0 env(safe-area-inset-bottom,0px);background:none;z-index:1700}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-cockpit{padding:0;--reactor-hue:0deg}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-heavy{--reactor-hue:80deg}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-console{height:auto;max-height:none;width:100%;aspect-ratio:3/1;margin:0;background-size:100% 100%;background-position:center;position:relative;isolation:isolate}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-screen{top:39%;height:45%;overflow:visible;text-align:center;z-index:2}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .screen-health{left:4.7%;width:29%}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .screen-squad{right:4.7%;width:29%}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-screen>small{display:block;line-height:10px;font-size:8px;color:#9db7ca;letter-spacing:.02em}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-screen strong{font-size:18px;line-height:22px;font-weight:800;color:#e3f4ff;text-shadow:0 1px 3px #041421}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-screen em{font-size:9px;color:#abcbdc}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .screen-squad strong:before{font-size:12px;padding-right:3px}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .screen-squad>span{position:static;display:block;font-size:8px;line-height:10px;white-space:nowrap;color:#a9c9da}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-hp-track{left:9%;top:35px;width:82%;height:5px;max-width:none;margin:0;border-radius:3px;background:#071e30;box-shadow:none;overflow:hidden}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-hp-track i:not(.cockpit-hp-trail){background:#73e8df;box-shadow:none}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .critical .cockpit-hp-track i:not(.cockpit-hp-trail){background:#ff8978}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-reactor{position:absolute;left:50%;top:8%;width:28%;height:auto;aspect-ratio:1;translate:-50% 0;border:0;padding:0;box-shadow:none;background:none;z-index:3;filter:none}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-reactor img{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:hue-rotate(var(--reactor-hue)) saturate(.75) brightness(.66);animation:none;transition:filter .2s}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-reactor.is-ready img{filter:hue-rotate(var(--reactor-hue)) drop-shadow(0 0 4px #73dce688) brightness(1.07)}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-reactor.is-active img{filter:hue-rotate(var(--reactor-hue)) drop-shadow(0 0 4px #73dce688) brightness(1.12);animation:none}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-reactor b,.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-reactor.is-ready b{position:absolute;left:50%;bottom:0;translate:-50% 0;font-size:10px;line-height:15px;padding:0 6px;opacity:1;color:#e6f7ff;background:#062438dd;border:1px solid #77abb977;border-radius:4px;z-index:5}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .reactor-meter{inset:9%;opacity:.8;mask:radial-gradient(transparent 89%,#000 91%);background:conic-gradient(#7ce7ee var(--core-fill),#234658 0);z-index:4}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-reactor:before,.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-reactor:after{display:none}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-steering-access>summary{right:4px;bottom:0;width:44px;height:26px;min-height:26px;border:1px solid #65879e77;border-radius:4px;background:#0a263bdd;line-height:1;color:#bddfe9;font-size:12px}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-readout.has-danger{bottom:95%;left:15%;right:15%;font-size:9px;padding:4px 7px;border:1px solid #b9896f;border-radius:6px;background:#3c2522ea;z-index:6}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-class-tactic{bottom:139px;right:10px;max-width:120px;font-size:8px;line-height:1.3;padding:3px 6px;background:#0c2d40cc;border:1px solid #497c8c77;z-index:1100}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .core-opportunity-badge-v42{max-width:70%;font-size:9px;line-height:1.35;bottom:100%;top:auto;left:50%;translate:-50% 0;z-index:8;background:#11384be8;border-color:#62a9b3;color:#d8fbf5}
+@media(max-width:350px){.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-top .toybot-brand,.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-top .toybot-reference-logo{width:67px;max-width:67px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29.has-cockpit .toybot-battle-banner.toybot-boss-top-hud{left:94px;right:110px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .boss-name-v48{font-size:8px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-boss-top-hud>small{font-size:6px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-screen strong{font-size:15px;line-height:19px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-screen>small{font-size:7px;line-height:9px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-hp-track{top:30px;height:4px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .screen-squad>span{font-size:7px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-class-tactic{bottom:113px}}
+@media(max-height:650px){.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-story-top{max-height:58px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .campaign-radio.has-crew-v45{height:51px;max-height:51px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .campaign-radio.has-crew-v45 p{-webkit-line-clamp:1}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-class-tactic{bottom:125px}}
+@media(prefers-reduced-motion:reduce){.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-reactor img{transition:none}}
+/* Reserve a real top band; actors, gates and projectiles share this same world rectangle. */
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-world{top:60px;bottom:18px;transform:none}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-top .toybot-brand{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:0;margin:0;padding:0;height:auto}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-top .toybot-brand>span{position:static;inset:auto;translate:none;transform:none;margin:2px 0 0;padding:0;line-height:10px;letter-spacing:0;white-space:nowrap}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29.has-cockpit .toybot-battle-banner.toybot-boss-top-hud{height:48px;min-height:48px;box-sizing:border-box}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-story-top .campaign-radio.has-crew-v45{box-sizing:border-box;height:48px;max-height:48px;padding:3px 7px;grid-template-columns:32px minmax(0,1fr)}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .campaign-radio.has-crew-v45 .crew-portrait-v45{height:40px;width:31px}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .campaign-radio.has-crew-v45 .campaign-radio-label{height:11px;line-height:11px}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .campaign-radio.has-crew-v45 p{line-height:12px;font-size:10px;margin-top:0}
+@media(max-height:650px){.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-story-top .campaign-radio.has-crew-v45{height:44px;max-height:44px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .campaign-radio.has-crew-v45 .crew-portrait-v45{height:36px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .campaign-radio.has-crew-v45 p{-webkit-line-clamp:1}}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-boss-top-hud>small{font-size:8px}
+.boss-meta-v48{font-size:7px;color:#9dbcca}
+@media(max-width:350px){.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .boss-meta-v48{display:none}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-boss-top-hud>small{font-size:8px}}
+@media(max-height:650px){.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-story-top .campaign-radio.has-crew-v45{height:48px;max-height:48px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .campaign-radio.has-crew-v45 p{-webkit-line-clamp:2}}
+@media(max-width:350px){.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .cockpit-screen>small{font-size:8px}}

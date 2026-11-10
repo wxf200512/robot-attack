@@ -2571,7 +2571,7 @@ test('V47 production showcase atlases provide eight distinct equipment cells for
 test('V48 active combat assets share the new three class art and retain all run, arena and blade phases',()=>{
  const art=load('combatArtV48'),visual=load('visualArt'),arena=load('arenaMotionV36'),blade=load('bladeMotionV35');
  const manifest=JSON.parse(fs.readFileSync(path.join(__dirname,'combat-art-v48.json'),'utf8'));assert.equal(manifest.length,16);assert.ok(manifest.reduce((n,r)=>n+r.bytes,0)<6*1048576);
- for(const kind of ['pulse','heavy','blade']){assert.equal(visual.RUN_ART[kind],art.COMBAT_RUN_V48[kind]);assert.equal(arena.ARENA_ART_V36[kind],art.COMBAT_ARENA_V48[kind]);
+ for(const kind of ['pulse','heavy','blade']){assert.equal(visual.RUN_ART[kind],load('runArtV52').COMBAT_RUN_V52[kind]);assert.equal(arena.ARENA_ART_V36[kind],art.COMBAT_ARENA_V48[kind]);
   for(const clip of ['run','arena']){const row=manifest.find(r=>r.file==='combat-'+clip+'-'+kind+'-v48.webp');assert.equal(row.columns,8);assert.equal(row.frames,clip==='run'?32:48);assert.equal(row.distinctFrames,row.frames);const info=imageInfo(fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',row.file)));assert.equal(info.width,1536);assert.equal(info.height,clip==='run'?768:1152);assert.equal(info.alpha,true);}
  }
  assert.equal(blade.BLADE_ATTACK_V35,art.COMBAT_BLADE_V48);assert.equal(load('art').GATE_ART,art.COMBAT_UI_V48.gate);assert.equal(load('roadMotionV37').ROAD_TILES_V37.length,5);assert.equal(new Set(art.COMBAT_ROADS_V48).size,5);
@@ -2583,7 +2583,7 @@ test('V48 scene repaint uses independent new art for each class without changing
   const s={...(arena?battle():quietRoad(0)),mechClass:kind,bots:3,fireCooldown:0,weaponLevel:0};const before=JSON.stringify(s);
   const body={style:{},dataset:{}},node={style:{},querySelector:()=>body},root={style:{setProperty(){}}};
   renderer.paintMotion(root,s,.5,[{node,kind:'robot',id:0}],false,{width:390,height:750});
-  assert.ok(body.style.backgroundImage.includes('combat-'+(arena?'arena-':'run-')+kind+'-v48.webp'));assert.ok(!body.dataset.mechAction.includes(arena?'run':'side-step'));assert.equal(JSON.stringify(s),before);
+  assert.ok(body.style.backgroundImage.includes('combat-'+(arena?'arena-':'run-')+kind+(arena?'-v48.webp':'-v52.webp')));assert.ok(!body.dataset.mechAction.includes(arena?'run':'side-step'));assert.equal(JSON.stringify(s),before);
  }
 });
 
@@ -2611,26 +2611,12 @@ test('V50 slow-road recovery slows stride progression while squad members keep d
 });
 
 
-test('V51 running has a continuous forward push and backward recovery on the distance clock',()=>{
- const stride=load('runStrideV50');
- for(const mechClass of ['pulse','heavy','blade']){
-  const s={...quietRoad(0),mechClass,progress:10},before=JSON.stringify(s),cycle=sim.RUN_SPEED*stride.STRIDE_TICKS_V50[mechClass];
-  const poses=Array.from({length:64},(_,i)=>stride.roadWeightShiftV51({...s,progress:cycle*i/64}));
-  assert.ok(Math.min(...poses.map(p=>p.forward))<-1.9);assert.ok(Math.max(...poses.map(p=>p.forward))>1.5);
-  assert.ok(poses.every(p=>Math.abs(p.forward)<4.3&&p.pitch>=1&&p.pitch<=6&&p.contact>=0&&p.contact<=.28));
-  const first=stride.roadWeightShiftV51(s,.35,1),wrapped=stride.roadWeightShiftV51({...s,progress:s.progress+cycle},.35,1);
-  assert.ok(Math.abs(first.forward-wrapped.forward)<1e-9);assert.ok(Math.abs(first.pitch-wrapped.pitch)<1e-9);
-  assert.deepEqual(first,stride.roadWeightShiftV51({...s,status:'paused',resumeStatus:'running'},.35,1));
-  assert.deepEqual(first,stride.roadWeightShiftV51({...s,roadTicks:99999},.35,1));
-  for(const stopped of [{...s,status:'battle'},{...s,status:'boss-intro'}])assert.deepEqual(stride.roadWeightShiftV51(stopped,.3),{forward:0,pitch:0,contact:0,dustX:0});
-  assert.deepEqual(stride.roadWeightShiftV51(s,.3,0,true),{forward:0,pitch:0,contact:0,dustX:0});assert.equal(JSON.stringify(s),before);
- }
-});
 
-test('V51 rendered weight shift is single-body and clears completely for boss combat and low motion',()=>{
- const body={style:{},dataset:{}},dust={style:{}},node={style:{},dataset:{},querySelector:selector=>selector==='.toybot-v28-body'?body:selector==='.toybot-v28-footdust'?dust:null},root={style:{setProperty(){}}};
- const entries=[{node,kind:'robot',id:0}],s={...quietRoad(0),progress:10,fireCooldown:0},before=JSON.stringify(s);
- motion.paintMotion(root,s,.3,entries);assert.match(body.style.transform,/rotateX/);assert.match(body.style.backgroundImage,/combat-run-pulse-v48/);assert.ok(Number(dust.style.opacity)>=0&&Number(dust.style.opacity)<=.28);
- motion.paintMotion(root,{...battle(),fireCooldown:0},.3,entries);assert.equal(body.style.transform,'none');assert.equal(dust.style.opacity,'0');assert.match(body.style.backgroundImage,/combat-arena-pulse-v48/);
- motion.paintMotion(root,s,.3,entries,true);assert.equal(body.style.transform,'none');assert.equal(dust.style.opacity,'0');assert.equal(JSON.stringify(s),before);
+test('V52 actual run artwork has separate authored leg phases and exact reproducible transparent atlases',()=>{
+ const rows=JSON.parse(fs.readFileSync(path.join(__dirname,'gait-v52.json'),'utf8'));
+ for(const row of rows){const data=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/combat-run-'+row.kind+'-v52.webp'));const info=imageInfo(data);assert.equal(info.width,1536);assert.equal(info.height,768);assert.equal(info.alpha,true);assert.equal(require('node:crypto').createHash('sha256').update(data).digest('hex'),row.sha256);assert.equal(row.authoredPhases,8);assert.ok(row.footDepthDifference.filter(x=>x>3).length>=2);assert.ok(row.footDepthDifference.filter(x=>x<-3).length>=2);assert.deepEqual(row.frameMap,Array.from({length:16},(_,i)=>i>>1));assert.ok(fs.existsSync(path.join(__dirname,'art-source/run-legs-'+row.kind+'-v52.png')));}
+});
+test('V52 keeps the upper body still, does not add hop transforms and clears for boss combat',()=>{
+ const body={style:{},dataset:{}},dust={style:{}},node={style:{},dataset:{},querySelector:selector=>selector==='.toybot-v28-body'?body:selector==='.toybot-v28-footdust'?dust:null},root={style:{setProperty(){}}},entries=[{node,kind:'robot',id:0}];
+ for(const mechClass of ['pulse','heavy','blade']){const s={...quietRoad(0),mechClass,fireCooldown:0,progress:10},before=JSON.stringify(s),positions=new Set();for(let i=0;i<64;i++){motion.paintMotion(root,{...s,progress:i*sim.RUN_SPEED/8},.3,entries);assert.equal(body.style.transform,'none');assert.equal(body.style.translate,'0 0px');assert.equal(dust.style.opacity,'0');positions.add(body.style.backgroundPosition);}assert.ok(positions.size>4);assert.match(body.style.backgroundImage,/-v52/);motion.paintMotion(root,{...battle(),mechClass,fireCooldown:0},.3,entries);assert.match(body.style.backgroundImage,/combat-arena/);assert.equal(body.style.transform,'none');assert.equal(JSON.stringify(s),before);}
 });

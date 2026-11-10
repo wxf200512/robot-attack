@@ -1,9 +1,9 @@
-import { COMBAT_RUN_V48 } from './combatArtV48';
+import { COMBAT_RUN_V52 } from './runArtV52';
 import type { GameState } from './simulation';
 export { motionTier } from './animationTypes';
 export { sampleMechMotion as artPose } from './animationModules';
 const ROOT='/games/toybot-breakout/optimized/';
-export const RUN_ART=COMBAT_RUN_V48;
+export const RUN_ART=COMBAT_RUN_V52;
 export const MOTION_ART={pulse:ROOT+'mech-pulse-motion-v30.webp',heavy:ROOT+'mech-heavy-motion-v30.webp',blade:ROOT+'mech-blade-motion-v30.webp'};
 export const BOSS_EVOLUTION_ART=ROOT+'boss-evolution-v28.webp';
 export const MATERIAL_ART=ROOT+'material-v28.webp';

@@ -2512,7 +2512,7 @@ test('V44 game restart soak resets transient effects and preserves only the inte
 
 test('V44 runtime artwork audit covers query strings and rejects unexpanded JSX asset roots',()=>{
  const output=require('node:child_process').execFileSync(process.execPath,[path.join(__dirname,'audit-assets-v43.cjs')],{encoding:'utf8'});assert.equal(JSON.parse(output).missing,0);
- const source=fs.readFileSync(path.join(__dirname,'index.tsx'),'utf8');assert.ok(!source.includes("optimized/upgrade-"));assert.ok(source.includes("<OperationSprite cell={upgrade.id"));
+ const source=fs.readFileSync(path.join(__dirname,'index.tsx'),'utf8');assert.ok(!source.includes("optimized/upgrade-"));assert.ok(source.includes("equipmentIconV47(upgrade.id,garage.mechClass)"));
 });
 test('V44 cannon-disabled branches are replaced before showing a new attack warning',()=>{
  const ops=load('operations');for(let level=0;level<5;level++){const base={...battle(level),bossCycle:1,bossStep:'recovery',bossStepTicks:100,fireCooldown:1000};base.ops={...base.ops,parts:ops.makeBossParts(base).map(p=>p.kind==='cannon'?{...p,hp:0}:p)};const next=tick(base);assert.notEqual(next.bossAttack,['smelt','hive-link','lockdown','polarity','judgement'][level]);}
@@ -2556,4 +2556,14 @@ test('V46 retired deployment art stays absent, preserves originals and exact his
  assert.equal(bytes,retiredV46.removedRuntimeBytes);assert.ok(bytes>10*1048576);
  const audit=JSON.parse(require('node:child_process').execFileSync(process.execPath,[path.join(__dirname,'audit-assets-v43.cjs'),'--list'],{encoding:'utf8'}));
  assert.equal(audit.missing,0);for(const row of retiredV46.files)assert.ok(!audit.urls.includes('/games/toybot-breakout/optimized/'+row.file));
+});
+
+test('V47 production showcase atlases provide eight distinct equipment cells for all three menu classes',()=>{
+ const art=load('interfaceArtV47');const positions=new Set();
+ for(let mask=0;mask<8;mask++)positions.add(art.showcaseCellV47(!!(mask&1),!!(mask&2),!!(mask&4)));
+ assert.equal(positions.size,8);assert.equal(art.showcaseCellV47(false,false,false),'0% 0%');assert.equal(art.showcaseCellV47(true,true,true),'100% 100%');
+ for(const kind of ['pulse','heavy','blade']){const file=path.resolve(__dirname,'../../../public',art.SHOWCASE_V47[kind].slice(1));const info=imageInfo(fs.readFileSync(file));assert.equal(info.width,1536);assert.equal(info.height,768);assert.equal(info.alpha,true);assert.ok(fs.existsSync(path.join(__dirname,'art-source','interface-'+kind+'-v47.png')));}
+ assert.equal(art.equipmentIconV47('weapon','pulse'),0);assert.equal(art.equipmentIconV47('weapon','heavy'),1);assert.equal(art.equipmentIconV47('weapon','blade'),2);assert.equal(art.equipmentIconV47('armor','blade'),3);assert.equal(art.equipmentIconV47('core','heavy'),4);
+ for(const [key,url]of Object.entries(art.INTERFACE_V47)){const b=fs.readFileSync(path.resolve(__dirname,'../../../public',url.slice(1)));if(key==='hangar'){assert.equal(b[0],255);assert.equal(b[1],216);}else{const info=imageInfo(b);assert.ok(info.width>=512);assert.equal(info.alpha,true);}}
+ const manifest=JSON.parse(fs.readFileSync(path.join(__dirname,'interface-art-v47.json'),'utf8'));assert.equal(manifest.length,9);assert.ok(manifest.reduce((n,row)=>n+row.bytes,0)<3*1048576);
 });

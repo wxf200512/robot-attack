@@ -1,0 +1,58 @@
+[
+  {
+    "file": "showcase-pulse-v47.webp",
+    "width": 1536,
+    "height": 768,
+    "frames": 8,
+    "bytes": 459794
+  },
+  {
+    "file": "showcase-heavy-v47.webp",
+    "width": 1536,
+    "height": 768,
+    "frames": 8,
+    "bytes": 397308
+  },
+  {
+    "file": "showcase-blade-v47.webp",
+    "width": 1536,
+    "height": 768,
+    "frames": 8,
+    "bytes": 612628
+  },
+  {
+    "file": "interface-hangar-v47.jpg",
+    "bytes": 172389
+  },
+  {
+    "file": "interface-gold-v47.webp",
+    "width": 512,
+    "height": 512,
+    "bytes": 268392
+  },
+  {
+    "file": "interface-steel-v47.webp",
+    "width": 512,
+    "height": 512,
+    "bytes": 235606
+  },
+  {
+    "file": "interface-panel-v47.webp",
+    "width": 512,
+    "height": 512,
+    "bytes": 225044
+  },
+  {
+    "file": "interface-selected-v47.webp",
+    "width": 512,
+    "height": 512,
+    "bytes": 236600
+  },
+  {
+    "file": "interface-equipment-v47.webp",
+    "width": 768,
+    "height": 512,
+    "frames": 6,
+    "bytes": 132866
+  }
+]

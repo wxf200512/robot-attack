@@ -47,7 +47,7 @@ export default function CampaignStory({game,dispatch}:{game:CampaignState;dispat
  }}>
   <header><div><small>HOMECOMING / CHAPTER 0{game.levelIndex+1}</small><strong>{chapter.title}</strong></div><button type="button" onClick={()=>dispatch({type:'STORY_SKIP'})}>跳过演出 ›</button></header>
   <div className="campaign-scroll" ref={body} tabIndex={0} aria-label="剧情分镜与行动选择">
-   <div className={'campaign-film '+(scene.kind==='confrontation'?'is-guardian':'')} style={{aspectRatio:CHAPTER_FILM_RATIOS[game.levelIndex],width:`min(100%,${(scene.step===1?160:240)*CHAPTER_FILM_RATIOS[game.levelIndex]}px)`}} aria-label={scene.kind==='aftermath'?'城市灯光与守护者回收的连续分镜':'归航小队的玩具城行动分镜'} role="img">
+   <div className={'campaign-film '+(scene.kind==='confrontation'?'is-guardian':'')+(scene.kind==='briefing'&&scene.step===1?' is-choice-v47':'')} style={{aspectRatio:CHAPTER_FILM_RATIOS[game.levelIndex],width:`min(100%,${(scene.step===1?160:240)*CHAPTER_FILM_RATIOS[game.levelIndex]}px)`}} aria-label={scene.kind==='aftermath'?'城市灯光与守护者回收的连续分镜':'归航小队的玩具城行动分镜'} role="img">
     {!artFailed&&<><div className="campaign-film-frame" style={{backgroundImage:`url(${CHAPTER_FILMS[game.levelIndex]})`,backgroundPosition:`0% ${Math.floor(frame/2)*50}%`}}/><div className="campaign-film-frame campaign-film-reveal" style={{backgroundImage:`url(${CHAPTER_FILMS[game.levelIndex]})`,backgroundPosition:`100% ${Math.floor(frame/2)*50}%`,opacity:frame%2}}/></>}
     {artFailed&&<div className="campaign-film-unavailable">通信画面暂不可用<br/>文字与交互仍可继续</div>}
     <span className="campaign-film-tag">{scene.kind==='briefing'?'现场接入':scene.kind==='confrontation'?BOSS_NAMES[game.levelIndex]:'城市恢复记录'} <i/></span>

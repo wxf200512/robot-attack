@@ -1,3 +1,5 @@
+> V57源码增量：局部页面与战斗展示优化、关卡递增难度，固定V56标签保留。交付源码需包含本轮新增difficultyV57.ts、presentationV57.ts、polishV57.css及其引用。V55历史ZIP不包含V56/V57，提测时应从选定最终提交重建并核验；见[POLISH_V57.md](./POLISH_V57.md)。
+
 # 玩具城突围集成交接
 
 源仓库：https://github.com/wxf200512/robot-attack.git；开发分支：game/toybot-breakout。源码提交以最终提测包release-report.json的sourceCommit为准。只迁移src/games/toybot-breakout/与public/games/toybot-breakout/两个目录；原画、加工脚本、提示词与测试保留在源码目录，不放入运行ZIP。

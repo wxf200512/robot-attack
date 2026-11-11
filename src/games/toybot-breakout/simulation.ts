@@ -1,3 +1,4 @@
+import { difficultyV57 } from './difficultyV57';
 import { attackSlotsV44, upgradeDeltaV44 } from './combatV44';
 import { bossMoveV43, eliteRearmV43, recoveryScaleV43 } from './encounterV43';
 import { newFinalPassV42, type FinalPassV42 } from './polishV42';
@@ -176,7 +177,7 @@ export const bossPhase = (state: GameState): 'shield' | 'weak' | 'warning' | 'at
 };
 export const bossEnrage = (s: GameState) => s.battleTime < BOSS_ENRAGE_TICKS ? 0 : Math.min(3, 1 + Math.floor((s.battleTime - BOSS_ENRAGE_TICKS) / 450));
 export const isRush = (s: GameState) => s.bossAttack === 'rush' || s.bossAttack === 'sweep';
-export const bossRecoveryTicks=(s:GameState)=>Math.round((s.bossCycle===0?BOSS_RECOVERY_TICKS:Math.max(s.bossAttack in SPECIAL_LABELS?24:BOSS_RECOVERY_TICKS,24+s.levelIndex*2))*recoveryScaleV43(s.bossStage,s.bossCycle)*(s.ops.protocol==='overdrive'?.8:1));
+export const bossRecoveryTicks=(s:GameState)=>Math.round((s.bossCycle===0?BOSS_RECOVERY_TICKS:difficultyV57(s.levelIndex).bossRecovery)*recoveryScaleV43(s.bossStage,s.bossCycle)*(s.ops.protocol==='overdrive'?.8:1));
 export const bossDamageLanes = (s: GameState) => s.levelIndex===4?[0,1,2]:s.bossMoveTicks > 0 ? [] : s.bossStep === 'rush'
   ? (s.bossStepTicks >= 4 && s.bossStepTicks <= 16 ? s.bossAttackLanes : []) : [s.battleLane];
 export const attackRangeFor = (s:GameState) => s.mechClass==='blade'?Math.max(s.burstTicks>0?coreSkill(s.mechClass).range:mechSpec(s.mechClass).range,s.ops.counterShots>0||s.report.bladeReady?11:0):mechSpec(s.mechClass).range;
@@ -449,7 +450,7 @@ const detonateCapturedV42=(s:GameState,shot:PendingShot,anchor:{x:number;y:numbe
 const flightTicks = (originY: number, destinationY: number) => Math.max(2, Math.min(8, Math.ceil(Math.abs(originY - destinationY) / 7)));
 
 export const bossAttackLabel = (s: GameState) => ({ ...SPECIAL_LABELS, cannon: '轨道炮击', burst: '蜂刺连射', rush: s.levelIndex === 2 ? '盾阵冲撞' : '重锤突袭', sweep: '帝皇横扫', mortar: '熔岩封路', swarm: '蜂群出击', bunker: '重盾封锁', storm: '风暴巡航', crossfire: '星核交叉炮' })[s.bossAttack];
-export const bossWarningTicks = (s: GameState) => s.bossAttack in SPECIAL_LABELS ? (s.bossAttack === 'judgement' || s.bossAttack === 'polarity' ? 16 : 20) : isRush(s) ? RUSH_WARNING_TICKS : s.bossAttack === 'mortar' || s.bossAttack === 'bunker' ? 16 : BOSS_WARNING_TICKS;
+export const bossWarningTicks = (s: GameState) => Math.max(12,(s.bossAttack in SPECIAL_LABELS ? (s.bossAttack === 'judgement' || s.bossAttack === 'polarity' ? 16 : 20) : isRush(s) ? RUSH_WARNING_TICKS : s.bossAttack === 'mortar' || s.bossAttack === 'bunker' ? 16 : BOSS_WARNING_TICKS)-(s.bossCycle===0?0:Math.floor(s.levelIndex/2)));
 const sequentialAttack = (s: GameState) => ['storm','crossfire','vents','polarity','judgement'].includes(s.bossAttack);
 const sequenceLength = (s: GameState) => s.bossAttack === 'judgement' ? 2 : s.bossAttack === 'vents' || s.bossAttack === 'polarity' ? (s.bossStage === 2 ? 2 : 1) : s.bossAttack === 'storm' ? (s.bossStage === 2 ? 3 : 2) : (s.bossStage === 2 ? 1 : 0);
 const beginWarning = (s: GameState) => {
@@ -517,13 +518,14 @@ const queueEnemyAttack = (s: GameState, source: EnemyAttack['source'], sourceId:
   const key=source+':'+sourceId;if(s.enemyAttackSources.includes(key))return false;
   const profile=kind in ELITE_ATTACKS?ELITE_ATTACKS[kind as ElitePattern]:null;
   const first=source==='hazard'&&!!LESSONS_V41[kind]&&!s.flow.lessons.includes(kind),introductory=first||s.flow.introSources.includes(key);
-  const warning=(profile?.warning??(kind==='sniper-shot'||kind==='bombard'?18:kind==='charge'?10:12))+(introductory?8:0);
+  const difficulty=difficultyV57(s.levelIndex,s.sortie?.slot);
+  const warning=Math.max(10,(profile?.warning??(kind==='sniper-shot'||kind==='bombard'?18:kind==='charge'?10:12))-(introductory?0:difficulty.warningReduction))+(introductory?8:0);
   const damage=profile?.damage??(kind==='sniper-shot'?13:kind==='bombard'?12:kind==='charge'?8:kind==='drone-burst'?7:kind==='shockwave'?12:14);
-  const proposals:EnemyAttack[]=lanes.map((targetLane,slot)=>({id:s.enemyAttackSequence+slot+1,source,sourceId,kind,lane:targetLane,fromLane,fromY,fromX:source==='hazard'?roadEnemyX(s,sourceId):laneXAt(fromLane,fromY),phase:'warning',ticks:warning+(kind==='royal-salvo'?slot*5:0),duration:warning+(kind==='royal-salvo'?slot*5:0),damage:damage*(introductory?.8:1)*(source==='hazard'&&commanderFor(s,sourceId)>=0?1.25:1),shotsRemaining:profile?.shots??(kind==='drone-burst'?2:1)}));
+  const proposals:EnemyAttack[]=lanes.map((targetLane,slot)=>({id:s.enemyAttackSequence+slot+1,source,sourceId,kind,lane:targetLane,fromLane,fromY,fromX:source==='hazard'?roadEnemyX(s,sourceId):laneXAt(fromLane,fromY),phase:'warning',ticks:warning+(kind==='royal-salvo'?slot*5:0),duration:warning+(kind==='royal-salvo'?slot*5:0),damage:damage*difficulty.damageScale*(introductory?.8:1)*(source==='hazard'&&commanderFor(s,sourceId)>=0?1.25:1),shotsRemaining:profile?.shots??(kind==='drone-burst'?2:1)}));
   if(!safeToQueueV42(s,proposals,s.status==='battle'&&s.bossStep==='warning'?Math.max(0,bossWarningTicks(s)-s.bossStepTicks):0))return false;
   s.enemyAttackSources.push(key);s.enemyAttackSequence+=proposals.length;s.enemyAttacks.push(...proposals);
   if(first){s.flow.lessons.push(kind);s.flow.introSources.push(key);s.flow.lastLesson=kind;s.flow.introTicks=50;}
-  if(source==='hazard'&&getLevel(s.levelIndex,s.sortie?.key).hazards[sourceId]?.elite)s.roadCooldowns[sourceId]=eliteRearmV43(profile?.rearm??60);
+  if(source==='hazard'&&getLevel(s.levelIndex,s.sortie?.key).hazards[sourceId]?.elite)s.roadCooldowns[sourceId]=Math.max(32,Math.round(eliteRearmV43(profile?.rearm??60)*difficulty.rearmScale));
   return true;
 };
 const advanceEnemyAttacks = (s: GameState) => {

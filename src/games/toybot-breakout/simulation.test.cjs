@@ -72,7 +72,7 @@ test('wave recipes keep weak lead ranks, stronger rear ranks and a final supply 
  for(const l of levels.LEVELS){for(let wave=0;wave<3;wave++){const pack=l.hazards.filter(h=>h.horde&&h.wave===wave&&!h.eliteRole);assert.ok(pack.find(h=>h.slot<6).hp<=pack.at(-1).hp);}assert.ok(Math.max(...l.hazards.filter(h=>h.horde).map(h=>h.progress))<l.encounters[0].progress-10);}
 });
 test('later boss recovery offers a readable stationary counter window and honors overdrive',()=>{
- const s={...battle(4),bossCycle:3};assert.equal(sim.bossRecoveryTicks(s),26);assert.ok(sim.bossRecoveryTicks({...s,ops:{...s.ops,protocol:'overdrive'}})<26);
+ const s={...battle(4),bossCycle:3};assert.equal(sim.bossRecoveryTicks(s),21);assert.ok(sim.bossRecoveryTicks({...s,ops:{...s.ops,protocol:'overdrive'}})<21);
  let n=tick(s);for(let i=0;i<6;i++)n=tick(n);assert.equal(n.bossMoveTicks,0);const lane=n.battleLane;n=tick(n);assert.equal(n.battleLane,lane);assert.equal(n.bossStep,'recovery');
 });
 test('debrief uses actual remaining boss durability and dominant damage cause',()=>{
@@ -516,7 +516,7 @@ test('destroying a charging drone cancels its volley; an already launched projec
 });
 test('roadblock locks and pursues a lane that can be dodged or interrupted', () => {
   const s=supportEnemy('barrier');assert.equal(s.enemyAttacks[0].kind,'pounce');assert.equal(s.bossStep,'flight');
-  let hit=s;for(let i=0;i<19;i++){hit=tick(hit);assert.equal(hit.playerHp,100);}hit=tick(hit);assert.equal(hit.playerHp,86);assert.equal(hit.enemyAttacks.length,0);
+  let hit=s;for(let i=0;i<s.enemyAttacks[0].ticks+7;i++){hit=tick(hit);assert.equal(hit.playerHp,100);}hit=tick(hit);assert.equal(hit.playerHp,85.44);assert.equal(hit.enemyAttacks.length,0);
   let dodge=sim.gameReducer(s,{type:'MOVE_LANE',lane:2});for(let i=0;i<18;i++)dodge=tick(dodge);assert.equal(dodge.playerHp,100);
   const destroyed=tick({...s,pendingShots:[incoming(s,{target:'threat',targetIndex:888,lane:1,damage:999})]});assert.equal(destroyed.enemyAttacks.length,0);
 });
@@ -524,8 +524,8 @@ test('small robot visibly pounces along the locked player lane, deals one hit an
   const s=supportEnemy('minion');assert.equal(s.enemyAttacks[0].kind,'pounce');let hit=s;
   for(let i=0;i<12;i++)hit=tick(hit);
   const from=sim.enemyThreatY(hit,hit.threats[0]);assert.equal(hit.enemyAttacks[0].phase,'flight');hit=tick(hit);assert.ok(sim.enemyThreatY(hit,hit.threats[0])>from);
-  for(let i=0;i<7;i++)hit=tick(hit);assert.equal(hit.playerHp,86);assert.equal(hit.threats[0].hp,0);const seq=hit.damageSequence;
-  for(let i=0;i<8;i++)hit=tick(hit);assert.equal(hit.playerHp,86);assert.equal(hit.damageSequence,seq);
+  for(let i=0;i<7;i++)hit=tick(hit);assert.equal(hit.playerHp,85.44);assert.equal(hit.threats[0].hp,0);const seq=hit.damageSequence;
+  for(let i=0;i<8;i++)hit=tick(hit);assert.equal(hit.playerHp,85.44);assert.equal(hit.damageSequence,seq);
   let dodge=sim.gameReducer(s,{type:'MOVE_LANE',lane:2});for(let i=0;i<18;i++)dodge=tick(dodge);assert.equal(dodge.playerHp,100);
 });
 test('extra enemy attacks freeze on pause and are cleared on arena entry, victory or lethal damage', () => {
@@ -912,21 +912,21 @@ test('road encounter density grows by sector and introduces specialists graduall
 
 test('sniper locks its warning, can be interrupted, and launched fire survives its source', () => {
   const {state,index}=roadSpecialist('sniper');let s=tick(state);
-  assert.equal(s.enemyAttacks[0].kind,'sniper-shot');assert.equal(s.enemyAttacks[0].ticks,18);
+  assert.equal(s.enemyAttacks[0].kind,'sniper-shot');assert.equal(s.enemyAttacks[0].ticks,15);
   const lane=s.enemyAttacks[0].lane;
   const interrupted=tick({...s,hazardHps:s.hazardHps.map(()=>0)});assert.equal(interrupted.enemyAttacks.length,0);
   let dodge=sim.gameReducer(s,{type:'MOVE_LANE',lane:(lane+1)%3});
   for(let i=0;i<24;i++)dodge=tick(dodge);assert.equal(dodge.playerHp,100);
-  for(let i=0;i<18;i++)s=tick(s);
+  for(let i=0;i<15;i++)s=tick(s);
   assert.equal(s.enemyAttacks[0].phase,'flight');
   s={...s,hazardHps:s.hazardHps.map(()=>0)};
   for(let i=0;i<6;i++)s=tick(s);
-  assert.equal(s.playerHp,87);assert.equal(s.enemyAttacks.length,0);assert.equal(s.enemyAttackSources.filter(k=>k==='hazard:'+index).length,1);
+  assert.equal(s.playerHp,84.92);assert.equal(s.enemyAttacks.length,0);assert.equal(s.enemyAttackSources.filter(k=>k==='hazard:'+index).length,1);
 });
 
 test('bomber advertises two fixed lanes with one safe gap and cannot release after interruption', () => {
   const {state}=roadSpecialist('bomber');let s=tick(state);
-  assert.equal(s.enemyAttacks.length,2);assert.ok(s.enemyAttacks.every(a=>a.kind==='bombard'&&a.phase==='warning'&&a.ticks===18));
+  assert.equal(s.enemyAttacks.length,2);assert.ok(s.enemyAttacks.every(a=>a.kind==='bombard'&&a.phase==='warning'&&a.ticks===15));
   const lanes=s.enemyAttacks.map(a=>a.lane),safe=[0,1,2].find(l=>!lanes.includes(l));assert.notEqual(safe,undefined);
   const interrupted=tick({...s,hazardHps:s.hazardHps.map(()=>0)});assert.equal(interrupted.enemyAttacks.length,0);
   s=sim.gameReducer(s,{type:'MOVE_LANE',lane:safe});
@@ -1661,10 +1661,10 @@ test('every sector has three named elite encounters and three extra themed swarm
 test('new elite patterns have fixed readable telegraphs, interruptible charges and pause-safe cooldowns',()=>{
  for(const [pattern,profile]of Object.entries(frontline.ELITE_ATTACKS)){
   const {state,index}=sectorElite(pattern);const old=JSON.stringify(state),s=tick(state);
-  assert.equal(JSON.stringify(state),old);assert.ok(s.enemyAttacks.length>0);assert.ok(s.enemyAttacks.every(a=>a.kind===pattern&&a.phase==='warning'&&a.ticks>=profile.warning));
+  assert.equal(JSON.stringify(state),old);assert.ok(s.enemyAttacks.length>0);assert.ok(s.enemyAttacks.every(a=>a.kind===pattern&&a.phase==='warning'&&a.ticks>=Math.max(10,profile.warning-load('difficultyV57').difficultyV57(s.levelIndex).warningReduction)));
   const pinned=s.enemyAttacks.map(a=>a.lane),moved=tick({...s,lane:(state.lane+1)%3});assert.deepEqual(moved.enemyAttacks.map(a=>a.lane),pinned);
   assert.equal(tick({...s,hazardHps:s.hazardHps.map(()=>-1)}).enemyAttacks.length,0);
-  assert.equal(s.roadCooldowns[index],load('encounterV43').eliteRearmV43(profile.rearm));const paused=sim.gameReducer(s,{type:'PAUSE'});assert.equal(tick(paused),paused);
+  assert.equal(s.roadCooldowns[index],Math.max(32,Math.round(load('encounterV43').eliteRearmV43(profile.rearm)*load('difficultyV57').difficultyV57(s.levelIndex).rearmScale)));const paused=sim.gameReducer(s,{type:'PAUSE'});assert.equal(tick(paused),paused);
  }
 });
 test('mines and storm orbs become real lingering fields after travel and survive a destroyed launcher',()=>{
@@ -2325,8 +2325,8 @@ test('V41 successful dodge and parry preserve combo with a cooldown and never in
  const parry={...battle(),combo:4,comboTicks:2};parry.tactics.parryTicks=10;sim.applySquadHit(parry,10);assert.equal(parry.comboTicks,35);assert.equal(parry.flow.defenseSaves,1);
 });
 test('V41 new specialist gets one isolated extended telegraph; learned attacks keep normal timing',()=>{
- const {state,index}=roadSpecialist('sniper');const fresh={...state,flow:flow41.newFlowV41()};const n=tick(fresh);const warning=n.enemyAttacks.find(a=>a.sourceId===index);assert.ok(warning);assert.equal(warning.duration,26);assert.equal(warning.damage,13*.8);assert.ok(n.flow.lessons.includes('sniper-shot'));assert.equal(n.flow.lastLesson,'sniper-shot');assert.equal(fresh.flow.lessons.length,0);
- const experienced=tick({...state,flow:flow41.newFlowV41(flow41.LESSON_KEYS_V41)});assert.equal(experienced.enemyAttacks.find(a=>a.sourceId===index).duration,18);assert.equal(experienced.flow.introTicks,0);
+ const {state,index}=roadSpecialist('sniper');const fresh={...state,flow:flow41.newFlowV41()};const n=tick(fresh);const warning=n.enemyAttacks.find(a=>a.sourceId===index);assert.ok(warning);assert.equal(warning.duration,26);assert.equal(warning.damage,13*1.16*.8);assert.ok(n.flow.lessons.includes('sniper-shot'));assert.equal(n.flow.lastLesson,'sniper-shot');assert.equal(fresh.flow.lessons.length,0);
+ const experienced=tick({...state,flow:flow41.newFlowV41(flow41.LESSON_KEYS_V41)});assert.equal(experienced.enemyAttacks.find(a=>a.sourceId===index).duration,15);assert.equal(experienced.flow.introTicks,0);
  const paused=sim.gameReducer(n,{type:'PAUSE'});assert.equal(tick(paused).flow.introTicks,n.flow.introTicks);
 });
 test('V41 lesson saves migrate veterans, preserve explicit new progress and filter unknown keys',()=>{
@@ -2658,4 +2658,54 @@ test('V56 smaller equal-sized squad members preserve each captured projectile or
    assert.ok(Math.abs(camera.projectedMuzzleX(shot)-xs[i])<1e-9);
   }
  }
+});
+
+test('V57 campaign pressure is deterministic and nondecreasing across districts and preludes',()=>{
+ const difficulty=load('difficultyV57').difficultyV57;let previous=-1,damage=0;
+ for(let sector=0;sector<5;sector++)for(let slot=0;slot<6;slot++){
+  const p=difficulty(sector,slot===5?undefined:slot);
+  assert.ok(p.rank>=previous);assert.ok(p.damageScale>=damage);assert.ok(p.warningReduction<=3);assert.ok(p.rearmScale>=.875);
+  assert.deepEqual(p,difficulty(sector,slot===5?undefined:slot));previous=p.rank;damage=p.damageScale;
+ }
+ assert.equal(difficulty(0,0).damageScale,1);assert.equal(difficulty(4).damageScale,1.16);
+ const hp=load('playability').BOSS_BASE_HEALTH;for(let i=1;i<5;i++)assert.ok(hp[i]>hp[i-1]);
+ for(let sector=1;sector<5;sector++){
+  const current={...battle(sector),bossCycle:2},before={...battle(sector-1),bossCycle:2};
+  assert.ok(sim.bossRecoveryTicks(current)<=sim.bossRecoveryTicks(before));
+  assert.ok(sim.bossRecoveryTicks({...current,bossStage:2})>=17);
+ }
+});
+
+test('V57 later preludes add specialists and elite durability without inflating basic horde HP',()=>{
+ for(let sector=0;sector<5;sector++){
+  const first=levels.getLevel(sector,sector+':0'),last=levels.getLevel(sector,sector+':4');
+  assert.ok(last.hazards.filter(h=>h.kind!=='swarm').length>first.hazards.filter(h=>h.kind!=='swarm').length);
+  assert.ok(last.hazards.length>first.hazards.length);
+  for(const h of last.hazards.filter(h=>h.horde&&!h.elite))assert.equal(h.hp,1+Math.floor(sector/2));
+  const elite=last.hazards.find(h=>h.elite);assert.ok(elite.hp>12+sector*2+4);
+ }
+});
+
+test('V57 guardian presentation stays hidden until approach and never appears in short roads',()=>{
+ const view=load('presentationV57').encounterPresentationV57;
+ const road={...quietRoad(0),progress:40},before=JSON.stringify(road);
+ assert.deepEqual(view(road,93),{boss:false,hud:false,approach:false,road:true,approachScale:.55});
+ assert.equal(view({...road,progress:87.99},93).boss,false);
+ assert.equal(view({...road,progress:88},93).approach,true);assert.equal(view({...road,progress:90},93).hud,false);
+ assert.equal(view({...road,progress:90,status:'paused',resumeStatus:'running'},93).approach,true);
+ assert.equal(view({...road,progress:99,sortie:{key:'0:0'}},93).boss,false);
+ const boss={...battle(),battleMaxHp:2300};assert.equal(view(boss,93).hud,true);
+ assert.equal(view({...boss,status:'boss-shift'},93).hud,true);assert.equal(view({...boss,status:'result'},93).hud,false);
+ assert.equal(JSON.stringify(road),before);
+});
+
+test('V57 local firing response belongs to the actual shooter and does not reset the gait',()=>{
+ const kick=load('presentationV57').runFireKickV57,pose=load('animationModules').sampleMechMotion;
+ const s={...quietRoad(0),mechClass:'heavy',progress:20,bots:3};
+ const firing={...s,pendingShots:[{duration:8,ticks:8,muzzle:true,origins:[{index:1,x:40,y:65}]}]};
+ assert.equal(kick(firing,1,0),0);assert.ok(kick(firing,1,1)>.5);assert.equal(kick(firing,1,2),0);
+ assert.equal(kick({...firing,mechClass:'blade'},1,1),0);assert.equal(kick(firing,1,1,true),0);
+ assert.equal(kick({...firing,status:'battle'},1,1),0);
+ assert.equal(kick({...firing,status:'paused',resumeStatus:'running'},.9,1),kick(firing,0,1));
+ assert.deepEqual(pose(s,.7,1),pose(firing,.7,1));assert.ok(kick(firing,1,1)<=.9);
 });

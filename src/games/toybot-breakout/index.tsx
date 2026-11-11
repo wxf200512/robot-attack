@@ -90,6 +90,8 @@ import './uiV46.css';
 import './uiV47.css';
 import './combatV48.css';
 import './runFireV56.css';
+import './polishV57.css';
+import { encounterPresentationV57 } from './presentationV57';
 
 const depthForPulse=(shot:import('./simulation').PendingShot)=>Math.round((shot.origins[0].y+(shot.y-shot.origins[0].y)*(1-shot.ticks/shot.duration)+6)*10)+3;
 function ProjectileArt({ level, heavy = false }: { level: number; heavy?: boolean }) {
@@ -302,9 +304,10 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
   const bossTop = bossY(game);
   const arena = isBossArena(game);
   const displayStatus = game.status === 'paused' ? game.resumeStatus : game.status;
-  const bossScale = arena ? 1.12 * (1 + rushProgress(game) * .25) : .95;
+  const encounterView=encounterPresentationV57(game,encounterProgress);
+  const bossScale = arena ? 1.12 * (1 + rushProgress(game) * .25) : encounterView.approachScale;
   const rushVisual = displayStatus === 'battle' && isRush(game) && (game.bossStep === 'warning' || game.bossStep === 'rush');
-  const showEncounter = !game.sortie&&(displayStatus === 'running' || displayStatus === 'boss-victory' || (!game.bossDefeated && encounterProgress !== undefined && game.progress >= encounterProgress - 5));
+  const showEncounter = encounterView.boss;
   const encounterLabel = LEVEL.encounters[game.encounter]?.label ?? '轨道维修站';
   const activeWeapon = effectiveWeapon(game);
   const comboFeedback=[game.comboHeal>0?`维修 +${game.comboHeal}`:'',game.burstTicks===0?'能量加成':''].filter(Boolean).join(' · ')||'连击达成';
@@ -914,14 +917,14 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
             {lt(visibleHazards.map(h => (
               <div key={h.index} data-motion="hazard" data-motion-id={h.index} className={`toybot-hazard enemy-kind-${h.kind ?? 'drone'} ${game.tactics.riskIds.includes(h.index)?'is-risk-v40':''} sector-enemy-${game.levelIndex} ${h.elite?'is-sector-elite':''} ${(game.roadImpacts[h.index]?.fracture??0)>0?'is-fractured':''} ${(game.roadImpacts[h.index]?.stun??0)>0?'is-staggered':''} ${h.horde?'is-horde':''} elite-${h.eliteRole??'none'} ${guardSourceFor(game,h.index)>=0?'is-guarded':''} ${commanderFor(game,h.index)>=0?'is-commanded':''} ${h.hp<hazardMaxHpFor(game,h.index)?'is-damaged':''} ${game.medicPulses.includes(h.index) ? 'is-repairing' : ''} ${h.armor ? 'is-armored' : ''} ${game.enemyAttacks.some(a => a.source === 'hazard' && a.sourceId === h.index && a.phase === 'warning') ? 'enemy-charging' : ''}`} style={{ left: h.x + '%', top: h.y + '%', '--enemy-offset': (h.slot??h.index)*-97+'ms', '--hazard-scale': .72 + (h.y - 39) / 19 * .34, zIndex: Math.round((h.y + 4) * 10) } as React.CSSProperties} role="img" aria-label={lt(roadEnemyName(game.levelIndex,h))}>
                 <div className="toybot-drone-sprite hostile-v31-body" style={{backgroundImage:`url(${ENEMY_MOTION_V31[h.kind??'drone']})`,backgroundSize:'800% 400%',backgroundPosition:'0% 0%'}} aria-hidden="true" />{h.eliteRole&&<small className="toybot-elite-tag">{lt(h.elite?roadEnemyName(game.levelIndex,h):eliteRoleName(h.eliteRole))}</small>}{guardSourceFor(game,h.index)>=0&&<span className="toybot-guard-link" aria-label={lt("护卫减伤35%")}>⬡</span>}
-                {h.kind && h.kind !== 'swarm' && !h.horde && !h.elite && <small className="toybot-enemy-role">{lt(roadEnemyName(game.levelIndex,h))}</small>}
+                {h.kind && h.kind !== 'swarm' && !h.horde && !h.elite && game.enemyAttacks.some(a=>a.source==='hazard'&&a.sourceId===h.index&&a.phase==='warning') && <small className="toybot-enemy-role">{lt(roadEnemyName(game.levelIndex,h))}</small>}
                 {h.kind === 'medic' && <span className="toybot-medic-pulse" aria-hidden="true">✚</span>}
                 {game.tactics.riskIds.includes(h.index)&&<small className="risk-tag-v40">{lt("强化×1.5")}</small>}{!!h.armor && <span className="toybot-enemy-armor" aria-label={lt(`装甲 ${h.armor}`)}>⬡{lt(h.armor)}</span>}
                 <div className="toybot-hazard-hp" aria-label={lt(`障碍耐久 ${h.hp}/${h.hp > 0 ? hazardMaxHpFor(game,h.index) : 0}`)}><span style={{ width: h.hp / hazardMaxHpFor(game,h.index) * 100 + '%' }} /></div>
               </div>
             )))}
             {game.comboTicks > 0 && game.combo >= 2 && !arena && <div className={'toybot-combo'+(game.comboRewardTicks>0?' has-reward':'')} role="status" aria-live="off"><b>{lt(game.combo)}<small> {lt(" 连击")}</small></b><span>{lt(game.comboRewardTicks>0?comboFeedback:`击破 ${game.kills} · 积分 ×${(1 + Math.min(3, Math.floor(game.combo / 3)) * .25).toFixed(2)}`)}</span><i style={{ scale: `${game.comboTicks / COMBO_WINDOW_TICKS} 1` }} /></div>}
-            {lt((quality==='low'?game.killEffects.slice(-3):game.killEffects.slice(-8)).map(effect => <div key={effect.id} data-world-y={effect.y} className={'toybot-enemy-break kind-' + effect.kind} style={{ left: effect.x + '%', top: effect.y + '%', '--break-progress': (7 - effect.ticks) / 7, zIndex: Math.round((effect.y + 7) * 10) + 5 } as React.CSSProperties} aria-hidden="true"><span />{effect.id>=game.killSequence-2&&(effect.combo<3||effect.combo%3===0)&&<b>{lt(effect.combo >= 3 ? effect.combo + ' 连击' : '击破')}</b>}</div>))}
+            {lt((quality==='low'?game.killEffects.slice(-3):game.killEffects.slice(-8)).map(effect => <div key={effect.id} data-world-y={effect.y} className={'toybot-enemy-break kind-' + effect.kind} style={{ left: effect.x + '%', top: effect.y + '%', '--break-progress': (7 - effect.ticks) / 7, zIndex: Math.round((effect.y + 7) * 10) + 5 } as React.CSSProperties} aria-hidden="true"><span />{effect.id>=game.killSequence-2&&effect.combo>=3&&effect.combo%3===0&&<b>{lt(effect.combo >= 3 ? effect.combo + ' 连击' : '击破')}</b>}</div>))}
             {lt(readableCoreImpacts(game.coreDetonations).map(effect=><span key={effect.id} data-world-y={effect.y} className={'toybot-core-detonation reaction-'+(effect.kind??'blast')} style={{'--detonation-age':(6-effect.ticks)/6,left:effect.x+'%',top:effect.y+'%',opacity:effect.ticks/6,scale:1+(6-effect.ticks)/6,zIndex:Math.round((effect.y+8)*10)} as React.CSSProperties} aria-hidden="true"/>))}
             {lt(game.enemyAttacks.map(attack => {
               const progress = attack.phase === 'flight' ? 1 - attack.ticks / attack.duration : 0;
@@ -1086,7 +1089,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
           <span style={{ width: `${displayProgress}%` }} />
         </div>
 
-        {showEncounter && (arena||displayStatus==='running') && displayStatus !== 'result' && (
+        {encounterView.hud && (
                     <div className="toybot-battle-banner toybot-boss-top-hud" aria-label={lt("首领耐久")}><span className="boss-icon-v48" aria-hidden="true" style={{backgroundImage:`url(${COMBAT_UI_V48.bossIcons})`,backgroundPosition:`${game.levelIndex*25}% 0%`}}/><b className="boss-name-v48">{lt(BOSS_NAMES[game.levelIndex])} · {lt(game.bossStage===1?'Ⅰ':'Ⅱ')}</b>
                       <small><span className="boss-health-v48">{lt(phase === 'shield' ? '⬡' : phase === 'weak' ? '◉' : '⚠')} {lt(Math.ceil(bossHudHp))}/{lt(bossHudMax)}</span><span className="boss-meta-v48"> · {lt(Math.floor(game.battleTime / 600))}:{lt(String(Math.floor(game.battleTime / 10) % 60).padStart(2, '0'))}{lt(enrage > 0 ? ` · ⚡${enrage}` : '')}</span></small>
                       {displayStatus==='battle'&&game.tactics.windowTicks>0&&<b className="boss-window-v40">{lt("规避成功 · 易伤 +65% · ")}{lt((game.tactics.windowTicks/10).toFixed(1))}s</b>}{displayStatus === 'battle' && phase === 'warning' && <b className="toybot-attack-name">{lt(bossAttackLabel(game))}</b>}
@@ -1094,6 +1097,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
                     </div>
         )}
 
+        {encounterView.road&&<div className="frontline-progress-v57" aria-label={lt(`关卡进度 ${Math.floor(displayProgress)}%`)}><span>{lt("关卡进度")}</span><b>{lt(Math.floor(displayProgress))}%</b><i><em style={{width:displayProgress+'%'}}/></i></div>}
         {canShoot(game.status)&&!game.narrative.scene&&<div className="toybot-story-top"><StoryMission game={game}/><StoryRadio game={game} dispatch={dispatch}/></div>}
         {!game.narrative.scene&&<><LessonCueV41 game={game}/>{game.flow.introTicks<=0&&<TacticalHudV40 game={game}/>}</>}
         {game.sortie?<SortieHudV39 game={game}/>:<OperationsHud game={game}/>}
@@ -1127,7 +1131,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
               <div className="toybot-home-dashboard">
                 <div className="toybot-mission-heading"><span className="menu-sector-number">{lt(String(game.levelIndex+1).padStart(2,'0'))}</span><div><small>{lt(selectedSortie?'前置行动 · '+selectedSortie.name:'主线任务 · '+STORY_CHAPTERS[game.levelIndex].title)}</small><b>{lt(LEVEL.title)}</b></div><span className="menu-sector-status">{lt(selectedSortie?(garage.sortieClears??[]).includes(selectedSortie.key)?'已完成':'待挑战':garage.completedLevels[game.levelIndex]?'已通关':'待突破')}</span></div>
                 <div className="toybot-level-select" role="group" aria-label={lt("选择关卡")}>{lt(LEVELS.map((level, index) => <button key={level.title} type="button" disabled={!canEnterLevel(garage,index)} title={lt(!canEnterLevel(garage,index) ? '请先通关第 ' + index + ' 关' : garage.completedLevels[index] ? '已通关，可再次挑战' : '已解锁，可以挑战')} aria-pressed={game.levelIndex === index} aria-label={lt(`第 ${index + 1} 关 ${level.title}`)} onClick={() => dispatch({ type: 'SELECT_LEVEL', levelIndex: index, garage })}><b>{lt(String(index + 1).padStart(2, '0'))}</b><small>{lt(!canEnterLevel(garage,index) ? '未解锁' : garage.completedLevels[index] ? '已通关' : '可挑战')}</small></button>))}</div>
-                <SortieSelectorV39 garage={garage} level={game.levelIndex} selected={selectedSortie?.key??null} onSelect={setSortieChoice}/><p className="toybot-home-story-objective">{lt(selectedSortie?selectedSortie.name+' · '+sortieGoalV39(selectedSortie)+' · 首通额外零件':STORY_CHAPTERS[game.levelIndex].objective)}</p>
+                <SortieSelectorV39 garage={garage} level={game.levelIndex} selected={selectedSortie?.key??null} onSelect={setSortieChoice}/><p className="toybot-home-story-objective">{lt(selectedSortie?sortieGoalV39(selectedSortie):STORY_CHAPTERS[game.levelIndex].objective)}</p>
               </div>
               <div className="home-launch-v47">
                 <button type="button" className="toybot-primary toybot-home-start" disabled={!selectedSortie&&game.tactics.trial==='signature'&&game.mechClass!==SECTOR_MECHS[game.levelIndex]} onClick={start}><span className="menu-play" aria-hidden="true">▶</span><span>{lt(garage.tutorialCompleted ? selectedSortie?'开始前置 '+(selectedSortie.slot+1)+'/5':'挑战守护者' : '开始基础训练')}<small>{lt("单机甲出发 · 自动攻击")}</small></span><span className="menu-launch-arrow" aria-hidden="true">››</span></button>

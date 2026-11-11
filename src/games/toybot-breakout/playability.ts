@@ -3,7 +3,7 @@ import type { GameState } from './simulation';
 import { rewardParts, UPGRADES, moduleLevel, upgradeCost, type Garage } from './progression';
 import type { CombatFeedback } from './experience';
 // Tuned for an ordinary three-unit W2 squad. Acquired power never changes HP.
-export const BOSS_BASE_HEALTH=[2300,3100,2900,3100,3500] as const;
+export const BOSS_BASE_HEALTH=[2300,2600,2800,3000,3200] as const;
 export const fixedBossHealth=(level:number,protocol:string)=>Math.round(BOSS_BASE_HEALTH[Math.max(0,Math.min(4,level))]*(protocol==='overdrive'?1.2:1));
 export function visibleFeedback(feedback:CombatFeedback[],low:boolean){
  const rank={hit:0,armor:1,heavy:2,elite:3,boss:4};

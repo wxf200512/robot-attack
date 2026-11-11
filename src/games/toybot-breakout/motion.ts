@@ -1,3 +1,4 @@
+import { runFireKickV57 } from './presentationV57';
 import { runTorsoV56 } from './runTorsoV56';
 import { partDamageV38 } from './partDamageV38';
 import { roadOffsetV37 } from './roadMotionV37';
@@ -60,7 +61,7 @@ export function paintMotion(root:HTMLElement,s:GameState,alpha:number,entries:Mo
   if(kind==='robot'){
    const p=formation[id];if(p)place(node,squadScreenX(p.x,formation[0]?.x??50,s.bots),p.y);
    const art=artPose(s,t,id,reduced),body=node.querySelector<HTMLElement>('.toybot-v28-body');
-   if(body){body.style.backgroundImage=`url(${art.sheet==='arena'?ARENA_ART_V36[s.mechClass]:art.sheet==='blade'?BLADE_ATTACK_V35:(art.sheet==='run'?RUN_ART:MOTION_ART)[s.mechClass]})`;body.style.backgroundSize=art.sheet==='arena'?'800% 600%':art.sheet==='run'||art.sheet==='blade'?'800% 400%':'800% 800%';body.style.backgroundPosition=art.sheet==='run'?atlasCell(art.frame%8,(art.row>=4?2:0)+Math.floor(art.frame/8),8,4):atlasCell(art.frame,art.row,8,art.sheet==='arena'?6:art.sheet==='blade'?4:8);body.dataset.mechAction=art.action;body.dataset.mechSheet=art.sheet;const torso=runTorsoV56(s,t,id,reduced);body.style.setProperty?.('--torso-roll',torso.roll+'deg');body.style.setProperty?.('--torso-sway',torso.sway+'px');body.style.scale=isBossArena(s)?'1':'var(--art-mirror,1) 1';body.style.rotate=art.lean+'deg';body.style.translate='0 '+art.recoil+'px';body.style.transform='none';}
+   if(body){body.style.backgroundImage=`url(${art.sheet==='arena'?ARENA_ART_V36[s.mechClass]:art.sheet==='blade'?BLADE_ATTACK_V35:(art.sheet==='run'?RUN_ART:MOTION_ART)[s.mechClass]})`;body.style.backgroundSize=art.sheet==='arena'?'800% 600%':art.sheet==='run'||art.sheet==='blade'?'800% 400%':'800% 800%';body.style.backgroundPosition=art.sheet==='run'?atlasCell(art.frame%8,(art.row>=4?2:0)+Math.floor(art.frame/8),8,4):atlasCell(art.frame,art.row,8,art.sheet==='arena'?6:art.sheet==='blade'?4:8);body.dataset.mechAction=art.action;body.dataset.mechSheet=art.sheet;const torso=runTorsoV56(s,t,id,reduced);body.style.setProperty?.('--torso-roll',torso.roll+'deg');body.style.setProperty?.('--torso-sway',torso.sway+'px');body.style.setProperty?.('--torso-recoil',runFireKickV57(s,t,id,reduced)+'px');body.style.scale=isBossArena(s)?'1':'var(--art-mirror,1) 1';body.style.rotate=art.lean+'deg';body.style.translate='0 '+art.recoil+'px';body.style.transform='none';}
 
    const dust=node.querySelector<HTMLElement>('.toybot-v28-footdust');if(dust){dust.style.opacity='0';dust.style.translate='0 0';}
 

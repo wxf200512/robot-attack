@@ -1,0 +1,47 @@
+/* Preserve the V56 art; give current objectives room and prioritize danger. */
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .frontline-progress-v57{position:absolute;left:104px;right:112px;top:11px;height:38px;z-index:1601;display:grid;grid-template-columns:1fr auto;gap:2px 6px;align-content:center;padding:3px 7px;background:#0b2434df;border:1px solid #4e7f96;border-radius:5px;color:#d8eff7;pointer-events:none}
+.frontline-progress-v57>span{font-size:11px;line-height:15px}.frontline-progress-v57>b{font-size:13px;line-height:15px}.frontline-progress-v57>i{grid-column:1/-1;height:4px;background:#183e51;overflow:hidden;border-radius:3px}.frontline-progress-v57 em{display:block;height:100%;background:#70e0d7}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29.in-boss-arena .toybot-top .toybot-brand{visibility:hidden}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29.in-boss-arena.has-cockpit .toybot-battle-banner.toybot-boss-top-hud{left:12px;right:112px;top:8px;height:44px}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .boss-icon-v48{left:4px;top:1px;width:30px;height:34px}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .boss-name-v48{left:40px;font-size:12px;line-height:15px}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-boss-top-hud>small{left:40px;top:15px;font-size:11px;line-height:13px}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-boss-top-hud>.toybot-battle-meter{left:40px;top:29px;height:6px}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-attack-name{top:49px!important;right:0!important;font-size:12px!important;line-height:18px;padding:2px 8px;background:#40251eea;border:1px solid #e2a06e;border-radius:4px;color:#ffe0b5}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29.in-boss-arena:has(.toybot-attack-name) .toybot-story-top{top:87px}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-story-top .campaign-mission b,.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-story-top .campaign-mission span{font-size:11px;line-height:1.4}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .campaign-radio.has-crew-v45 p{font-size:12px;line-height:1.4;-webkit-line-clamp:2}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-approach-banner{top:18%;max-width:78%;padding:8px 14px;background:#302017ed;border:1px solid #ebad69;box-shadow:0 3px 12px #0005}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-approach-banner strong{font-size:15px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-approach-banner small{font-size:12px}
+.toybot-page .toybot-shell .toybot-enemy-role{font-size:11px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toybot-page .toybot-shell .is-sector-elite .toybot-elite-tag{font-size:11px;line-height:14px;top:-18px}
+.toybot-page .toybot-shell .is-horde:not(.enemy-charging) .toybot-hazard-hp{opacity:.4}
+.toybot-page .toybot-shell .enemy-charging .toybot-hazard-hp{opacity:1}
+.toybot-page .toybot-shell .toybot-impact-event .toybot-hit-damage{font-size:13px;font-weight:900;color:#e9fbff}
+.toybot-page .toybot-shell .toybot-hazard.is-staggered{outline:1px solid #9ce9ee77;outline-offset:2px}
+.toybot-page .toybot-shell .completed-routes-v57{margin-top:7px;border-top:1px solid #57788d66}
+.completed-routes-v57>summary{cursor:pointer;padding:9px 3px;min-height:40px;box-sizing:border-box;font-size:12px;color:#b8d4df;list-style:none}.completed-routes-v57>summary::-webkit-details-marker{display:none}.completed-routes-v57>summary>span{float:right}.completed-routes-v57[open]>summary>span{rotate:180deg}
+.toybot-page .toybot-shell .sortie-picker-v39>button[aria-pressed="true"]{border:1px solid #75e1dd;background:linear-gradient(115deg,#205368,#102d40);box-shadow:inset 3px 0 #86e8e0}
+.toybot-page .toybot-shell .sortie-picker-v39>button[aria-pressed="true"]>span{font-size:12px;font-weight:800}
+.toybot-page .toybot-shell .toybot-paused .toybot-secondary,.toybot-page .toybot-shell .toybot-result .toybot-secondary{box-shadow:none}
+@media(max-width:350px){.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .frontline-progress-v57{left:85px;right:111px;padding:3px 5px}.frontline-progress-v57>span{font-size:10px}.frontline-progress-v57>b{font-size:12px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .boss-name-v48{font-size:11px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .boss-meta-v48{display:none}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-boss-top-hud>small{font-size:11px}.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .campaign-radio.has-crew-v45 p{font-size:11px}}
+
+.toybot-page .toybot-shell .prelude-route-v53>.sortie-picker-v39>button[aria-pressed="true"]{grid-column:1/-1;min-height:48px}
+
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .ops-mission-hud b{font-size:11px;line-height:1.4}
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .ops-mission-hud small{font-size:11px;line-height:1.4}
+
+.toybot-page .toybot-shell.toybot-menu-system.reference-v29 .toybot-attack-name{display:block}
+.toybot-page .toybot-shell .boss-mounted-part small{font-size:10px;line-height:14px;padding:1px 4px}
+.toybot-page .toybot-shell .boss-mounted-part:not(.is-targeted) small{opacity:0}
+
+@media(max-width:360px) and (max-height:700px){
+ .toybot-page[data-language] .toybot-shell.toybot-menu-system.reference-v29 .toybot-home-story-objective{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+ .toybot-page .toybot-shell .prelude-route-v53>.sortie-picker-v39>button[aria-pressed="true"]{min-height:40px}
+}
+
+@media(max-width:360px) and (max-height:700px){
+ .toybot-page[data-language] .toybot-shell.toybot-menu-system.reference-v29 .toybot-home:not(.is-workshop) .toybot-home-hero{min-height:174px;flex-basis:174px}
+ .toybot-page[data-language] .toybot-shell.toybot-menu-system.reference-v29 .toybot-home-dashboard{padding:6px;gap:4px}
+ .toybot-page[data-language] .toybot-shell.toybot-menu-system.reference-v29 .toybot-home-story-objective{margin-top:3px}
+}

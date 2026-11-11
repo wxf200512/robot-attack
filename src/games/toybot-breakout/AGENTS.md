@@ -21,3 +21,7 @@ The user explicitly requests a GitHub connection and branch synchronization afte
 ## Generated layout previews
 
 `victory-review.html` and `defeat-review.html` are generated, read-only QA fixtures. Keep the renderer source but exclude these generated HTML outputs from commits. Keep original game artwork and optimized runtime artwork available for reproducible builds.
+
+## User-confirmed fixed baseline (2026-11-11)
+
+The user fixed V56 as the baseline and requests only partial optimizations going forward. Baseline commit: `96a1f77af4199db63f2a07e11fed6672f9646304`; immutable tag: `toybot-breakout-v56-baseline`. See BASELINE_V56.md. Preserve existing gameplay, art direction and major flows; scope work to requested local polish or bug fixes. Do not proactively add systems, redesign the whole game or rebalance global values. Explain material changes and obtain explicit user direction before expanding beyond that scope. Keep normal reviewed commit/push workflow for authorized changes; never move the baseline tag or discard later work to return to it.

@@ -1,5 +1,7 @@
 # 玩具城突围当前有效要求
 
+> 2026-11-11用户确认固定V56开发基线，后续仅做局部优化与修复。固定提交、标签与范围见[BASELINE_V56.md](./BASELINE_V56.md)。
+
 当前源码显示版本为 V56（全身跑射与肩胯联动），玩法为 V53，九语言为 V55。正式提测ZIP仍是V55，不能代表V56动作。本文说明当前实现，历史版本文档用于追溯。交付文件、实测范围与未验收事项见 [ACCEPTANCE_STATUS.md](./ACCEPTANCE_STATUS.md)；集成方从 [INTEGRATION_HANDOFF.md](./INTEGRATION_HANDOFF.md) 开始。根目录与游戏目录 AGENTS.md 的工程和权限约束保持有效。
 
 ## 关卡和进度

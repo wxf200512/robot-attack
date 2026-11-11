@@ -1,6 +1,6 @@
-> 当前交付为V53，含V52双腿交替跑步。最新提测包和实测范围请查看 [ACCEPTANCE_STATUS.md](./ACCEPTANCE_STATUS.md)，当前玩法以 [CURRENT_REQUIREMENTS.md](./CURRENT_REQUIREMENTS.md) 为准。下方为各轮历史记录，旧版“未打包”“共享类型错误”不代表当前状态。
+> 当前交付为V54，含V53前置小关、V52双腿交替跑步及中英文适配。语言范围见[LOCALIZATION_V54.md](./LOCALIZATION_V54.md)。最新提测包和实测范围请查看 [ACCEPTANCE_STATUS.md](./ACCEPTANCE_STATUS.md)，当前玩法以 [CURRENT_REQUIREMENTS.md](./CURRENT_REQUIREMENTS.md) 为准。下方为各轮历史记录，旧版“未打包”“共享类型错误”不代表当前状态。
 
-## 当前提测交付核验
+## V53提测交付核验（历史）
 
 2026-11-10重新构建V53包，核对ZIP CRC、150个归档文件与staging、125项运行素材及V52/V53功能标记。候选包约58.3MiB；最终包必须从干净的最终提交生成，并与本地已测站点逐文件哈希一致。保留真实平台SDK、竖屏与相对资源路径，不包含本地平台替身、调试控制台、源映射或其它游戏。
 

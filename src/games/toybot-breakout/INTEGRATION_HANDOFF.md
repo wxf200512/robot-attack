@@ -2,6 +2,8 @@
 
 源仓库：https://github.com/wxf200512/robot-attack.git；开发分支：game/toybot-breakout。源码提交以最终提测包release-report.json的sourceCommit为准。只迁移src/games/toybot-breakout/与public/games/toybot-breakout/两个目录；原画、加工脚本、提示词与测试保留在源码目录，不放入运行ZIP。
 
+V54增量：中英文显示与语言切换全部位于游戏目录，复用主项目i18next，无新增依赖或共享文件修改。迁移时使用V54最终提交与包，不能拿V53旧包替代。详见[LOCALIZATION_V54.md](./LOCALIZATION_V54.md)。
+
 ## 已准备
 
 游戏manifest默认导出，id/payloadKey均为toybot-breakout，路由/toybot-breakout，按需导入index组件。首页封面为optimized/story-comic-4-v38.jpg，标题中英文均有。返回游戏列表使用/home。无新增npm依赖。

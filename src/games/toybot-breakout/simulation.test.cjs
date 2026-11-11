@@ -280,7 +280,8 @@ test('pause freezes hostile entities and boss defeat clears attacks before they 
 });
 test('untargeted bullets stay on the roadway and always travel forward', () => {
   for (let levelIndex = 0; levelIndex < 5; levelIndex++) {
-    const s = tick({ ...initial(levelIndex), status: 'running', bots: 7 });
+    const base=initial(levelIndex);const s = tick({ ...base, status: 'running', bots: 7,hazardHps:base.hazardHps.map(()=>-1) });
+    assert.ok(s.pendingShots.length>0);
     for (const shot of s.pendingShots) {
       assert.equal(shot.target, null);
       assert.ok(shot.y >= sim.ROAD_HORIZON[levelIndex]);
@@ -492,7 +493,7 @@ test('every boss opens with its own mechanic instead of a shared tutorial cannon
 });
 
 function roadDrone() {
-  const s=initial();return tick({...s,status:'running',progress:levels.getLevel(0).hazards[0].progress-9.9,gate:2,fireCooldown:1000});
+  const s=initial();return tick({...s,status:'running',progress:levels.getLevel(0).hazards[0].progress-9.9,gate:2,fireCooldown:1000,hazardHps:s.hazardHps.map((hp,i)=>i===0?hp:-1)});
 }
 function supportEnemy(kind) {
   const s=battle(1),duration=kind==='minion'?32:36;
@@ -900,7 +901,7 @@ test('interactive campaign completes all five sectors with both support routes a
 
 test('road encounter density grows by sector and introduces specialists gradually', () => {
   const totals = levels.LEVELS.map(l => l.hazards.length);
-  assert.deepEqual(totals, [119,147,176,203,230]);
+  assert.deepEqual(totals, [131,159,188,215,242]);
   assert.ok(totals.every((n,i) => i===0 || n>totals[i-1]));
   for(const [sector,l] of levels.LEVELS.entries()) {
     assert.equal(new Set(l.hazards.filter(h=>h.wave!==undefined).map(h=>h.wave)).size,3);
@@ -1257,7 +1258,7 @@ test('each sector adds three weak horde waves and preserves final supply breathi
  const old=[14,18,23,26,29];
  for(const [sector,l]of levels.LEVELS.entries()){
   assert.ok(l.hazards.length>=old[sector]*3);
-  const crowd=l.hazards.filter(h=>h.horde);assert.equal(crowd.length,3*(18+sector*3)+3*(12+sector*4));
+  const crowd=l.hazards.filter(h=>h.horde);assert.equal(crowd.length,3*(18+sector*3)+3*(16+sector*4));
   assert.ok(crowd.every(h=>(h.eliteRole?h.hp<=6:h.hp<=3)&&!h.armor&&h.progress<=80&&h.progress<l.encounters[0].progress-10));
   for(let wave=0;wave<3;wave++)assert.equal(new Set(crowd.filter(h=>h.wave===wave).map(h=>Math.floor(h.slot%6/2))).size,3);
  }
@@ -1495,7 +1496,7 @@ test('defeat clears operation flashes and queued counterattacks without losing e
 
 test('the last blade counter keeps its acquired extended range after consuming the charge',()=>{
  const base=battle();base.mechClass='blade';base.battleLane=2;base.lane=1;base.bossStep='recovery';base.bossStepTicks=3;base.ops.counterShots=1;base.fireCooldown=0;base.threats=[{id:88,kind:'orb',lane:1,originY:48,ticks:20,duration:20,hp:30,maxHp:30,damage:0,fromLane:2}];
- const shot=tick(base);assert.ok(shot.pendingShots.length);assert.ok(shot.pendingShots.every(p=>p.counter&&p.range===11));assert.equal(shot.ops.counterShots,0);
+ const shot=tick(base);assert.ok(shot.pendingShots.length);assert.ok(shot.pendingShots.every(p=>p.counter&&p.range===12.5));assert.equal(shot.ops.counterShots,0);
  let s=shot;for(let i=0;i<3;i++)s=tick(s);assert.ok(s.threats.find(t=>t.id===88).hp<30);
 });
 
@@ -1652,7 +1653,7 @@ test('every sector has three named elite encounters and three extra themed swarm
  for(const [sector,l]of levels.LEVELS.entries()){
   const elites=l.hazards.filter(h=>h.elite);assert.equal(elites.length,3);assert.equal(new Set(elites.map(h=>h.encounterId)).size,3);
   assert.ok(elites.every(h=>h.title&&h.pattern in frontline.ELITE_ATTACKS&&h.progress<l.encounters[0].progress-7));
-  for(let stage=0;stage<3;stage++)assert.equal(l.hazards.filter(h=>h.encounterId==='surge-'+stage).length,12+sector*4);
+  for(let stage=0;stage<3;stage++)assert.equal(l.hazards.filter(h=>h.encounterId==='surge-'+stage).length,16+sector*4);
   assert.equal(l.bossTargetSeconds,180);themes.add(frontline.frontlineStage(sector,50).theme);
   assert.equal(frontline.roadEnemyName(sector,elites[0]),elites[0].title);
  }
@@ -1833,8 +1834,8 @@ test('blade counts one chain step per landed volley, then performs a captured lo
  const {ids,state}=eliteScene();let s={...state,mechClass:'blade',fireCooldown:1000};s.hazardHps=s.hazardHps.map((_,i)=>ids.slice(0,4).includes(i)?100:-1);
  const hit=(s,volley)=>incoming(s,{target:'hazard',targetIndex:ids[0],lane:s.lane,damage:1,attackStyle:'blade',volleyId:volley,range:11});
  s=tick({...s,pendingShots:[hit(s,1),hit(s,1),hit(s,1)]});assert.equal(s.report.bladeCombo,1);
- s=tick({...s,pendingShots:[hit(s,2)]});s=tick({...s,pendingShots:[hit(s,3)]});assert.equal(s.report.bladeReady,true);assert.equal(sim.attackRangeFor(s),11);
- const fired=tick({...s,fireCooldown:0});const finishers=fired.pendingShots.filter(p=>p.finisher);assert.equal(finishers.length,3);assert.ok(finishers.every(p=>p.range===11&&p.lane===s.lane&&p.duration===4));assert.equal(fired.report.bladeReady,false);assert.equal(fired.report.bladeCombo,0);
+ s=tick({...s,pendingShots:[hit(s,2)]});s=tick({...s,pendingShots:[hit(s,3)]});assert.equal(s.report.bladeReady,true);assert.equal(sim.attackRangeFor(s),12.5);
+ const fired=tick({...s,fireCooldown:0});const finishers=fired.pendingShots.filter(p=>p.finisher);assert.equal(finishers.length,3);assert.ok(finishers.every(p=>p.range===12.5&&p.lane===s.lane&&p.duration===4));assert.equal(fired.report.bladeReady,false);assert.equal(fired.report.bladeCombo,0);
  const missed=tick({...state,mechClass:'blade',pendingShots:[incoming(state,{target:'hazard',targetIndex:ids[0],lane:(state.lane+1)%3,attackStyle:'blade',damage:1})]});assert.equal(missed.report.bladeCombo,0);
 });
 test('visual budget preserves elite and boss confirmations without dropping any damage records',()=>{
@@ -2708,4 +2709,26 @@ test('V57 local firing response belongs to the actual shooter and does not reset
  assert.equal(kick({...firing,status:'battle'},1,1),0);
  assert.equal(kick({...firing,status:'paused',resumeStatus:'running'},.9,1),kick(firing,0,1));
  assert.deepEqual(pose(s,.7,1),pose(firing,.7,1));assert.ok(kick(firing,1,1)<=.9);
+});
+
+test('V58 extra fodder increases every mission while retaining the existing guardian and specialist counts',()=>{
+ const oldTotals=[119,147,176,203,230],stages=load('sortiesV39').SORTIES_V39;
+ for(const [sector,level]of levels.LEVELS.entries()){
+  assert.equal(level.hazards.length,oldTotals[sector]+12);
+  assert.equal(level.hazards.filter(h=>h.elite).length,3);
+  for(let wave=0;wave<3;wave++)assert.equal(level.hazards.filter(h=>h.encounterId==='surge-'+wave).length,16+sector*4);
+ }
+ for(const stage of stages){assert.equal(stage.enemyCount,84+stage.level*12+stage.slot*12);assert.equal(levels.getLevel(stage.level,stage.key).hazards.length,stage.enemyCount);}
+});
+
+test('V58 blade reaches newly accessible same-lane enemies but respects the outer boundary',()=>{
+ const mech=load('mechs');assert.equal(mech.mechSpec('blade').range,10.5);assert.equal(mech.CORE_SKILLS.blade.range,14);
+ const build=progress=>{const s={...quietRoad(0),progress,mechClass:'blade',lane:1,bots:1,fireCooldown:0};s.hazardHps=s.hazardHps.map((_,i)=>i===0?500:-1);s.ops={...s.ops,mission:{...s.ops.mission,status:'done'},event:{...s.ops.event,status:'done'}};return s;};
+ const s=build(15.1),distance=59-sim.roadEnemyY(s,0);assert.ok(distance>9&&distance<10.5);
+ let n=tick(s);const shot=n.pendingShots.find(p=>p.target==='hazard'&&p.targetIndex===0);assert.ok(shot);assert.equal(shot.range,10.5);assert.equal(shot.lane,1);
+ for(let i=0;i<shot.duration;i++)n=tick(n);assert.ok(n.hazardHps[0]<500);
+ const outside=build(14.5);assert.ok(59-sim.roadEnemyY(outside,0)>10.5);assert.equal(tick(outside).pendingShots.length,0);
+ assert.equal(tick({...s,lane:0}).pendingShots.length,0);
+ const counter={...outside,ops:{...outside.ops,counterShots:1}};assert.equal(sim.attackRangeFor(counter),12.5);assert.ok(tick(counter).pendingShots.some(p=>p.target==='hazard'&&p.targetIndex===0&&p.range===12.5));
+ assert.equal(sim.attackIntervalFor(s),7);assert.equal(sim.attackRangeFor({...s,mechClass:'pulse'}),Infinity);assert.equal(sim.attackRangeFor({...s,mechClass:'heavy'}),Infinity);
 });

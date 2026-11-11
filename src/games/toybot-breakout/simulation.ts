@@ -11,7 +11,7 @@ import { fixedBossHealth } from './playability';
 import { ELITE_ATTACKS, type ElitePattern } from './frontline';
 import { newReport, type CombatReport, type CombatFeedback } from './experience';
 import { createOperations, copyOperations, fieldVisible, fieldY, makeBossParts, partBroken, eligibleFusion, FUSIONS, PROTOCOLS, prepMark, type Operations, type Protocol, type Fusion } from './operations';
-import { coreSkill, mechSpec, normalizeMechClass, type MechClass } from './mechs';
+import { BLADE_REACH, coreSkill, mechSpec, normalizeMechClass, type MechClass } from './mechs';
 import { SPECIAL_LABELS, type BossSpecial } from './bossSkills';
 import { bossLaneAt, getLevel, hazardLaneAt, LEVELS, type EnemyKind } from './level';
 import { garageStats, garageInterval, normalizeGarage, canEnterLevel, canChallengeBossV53, recordLevelCompletion, type Garage } from './progression';
@@ -180,7 +180,7 @@ export const isRush = (s: GameState) => s.bossAttack === 'rush' || s.bossAttack 
 export const bossRecoveryTicks=(s:GameState)=>Math.round((s.bossCycle===0?BOSS_RECOVERY_TICKS:difficultyV57(s.levelIndex).bossRecovery)*recoveryScaleV43(s.bossStage,s.bossCycle)*(s.ops.protocol==='overdrive'?.8:1));
 export const bossDamageLanes = (s: GameState) => s.levelIndex===4?[0,1,2]:s.bossMoveTicks > 0 ? [] : s.bossStep === 'rush'
   ? (s.bossStepTicks >= 4 && s.bossStepTicks <= 16 ? s.bossAttackLanes : []) : [s.battleLane];
-export const attackRangeFor = (s:GameState) => s.mechClass==='blade'?Math.max(s.burstTicks>0?coreSkill(s.mechClass).range:mechSpec(s.mechClass).range,s.ops.counterShots>0||s.report.bladeReady?11:0):mechSpec(s.mechClass).range;
+export const attackRangeFor = (s:GameState) => s.mechClass==='blade'?Math.max(s.burstTicks>0?coreSkill(s.mechClass).range:mechSpec(s.mechClass).range,s.ops.counterShots>0||s.report.bladeReady?BLADE_REACH.empowered:0):mechSpec(s.mechClass).range;
 export const attackIntervalFor = (s: GameState) => garageInterval(s.mechClass, s.garageCoreLevel);
 // Sector and protocol fix durability; all acquired and permanent power remains useful.
 export const bossHealthFor = (s: GameState) => fixedBossHealth(s.levelIndex,s.ops.protocol);

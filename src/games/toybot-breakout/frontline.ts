@@ -21,11 +21,16 @@ export function populateFrontline(level:LevelSpec,sector:number){
  const f=FRONTLINES[sector];level.bossTargetSeconds=180;level.focus=f.theme+' · 3段精英遭遇 · 约5分钟';
  // Keep an escape/supply lane under every rotated layout. Existing indices stay stable.
  const reserved=level.gateMarks.map(mark=>{const used=new Set(level.hazards.filter(h=>Math.abs(h.progress-mark)<=6).map(h=>(h.lane+(h.moving&&mark>=h.progress-8?1:0))%3));return {mark,lane:[0,1,2].find(l=>!used.has(l))??2};});
- const add=(h:HazardSpec)=>{
+ const add=(h:HazardSpec,visibleBudget=0)=>{
   // Check every overlapping 5.5-second contact window, including legacy waves.
   // This keeps dense packs in two lanes rather than turning them into a wall.
   const contact=(unit:HazardSpec)=> (unit.lane+(unit.moving?1:0))%3;
-  for(let retry=0;retry<24;retry++){
+  for(let retry=0;retry<(visibleBudget?128:24);retry++){
+   if(visibleBudget){
+    const starts=[h.progress-14,...level.hazards.filter(u=>u.progress>=h.progress-14&&u.progress<=h.progress).map(u=>u.progress)];
+    if(starts.some(start=>1+level.hazards.filter(u=>u.progress>=start&&u.progress<=start+14).length>visibleBudget)){h.progress+=.25;continue;}
+    if(h.progress>80)break;
+   }
    const nearby=level.hazards.filter(unit=>Math.abs(unit.progress-h.progress)<=4.4);
    const starts=[h.progress,...nearby.filter(unit=>unit.progress<=h.progress).map(unit=>unit.progress)];
    const allowed=[0,1,2].filter(lane=>{
@@ -43,4 +48,7 @@ export function populateFrontline(level:LevelSpec,sector:number){
   add({progress:mark,lane:stage%3,hp:Math.round((60+sector*12)*(1+stage*.22)),armor:sector===2?2:0,kind,elite:true,eliteRole:stage===0?'energy':stage===1?'guard':'commander',pattern:f.patterns[stage],title:f.elites[stage],encounterId:id,moving:sector===1});
   for(let i=0;i<4+sector;i++)add({progress:mark-1+Math.floor(i/2)*.55,lane:(stage+i%2)%3,hp:3+sector,kind:i===0?f.special:'swarm',armor:sector===2&&i%2===0?1:0,pattern:i===0&&sector===0?'heat-mine':i===0&&sector===3?'storm-orb':undefined,encounterId:id,slot:i});
  }
+ // Extra fodder uses free space between existing packs; retain the 72-body budget.
+ for(const [stage,mark]of [16,38,60].entries())for(let i=0;i<4;i++)add({progress:mark+i*.55,lane:(stage+i%2)%3,hp:1+Math.floor(sector/2),kind:f.pack,horde:true,slot:12+sector*4+i,encounterId:'surge-'+stage},72);
+
 }

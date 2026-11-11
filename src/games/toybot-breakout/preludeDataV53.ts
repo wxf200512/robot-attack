@@ -38,4 +38,4 @@ const chapters=[
   ['王座封锁阵','诺拉：这是最后一道前线防线，把五区的声音送到帝皇面前。','伊森：突破这批禁卫，下一步就是最终守护者行动。','五区回执就绪，星核帝皇行动开放。'],
  ],
 ] as const;
-export const PRELUDES_V53=chapters.flatMap((rows,level)=>rows.map(([name,intro,mid,outro],slot)=>({key:level+':'+slot,level,slot:slot as PreludeSlotV53,name,intro,mid,outro,start:0,end:36+slot*4,target:12+level*2+slot*2,goal:'kills' as const,enemyCount:72+level*12+slot*12})));
+export const PRELUDES_V53=chapters.flatMap((rows,level)=>rows.map(([name,intro,mid,outro],slot)=>({key:level+':'+slot,level,slot:slot as PreludeSlotV53,name,intro,mid,outro,start:0,end:36+slot*4,target:12+level*2+slot*2,goal:'kills' as const,enemyCount:84+level*12+slot*12})));

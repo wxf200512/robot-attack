@@ -1,0 +1,164 @@
+[
+  {
+    "kind": "pulse",
+    "file": "combat-run-pulse-v56.webp",
+    "columns": 8,
+    "rows": 4,
+    "slotsPerSkin": 16,
+    "skins": [
+      {
+        "source": "run-whole-pulse-0-v56.png",
+        "frameMap": [
+          9,
+          10,
+          11,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8,
+          7,
+          4,
+          3,
+          2,
+          12,
+          14,
+          15
+        ],
+        "scale": 0.5992779783393501
+      },
+      {
+        "source": "run-whole-pulse-1-v56.png",
+        "frameMap": [
+          9,
+          10,
+          11,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8,
+          7,
+          4,
+          3,
+          2,
+          12,
+          14,
+          15
+        ],
+        "scale": 0.5949820788530465
+      }
+    ],
+    "sha256": "85ee5c1e4883489d3534a033d6e073886a82eaf1bf3d068e6925668acb9437c4"
+  },
+  {
+    "kind": "heavy",
+    "file": "combat-run-heavy-v56.webp",
+    "columns": 8,
+    "rows": 4,
+    "slotsPerSkin": 16,
+    "skins": [
+      {
+        "source": "run-whole-heavy-0-v56.png",
+        "frameMap": [
+          0,
+          14,
+          15,
+          2,
+          10,
+          5,
+          3,
+          4,
+          7,
+          8,
+          12,
+          9,
+          6,
+          11,
+          1,
+          13
+        ],
+        "scale": 0.8426395939086294
+      },
+      {
+        "source": "run-whole-heavy-1-v56.png",
+        "frameMap": [
+          0,
+          14,
+          15,
+          2,
+          10,
+          5,
+          3,
+          4,
+          7,
+          8,
+          12,
+          9,
+          6,
+          11,
+          1,
+          13
+        ],
+        "scale": 0.8469387755102041
+      }
+    ],
+    "sha256": "101e2c091e84cb44171d4a1b43013bc045ef544482cdf48e0211af7b921bf5a4"
+  },
+  {
+    "kind": "blade",
+    "file": "combat-run-blade-v56.webp",
+    "columns": 8,
+    "rows": 4,
+    "slotsPerSkin": 16,
+    "skins": [
+      {
+        "source": "run-whole-blade-0-v56.png",
+        "frameMap": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "scale": 0.5992779783393501
+      },
+      {
+        "source": "run-whole-blade-1-v56.png",
+        "frameMap": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "scale": 0.5845070422535211
+      }
+    ],
+    "sha256": "4eb0532af657d772358e805429cd4c4f7ca573dbd1085ccc5a695798957b771a"
+  }
+]

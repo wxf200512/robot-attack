@@ -1,0 +1,15 @@
+/* The two complementary raster masks share one atlas cell and a hip pivot.
+   No crossfade, duplicate silhouettes or separate animation timers. */
+.toybot-shell .run-lower-v56,.toybot-shell .run-upper-v56{display:none}
+.toybot-shell .toybot-v28-body[data-mech-sheet="run"]{background-size:0 0!important}
+.toybot-shell .toybot-v28-body[data-mech-sheet="run"]>.run-lower-v56,
+.toybot-shell .toybot-v28-body[data-mech-sheet="run"]>.run-upper-v56{display:block;position:absolute;inset:0;background-image:inherit;background-position:inherit;background-size:800% 400%;background-repeat:no-repeat;pointer-events:none}
+.toybot-shell .run-lower-v56{clip-path:inset(59% 0 0);z-index:0}
+.toybot-shell .run-upper-v56{clip-path:inset(0 0 39%);transform-origin:50% 60%;transform:translateX(var(--torso-sway,0px)) rotate(var(--torso-roll,0deg));z-index:1}
+/* Armor is part of the body art. Reserve the large halo for actual impacts. */
+.toybot-shell .toybot-defense-vfx .defense-armor:not(.is-impact){opacity:0}
+.toybot-shell .toybot-defense-vfx .defense-idle{opacity:.18}
+.toybot-shell .toybot-defense-vfx{width:132%}
+.toybot-shell .is-arena .toybot-defense-vfx{width:138%}
+.toybot-shell .toybot-defense-vfx:has(.is-impact){width:170%}
+@media(prefers-reduced-motion:reduce){.toybot-shell .run-upper-v56{transform:none}}

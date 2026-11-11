@@ -1,3 +1,5 @@
+> 历史版本：V56已替换固定上半身/腿部分离装配，当前动作见 [RUN_FIRE_V56.md](./RUN_FIRE_V56.md)。
+
 > 当前规则总览：[CURRENT_REQUIREMENTS.md](./CURRENT_REQUIREMENTS.md)；交付与待验收项：[ACCEPTANCE_STATUS.md](./ACCEPTANCE_STATUS.md)。
 
 # V52 双腿交替奔跑

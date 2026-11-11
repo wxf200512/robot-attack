@@ -89,6 +89,7 @@ import './clarityV43.css';
 import './uiV46.css';
 import './uiV47.css';
 import './combatV48.css';
+import './runFireV56.css';
 
 const depthForPulse=(shot:import('./simulation').PendingShot)=>Math.round((shot.origins[0].y+(shot.y-shot.origins[0].y)*(1-shot.ticks/shot.duration)+6)*10)+3;
 function ProjectileArt({ level, heavy = false }: { level: number; heavy?: boolean }) {
@@ -104,7 +105,7 @@ function Robot({ awakened=false, index, small = false, enemy = false, firing = f
   const tier=awakened?4:motionTier(weaponLevel,armorLevel,coreLevel),row=combat?(tier?3:0)+(dodging?2:attacking?1:0):(tier?2:0);
   return <div className={`robot-player-art toybot-v28-mech class-${mechClass}${awakened?' is-reference-awakened':''}${small?' robot-small':''}${firing?' is-firing':''}`} style={{'--art-mirror':combat&&dodging&&dodgeDirection<0?-1:1} as React.CSSProperties} aria-hidden="true">
     <span className="toybot-v28-footdust"/>
-    <span className="toybot-v28-body" style={{backgroundImage:`url(${combat?ARENA_ART_V36[mechClass]:RUN_ART[mechClass]})`,backgroundSize:combat?'800% 600%':'800% 400%',backgroundPosition:atlasCell(motionFrame,row,8,combat?6:4)}}/>
+    <span className="toybot-v28-body" style={{backgroundImage:`url(${combat?ARENA_ART_V36[mechClass]:RUN_ART[mechClass]})`,backgroundSize:combat?'800% 600%':'800% 400%',backgroundPosition:atlasCell(motionFrame,row,8,combat?6:4)}}><i className="run-lower-v56"/><i className="run-upper-v56"/></span>
 
   </div>;
 }
@@ -941,7 +942,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
             {lt(coreVisualShots(game.pendingShots).map((volley) => (
               <React.Fragment key={volley.id}>
                 {lt(volley.origins.map((origin) => {
-                  const size = volley.count <= 1 ? '68px' : volley.count <= 4 ? 'clamp(58px,20.55vw,82px)' : 'clamp(27px,9.8vw,38px)';
+                  const size = volley.count <= 1 ? '68px' : volley.count <= 4 ? 'clamp(52px,16vw,64px)' : 'clamp(27px,9.8vw,38px)';
 
                   if(volley.burst)return <div key={origin.index} data-motion="core-pulse" data-motion-id={volley.id} className={'core-pulse-flight fx-'+volley.attackStyle+(signatureShotV34(volley)?' is-signature':'')+(volley.count>=5?' is-large-squad':'')} style={{left:origin.x+'%',top:origin.y+'%',zIndex:depthForPulse(volley)}} aria-hidden="true"><span className="core-pulse-flight-art" style={{backgroundImage:`url(${CORE_FX_V34[volley.attackStyle??game.mechClass]})`,backgroundPosition:atlasCell(0,1,8,3)}}/><i className="core-pulse-vortex" style={{backgroundImage:`url(${CORE_FX_V34[volley.attackStyle??game.mechClass]})`,backgroundPosition:atlasCell(0,0,8,3)}}/><i className="core-pulse-wake" style={{backgroundImage:`url(${CORE_FX_V34[volley.attackStyle??game.mechClass]})`,backgroundPosition:atlasCell(0,1,8,3)}}/></div>;
                   if (volley.attackStyle === 'blade'&&!volley.burst) {

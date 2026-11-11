@@ -4,7 +4,7 @@
 .toybot-page .reference-v29 .art-v28 .toybot-scene-background{filter:none;animation:none;transform:none;object-fit:fill}
 .reference-v29 .toybot-track-guides,.reference-v29 .toybot-road-flow,.reference-v29 .toybot-depth-layer,.reference-v29 .toybot-v28-foreground{display:none}
 .toybot-page .reference-v29 .toybot-scene.formation-1{--squad-size:68px}
-.toybot-page .reference-v29 .toybot-scene.formation-2{--squad-size:clamp(58px,20.55vw,82px)}
+.toybot-page .reference-v29 .toybot-scene.formation-2{--squad-size:clamp(52px,16vw,64px)}
 .toybot-page .reference-v29 .toybot-scene.formation-3{--squad-size:clamp(27px,9.8vw,38px)}
 .toybot-page .reference-v29 .toybot-top{padding:5px 7px;gap:5px;align-items:flex-start}
 .reference-v29 .toybot-brand{width:30%;font-size:0;background:none;padding:0;flex-shrink:0}

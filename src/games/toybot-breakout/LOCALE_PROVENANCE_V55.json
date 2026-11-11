@@ -1,0 +1,69 @@
+{
+  "date": "2026-11-11",
+  "source": "V54 Chinese source keys and reviewed English catalog",
+  "additionalDraftProvider": "Google Translate public text service for six non-Chinese drafts (build time only); Traditional Chinese from offline OpenCC",
+  "endpoint": "https://translate.googleapis.com/translate_a/single",
+  "manualReview": "Core navigation, language labels, home layout labels and mech names reviewed; full native-speaker linguistic review is still pending",
+  "runtime": "Local dictionaries only. Source imports are prepared on demand; the current template inlines all dictionaries into the main JS. No translation API or extra language chunk request in the current production package.",
+  "catalogs": [
+    {
+      "locale": "zh-TW",
+      "entries": 1174,
+      "missing": 0,
+      "placeholderMismatches": 0,
+      "manualTerms": 13
+    },
+    {
+      "locale": "es",
+      "entries": 1174,
+      "missing": 0,
+      "placeholderMismatches": 0,
+      "manualTerms": 9
+    },
+    {
+      "locale": "pt-BR",
+      "entries": 1174,
+      "missing": 0,
+      "placeholderMismatches": 0,
+      "manualTerms": 9
+    },
+    {
+      "locale": "fr",
+      "entries": 1174,
+      "missing": 0,
+      "placeholderMismatches": 0,
+      "manualTerms": 9
+    },
+    {
+      "locale": "de",
+      "entries": 1174,
+      "missing": 0,
+      "placeholderMismatches": 0,
+      "manualTerms": 9
+    },
+    {
+      "locale": "ja",
+      "entries": 1174,
+      "missing": 0,
+      "placeholderMismatches": 0,
+      "manualTerms": 19
+    },
+    {
+      "locale": "ko",
+      "entries": 1174,
+      "missing": 0,
+      "placeholderMismatches": 0,
+      "manualTerms": 12
+    }
+  ],
+  "reviewedGameplayTerms": 46,
+  "traditionalChinese": {
+    "simplifiedGuiCharacterScan": "passed",
+    "tool": "opencc-python-reimplemented",
+    "runtimeDependency": false,
+    "version": "0.1.7",
+    "script": "convert-traditional-v55.py",
+    "configuration": "s2twp",
+    "source": "Chinese source keys"
+  }
+}

@@ -1170,5 +1170,8 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "释放{0}：{1}，持续5秒，清除干扰": "Release {0}: {1}. Lasts 5s and clears interference",
   "释放{0}：{1}，持续5秒，清除干扰。时机提示：{2}": "Release {0}: {1}. Lasts 5s and clears interference. Timing: {2}",
   "{0} · 蓄力{1}s": "{0} · Charging {1}s",
-  "中文": "Chinese"
+  "中文": "Chinese",
+  "繁體中文": "Traditional Chinese",
+  "日本語": "Japanese",
+  "语言加载失败，请重试。": "Language failed to load. Please try again."
 };

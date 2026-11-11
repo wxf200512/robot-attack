@@ -11,12 +11,12 @@ function load(name){
 const l=load('locale'),{ENGLISH}=load('locale.en');
 const han=/[\u3400-\u9fff]/;
 test('regional platform locales and unsupported languages select a supported display language',()=>{
- for(const [input,expected]of [['zh_CN','zh'],['zh-TW','zh'],['ZH-hans','zh'],['en_US','en'],['pt-BR','en'],[undefined,'en'],['','en']])assert.equal(l.resolveGameLanguage(input),expected);
+ for(const [input,expected]of [['zh_CN','zh'],['zh-TW','zh-TW'],['ZH-hans','zh'],['en_US','en'],['pt-BR','pt-BR'],[undefined,'en'],['','en']])assert.equal(l.resolveGameLanguage(input),expected);
 });
 test('language preference persists separately and tolerates unavailable or malformed storage',()=>{
  const data=new Map([['toybot-breakout:garage:v1','unchanged']]);const store={getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)};
  assert.equal(l.readLanguagePreference(store),null);l.saveLanguagePreference('en',store);assert.equal(l.readLanguagePreference(store),'en');assert.equal(data.get('toybot-breakout:garage:v1'),'unchanged');
- assert.equal(l.readLanguagePreference({getItem:()=> 'fr'}),null);assert.equal(l.readLanguagePreference({getItem:()=>{throw Error();}}),null);assert.doesNotThrow(()=>l.saveLanguagePreference('zh',{setItem:()=>{throw Error();}}));
+ assert.equal(l.readLanguagePreference({getItem:()=> 'xx'}),null);assert.equal(l.readLanguagePreference({getItem:()=>{throw Error();}}),null);assert.doesNotThrow(()=>l.saveLanguagePreference('zh',{setItem:()=>{throw Error();}}));
 });
 test('every English catalog entry is populated and preserves interpolation slots',()=>{
  for(const [source,target]of Object.entries(ENGLISH)){
@@ -26,7 +26,7 @@ test('every English catalog entry is populated and preserves interpolation slots
 });
 test('current source prose and JSX labels have catalog coverage',()=>{
  const missing=[];
- for(const name of fs.readdirSync(__dirname).filter(n=>/\.tsx?$/.test(n)&&!/(Review|locale\.en|i18n)/.test(n))){
+ for(const name of fs.readdirSync(__dirname).filter(n=>/\.tsx?$/.test(n)&&!/(Review|locale\.[a-zA-Z-]+|i18n)/.test(n))){
   const text=fs.readFileSync(path.join(__dirname,name),'utf8');const source=ts.createSourceFile(name,text,ts.ScriptTarget.Latest,true,name.endsWith('tsx')?ts.ScriptKind.TSX:ts.ScriptKind.TS);
   const check=s=>{s=s.trim();if(han.test(s)&&ENGLISH[s]===undefined&&han.test(l.translateText(s,'en')))missing.push(name+': '+s);};
   function visit(n){if(ts.isStringLiteral(n)||ts.isNoSubstitutionTemplateLiteral(n)||ts.isJsxText(n))check(n.text);if(ts.isTemplateExpression(n))check(n.head.text+n.templateSpans.map((p,i)=>'{'+i+'}'+p.literal.text).join(''));ts.forEachChild(n,visit);}visit(source);

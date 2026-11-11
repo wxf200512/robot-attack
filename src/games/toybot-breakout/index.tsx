@@ -354,7 +354,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
   };
 
   return (
-    <main lang={language === 'zh' ? 'zh-CN' : 'en'} data-language={language} className={'toybot-page quality-' + quality} onPointerDownCapture={() => audio.current?.unlock()} onKeyDownCapture={() => audio.current?.unlock()}>
+    <main lang={language === 'zh' ? 'zh-CN' : language} data-language={language} className={'toybot-page quality-' + quality} onPointerDownCapture={() => audio.current?.unlock()} onKeyDownCapture={() => audio.current?.unlock()}>
       <style>{`
         .toybot-page{min-height:100svh;display:flex;justify-content:center;align-items:center;padding:18px;background:radial-gradient(ellipse at 50% 0%,#d8ad67 0,#415c70 42%,#101c2e 100%);font-family:ui-rounded,'Trebuchet MS',system-ui,sans-serif;color:#e6f0ec}
         .toybot-shell{position:relative;width:min(100%,430px);height:min(850px,calc(100svh - 36px));min-height:620px;overflow:hidden;border:5px solid #d7e1db;border-radius:32px;background:#142c3d;box-shadow:0 24px 70px #071321b8;isolation:isolate}
@@ -1060,7 +1060,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
         </div>}
 
         <header className="toybot-top">
-          <div className="toybot-brand">{language === 'zh' ? <img className="toybot-reference-logo" src={REFERENCE_LOGO} alt={lt("玩具城突围")}/> : <b className="toybot-english-logo">TOYBOT<br/>BREAKOUT</b>}<span>{lt("第 ")}{lt(game.levelIndex + 1)} {lt(" 关 · ")}{lt(LEVEL.title)}</span></div>
+          <div className="toybot-brand">{language === 'zh' ? <img className="toybot-reference-logo" src={REFERENCE_LOGO} alt={lt("玩具城突围")}/> : <b className="toybot-english-logo">{language === 'zh-TW' ? lt('玩具城突围') : <>TOYBOT<br/>BREAKOUT</>}</b>}<span>{lt("第 ")}{lt(game.levelIndex + 1)} {lt(" 关 · ")}{lt(LEVEL.title)}</span></div>
           <button type="button" className="toybot-live-settings" aria-label={lt("声音与画面设置")} onClick={openSettings}>⚙</button>
           <button
             type="button"
@@ -1108,8 +1108,8 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
             <div className="toybot-home-content">
               <header className="menu-commandbar">
                 <button type="button" className="menu-square-button menu-back" onClick={() => navigate('/home')} aria-label={lt("返回游戏列表")}>‹</button>
-                <div className="menu-currency"><MenuIcon name="garage"/><span><small>{lt("零件")}</small><b>{lt(garage.parts.toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US'))}</b></span></div>
-                <div className="menu-currency menu-best"><span className="menu-cup" aria-hidden="true">★</span><span><small>{lt("最高分")}</small><b>{lt(garage.bestScore.toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US'))}</b></span></div><LanguageSelector compact/>
+                <div className="menu-currency"><MenuIcon name="garage"/><span><small>{lt("零件")}</small><b>{lt(garage.parts.toLocaleString(language === 'zh' ? 'zh-CN' : language))}</b></span></div>
+                <div className="menu-currency menu-best"><span className="menu-cup" aria-hidden="true">★</span><span><small>{lt("最高分")}</small><b>{lt(garage.bestScore.toLocaleString(language === 'zh' ? 'zh-CN' : language))}</b></span></div><LanguageSelector compact/>
                 <button type="button" className="menu-square-button" onClick={openSettings} aria-label={lt("声音与画面设置")}><MenuIcon name="settings"/></button>
               </header>
               <div className="toybot-home-hero">
@@ -1167,7 +1167,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
               <div className="toybot-debrief-kicker">{lt(game.won ? 'MISSION COMPLETE' : 'MISSION INCOMPLETE')}</div>
               <h2 id="result-title">{lt(game.sortie?(game.won?'前线行动完成':'目标未达成'):game.won ? (game.levelIndex === LEVELS.length - 1 ? '全境突破' : '突围成功') : '突围受阻')}</h2>
               <p className="toybot-result-summary">{lt(game.sortie?game.sortie.name+' · '+sortieGoalV39(game.sortie)+' · 实际 '+sortieCountV39(game):game.won ? LEVEL.encounters[0].label + ' 已击败 · 区域安全' : game.defeatReason === 'boss-wipe' ? '核心生命耗尽，整备后再次出击' : '小队停止作战，返回机库重新整备')}</p>
-              <div className="grade-score-v47"><ResultGradeV44 game={game}/><div className="toybot-debrief-score"><span>{lt("本次作战得分")}</span><strong>{lt(game.score.toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US'))}</strong><small>{lt("历史最佳 ")}{lt(garage.bestScore.toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US'))}</small></div></div>
+              <div className="grade-score-v47"><ResultGradeV44 game={game}/><div className="toybot-debrief-score"><span>{lt("本次作战得分")}</span><strong>{lt(game.score.toLocaleString(language === 'zh' ? 'zh-CN' : language))}</strong><small>{lt("历史最佳 ")}{lt(garage.bestScore.toLocaleString(language === 'zh' ? 'zh-CN' : language))}</small></div></div>
               <div className="toybot-ops-debrief">{game.sortie?<>{lt(sortieGoalV39(game.sortie))} {lt(" · 完成 ")}{lt(sortieCountV39(game))}/{lt(game.sortie.target)}</>:<>{lt("任务 ")}{lt(game.ops.mission.status==='done'?'完成':'未完成')} {lt(" · 救援 ")}{lt(game.ops.event.status==='done'?'成功':'未完成')} {lt(" · 破阵 ")}{lt(game.ops.broken)}{lt("/3 · 完美闪避 ")}{lt(game.ops.perfects)}{game.won&&game.ops.protocol!=='standard'&&<b><OperationSprite cell={2}/>{lt("协议徽章已解锁")}</b>}</>}</div><div className="toybot-debrief-rewards"><div><small>{lt("回收零件")}</small><b>◈ +{lt(previewState?resultReward:earnedParts)}</b></div><div><small>{lt("当前库存")}</small><b>{lt(garage.parts+(previewState?resultReward:0))}</b></div><div><small>{lt(game.won ? '归队机甲' : '关卡进度')}</small><b>{lt(game.won ? game.bots + ' 台' : Math.floor(game.progress) + '%')}</b></div></div>
               {!game.won&&<button type="button" className="toybot-primary toybot-quick-retry" onClick={restart}>{lt("立即重试本关 ")}<span aria-hidden="true">↗</span></button>}
 

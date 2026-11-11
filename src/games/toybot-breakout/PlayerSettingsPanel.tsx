@@ -7,7 +7,7 @@ export default function PlayerSettingsPanel({settings,onChange,onClose}:{setting
  useEffect(()=>{root.current?.focus({preventScroll:true});},[]);
  return <div ref={root} tabIndex={-1} className="toybot-overlay toybot-settings" role="dialog" aria-modal="true" aria-labelledby="toybot-settings-title" onKeyDown={e=>{
   if(e.key==='Escape'){onClose();return;}if(e.key!=='Tab'||e.ctrlKey||e.metaKey||e.altKey)return;
-  const items=Array.from(e.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]),input'));const first=items[0],last=items[items.length-1];
+  const items=Array.from(e.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]),input,select:not([disabled])'));const first=items[0],last=items[items.length-1];
   if(e.target===e.currentTarget||e.shiftKey&&e.target===first){e.preventDefault();(e.shiftKey?last:first)?.focus();}else if(!e.shiftKey&&e.target===last){e.preventDefault();first?.focus();}
  }}>
  <div className="toybot-settings-panel"><div className="toybot-settings-heading"><small>PLAYER PREFERENCES</small><button type="button" onClick={onClose} aria-label={lt("关闭设置")}>×</button></div><h2 id="toybot-settings-title">{lt("操作、声音与画面")}</h2>

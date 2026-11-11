@@ -1,4 +1,4 @@
-> 当前交付为V54，含V53前置小关、V52双腿交替跑步及中英文适配。语言范围见[LOCALIZATION_V54.md](./LOCALIZATION_V54.md)。最新提测包和实测范围请查看 [ACCEPTANCE_STATUS.md](./ACCEPTANCE_STATUS.md)，当前玩法以 [CURRENT_REQUIREMENTS.md](./CURRENT_REQUIREMENTS.md) 为准。下方为各轮历史记录，旧版“未打包”“共享类型错误”不代表当前状态。
+> 当前交付为V55，含九语言、首页无遮挡排版、V53前置小关和V52双腿交替跑步。语言范围见[LOCALIZATION_V55.md](./LOCALIZATION_V55.md)。最新提测包和实测范围请查看 [ACCEPTANCE_STATUS.md](./ACCEPTANCE_STATUS.md)，当前玩法以 [CURRENT_REQUIREMENTS.md](./CURRENT_REQUIREMENTS.md) 为准。下方为各轮历史记录，旧版“未打包”“共享类型错误”不代表当前状态。
 
 ## V53提测交付核验（历史）
 

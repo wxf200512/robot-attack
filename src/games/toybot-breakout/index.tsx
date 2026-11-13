@@ -91,6 +91,8 @@ import './uiV47.css';
 import './combatV48.css';
 import './runFireV56.css';
 import './polishV57.css';
+import './readinessV59.css';
+import { useAssetGateV59 } from './useAssetGateV59';
 import { encounterPresentationV57 } from './presentationV57';
 
 const depthForPulse=(shot:import('./simulation').PendingShot)=>Math.round((shot.origins[0].y+(shot.y-shot.origins[0].y)*(1-shot.ticks/shot.duration)+6)*10)+3;
@@ -172,10 +174,13 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
   if (initialState.current === null) {initialState.current = createCampaign(previewState??createInitialState(garage));if(previewState)initialState.current.narrative=previewState.narrative??{...initialState.current.narrative,seen:['briefing','confrontation','aftermath','lore']};}
   const [game, dispatch] = useReducer(campaignReducer, initialState.current);
   const LEVEL = getLevel(game.levelIndex,game.sortie?.key);
+  const sceneRef=useRef<HTMLDivElement>(null);
+  const assetGate=useAssetGateV59(game);
+  useEffect(()=>{if(assetGate.blocked)document.querySelector<HTMLElement>('.asset-ready-v59')?.focus({preventScroll:true});else if(canMove(game.status))sceneRef.current?.focus({preventScroll:true});},[assetGate.blocked,game.status]);
   const previousGame = useRef(game);
   const previousModules = useRef(UPGRADES.reduce((sum,u)=>sum+moduleLevel(garage,u.id),0));
-  const sceneRef=useRef<HTMLDivElement>(null);
-  useSceneMotion(sceneRef,game,(canShoot(game.status)||game.status==='boss-intro'||game.status==='boss-shift')&&!game.narrative.scene&&!previewFrozen&&game.finish.resumeTicks===0,quality==='low',reducedMotion);
+
+  useSceneMotion(sceneRef,game,(canShoot(game.status)||game.status==='boss-intro'||game.status==='boss-shift')&&!game.narrative.scene&&!previewFrozen&&!assetGate.blocked&&game.finish.resumeTicks===0,quality==='low',reducedMotion);
   const dragStart = useRef<{
     pointerId: number;
     startX: number;
@@ -185,10 +190,10 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
   } | null>(null);
 
   useEffect(() => {
-    if (!isActiveStatus(game.status)||previewState&&previewFrozen) return undefined;
+    if (assetGate.blocked||!isActiveStatus(game.status)||previewState&&previewFrozen) return undefined;
     const timer = window.setInterval(() => dispatch({ type: 'TICK' }), STEP_MS);
     return () => window.clearInterval(timer);
-  }, [game.status,previewState,previewFrozen]);
+  }, [game.status,previewState,previewFrozen,assetGate.blocked]);
 
   useEffect(() => {
     if (!game.toast) return undefined;
@@ -196,7 +201,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
     return () => window.clearTimeout(timer);
   }, [game.toast]);
 
-  const campaignBlocking=!!game.narrative.scene;
+  const campaignBlocking=!!game.narrative.scene||assetGate.blocked;
   const lessonKey=game.flow.lessons.join('|');
   useEffect(()=>{
     if(previewState||!lessonKey)return;
@@ -351,6 +356,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
   const handlePointerCancel = () => { dragStart.current = null; };
 
   const handleSceneKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if(assetGate.blocked)return;
     if(event.code==='Space'){event.preventDefault();if(!event.repeat)dispatch({type:'ACTIVATE_BURST'});return;}
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
     event.preventDefault();
@@ -868,6 +874,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
       `}</style>
 
       <section className={'toybot-shell toybot-menu-system reference-v29 coating-'+(game.status==='home'?(coatingPreview??garage.coating??'stock'):(garage.coating??'stock'))+(crowdV43(game)?' is-crowded-v43':'')+(game.burstTicks>0?' has-core-active has-core-readout':'')+' core-style-'+game.mechClass + (game.narrative.radio&&canShoot(game.status)&&!game.narrative.scene?' has-story-radio':'') + (game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'?' has-cockpit':'') + (game.burstTicks===0&&!game.pendingShots.some(shot=>shot.burst)&&settings.shake!==false&&!reducedMotion&&quality!=='low'&&game.feedback.some(f=>f.ticks>=4&&strongFeedbackV42(f))?' has-impact-shake':'') + ((displayStatus==='running'||displayStatus==='battle')?' has-core-control':'') + (arena ? ' in-boss-arena' : '') + (game.narrative.scene?' has-campaign-scene':'')} aria-label="Toybot Breakout game">
+        {assetGate.blocked&&<div className="asset-ready-v59" tabIndex={-1} onKeyDown={event=>{if(event.key!=='Tab')return;const buttons=Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button'));const i=buttons.indexOf(document.activeElement as HTMLButtonElement);event.preventDefault();buttons[(i+(event.shiftKey?-1:1)+buttons.length)%buttons.length]?.focus();}} role="dialog" aria-modal="true" aria-label={lt("准备出击")}><div><strong>{lt(assetGate.failed?'资源加载失败，请重试。':'准备出击')}</strong><progress max={assetGate.total||1} value={assetGate.done}/><p>{assetGate.done}/{assetGate.total}</p>{assetGate.failed&&<button type="button" onClick={assetGate.retry}>{lt("重试加载")}</button>}<button type="button" onClick={()=>dispatch({type:'HOME',garage})}>{lt("返回游戏首页")}</button></div></div>}
         {game.status !== 'home' && <div
           ref={sceneRef}
           className={`toybot-scene art-v28 sector-${game.levelIndex} formation-${formationColumns} weapon-tier-${activeWeapon} ${displayStatus === 'running' ? 'is-moving' : displayStatus === 'battle' ? 'is-battle' : displayStatus === 'defeat' ? `is-defeat ${game.defeatReason}` : ''} ${game.status === 'paused'||previewFrozen||game.finish.resumeTicks>0 ? 'is-paused' : ''} ${game.invulnerableTicks > 0 ? `is-player-hit damage-${game.damageKind}` : ''} ${arena ? 'is-arena' : ''} ${displayStatus === 'boss-intro' ? 'is-boss-intro' : displayStatus === 'boss-shift' ? 'is-boss-shift' : displayStatus === 'boss-victory' ? 'is-boss-victory' : ''}`}
@@ -1102,7 +1109,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
         {!game.narrative.scene&&<><LessonCueV41 game={game}/>{game.flow.introTicks<=0&&<TacticalHudV40 game={game}/>}</>}
         {game.sortie?<SortieHudV39 game={game}/>:<OperationsHud game={game}/>}
         {game.status!=='home'&&game.status!=='result'&&game.status!=='defeat'&&<div className="toybot-bottom cockpit-bottom">
-          <Cockpit game={game} blocked={!!game.narrative.scene} onMove={lane=>dispatch({type:'MOVE_LANE',lane})} onBurst={()=>dispatch({type:'ACTIVATE_BURST'})}/>
+          <Cockpit game={game} blocked={campaignBlocking} onMove={lane=>dispatch({type:'MOVE_LANE',lane})} onBurst={()=>dispatch({type:'ACTIVATE_BURST'})}/>
         </div>}
         {!game.narrative.scene&&<PilotFeedbackV44 game={game}/>}
         {game.finish.resumeTicks>0&&game.status!=='paused'&&<div className="resume-receipt-v42" role="status">{lt("准备继续 ")}{lt((game.finish.resumeTicks/10).toFixed(1))}{lt("s · 可先换轨")}</div>}{game.status==='defeat'&&game.defeatTicks>=6&&<button type="button" className="defeat-skip-v42" onClick={()=>dispatch({type:'SKIP_DEFEAT'})}>{lt("跳过战败演出")}</button>}{!game.narrative.scene&&game.finish.receipt&&game.burstTicks===0&&game.flow.introTicks===0&&canShoot(game.status)&&<div className="skill-receipt-v42" role="status"><b>{lt(game.finish.receipt.name)} {lt(" · 本次成果")}</b><small>{lt("技能直伤 ")}{lt(game.finish.receipt.damage)} {lt(" · 期间击破 ")}{lt(game.finish.receipt.kills)} · {lt(game.finish.receipt.utility)}</small></div>}{!game.narrative.scene&&<CoreBurstScreen game={game} reduced={reducedMotion||quality==='low'}/>}

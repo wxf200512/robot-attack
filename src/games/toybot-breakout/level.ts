@@ -2,7 +2,7 @@ import { buildPreludeLevelV53 } from './preludeLevelsV53';
 import { populateFrontline, type ElitePattern } from './frontline';
 export type EnemyKind = 'drone' | 'swarm' | 'sniper' | 'bomber' | 'medic';
 export const ENEMY_NAMES: Record<EnemyKind, string> = { drone: '巡逻机', swarm: '突击蜂', sniper: '狙击哨', bomber: '轰炸机', medic: '维修机' };
-export type HazardSpec = { elite?:boolean;pattern?:ElitePattern;title?:string;encounterId?:string; progress: number; hp: number; lane: number; armor?: number; moving?: boolean; kind?: EnemyKind; wave?: number; slot?: number; eliteRole?: 'energy' | 'guard' | 'commander'; horde?: boolean };
+export type HazardSpec = { reveal?:number; elite?:boolean;pattern?:ElitePattern;title?:string;encounterId?:string; progress: number; hp: number; lane: number; armor?: number; moving?: boolean; kind?: EnemyKind; wave?: number; slot?: number; eliteRole?: 'energy' | 'guard' | 'commander'; horde?: boolean };
 export type LevelSpec = {
   title: string; focus: string; gateMarks: number[]; hazards: HazardSpec[];
   encounters: { progress: number; reward: number; label: string }[];

@@ -1,3 +1,5 @@
+> V59最新交付入口：[LOCAL_ACCEPTANCE_V59.md](./LOCAL_ACCEPTANCE_V59.md)。迁移必须包含useAssetGateV59.ts/readinessV59.css、九语言更新、波次揭示配置及完整句子通信翻译；发布目录只包含当前运行素材，历史校验素材保留在src内。以V59最终ZIP报告的sourceCommit为准；不再用V55旧包提测。
+
 > V57源码增量：局部页面与战斗展示优化、关卡递增难度，固定V56标签保留。交付源码需包含本轮新增difficultyV57.ts、presentationV57.ts、polishV57.css及其引用。V55历史ZIP不包含V56/V57，提测时应从选定最终提交重建并核验；见[POLISH_V57.md](./POLISH_V57.md)。
 
 # 玩具城突围集成交接

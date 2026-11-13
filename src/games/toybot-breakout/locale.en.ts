@@ -1173,5 +1173,9 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "中文": "Chinese",
   "繁體中文": "Traditional Chinese",
   "日本語": "Japanese",
-  "语言加载失败，请重试。": "Language failed to load. Please try again."
+  "语言加载失败，请重试。": "Language failed to load. Please try again.",
+  "准备出击": "Preparing deployment",
+  "资源加载失败，请重试。": "Assets failed to load. Please retry.",
+  "重试加载": "Retry loading",
+
 };

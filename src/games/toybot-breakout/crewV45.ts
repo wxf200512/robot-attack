@@ -26,3 +26,6 @@ export const PILOT_REPLIES_V45={
 export const CREW_WORLD_V45='星穹玩具城是人类与自主玩具机甲共同维护的巡游城市。玛雅、伊森在城外驾驶舱通过远程链路协同火花核心；诺拉负责通信，米可执行现场维修。驾驶员在远程座舱守住链路，火花与守护者保有自主意识；人与机甲以信任协同，让每位伙伴都有回家的路。';
 
 export function sceneSpeakerV45(kind:'briefing'|'confrontation'|'aftermath',step:number,mech:MechClass):SpeakerV45{return kind==='briefing'?(step===0?'nora':pilotV45(mech)):kind==='confrontation'?(step===0?'guardian':pilotV45(mech)):step===0?'nora':wingmateV45(mech);}
+
+// Translate the complete catalog key before removing the localized speaker prefix.
+export function radioTextV59(text:string,translate:(text:string)=>string){const translated=translate(text);return cleanRadioV45(text)!==text?translated.replace(/^[^:：]{1,40}[:：]\s*/,''):translated;}

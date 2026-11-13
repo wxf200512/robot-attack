@@ -6,9 +6,10 @@ const path = require('node:path');
 const ts = require('typescript');
 
 const migrationV43=JSON.parse(fs.readFileSync(path.join(__dirname,'asset-migration-v43.json'),'utf8'));
+const retiredV59=JSON.parse(fs.readFileSync(path.join(__dirname,'asset-retirement-v59.json'),'utf8'));
 const retiredV46=JSON.parse(fs.readFileSync(path.join(__dirname,'asset-retirement-v46.json'),'utf8'));
-function retiredFixture(file){const row=retiredV46.files.find(r=>r.file===path.basename(file));return row?.historicalFixture?path.resolve(__dirname,row.historicalFixture):file;}
-function fixturePath(file){if(fs.existsSync(file))return file;const normalized=String(file).replaceAll('\\','/');if(normalized.includes('/optimized/')){const item=migrationV43.converted.find(m=>m.from===path.basename(file));if(item)return retiredFixture(path.join(path.dirname(file),item.to));}if(normalized.includes('/art-source/')&&String(file).endsWith('.webp'))return String(file).replace(/\.webp$/,'.png');return file;}
+function retiredFixture(file){const row=[...retiredV46.files,...retiredV59.files].find(r=>r.file===path.basename(file));return row?.historicalFixture?path.resolve(__dirname,row.historicalFixture):file;}
+function fixturePath(file){if(fs.existsSync(file))return file;const retired=retiredFixture(file);if(retired!==file)return retired;const normalized=String(file).replaceAll('\\','/');if(normalized.includes('/optimized/')){const item=migrationV43.converted.find(m=>m.from===path.basename(file));if(item)return retiredFixture(path.join(path.dirname(file),item.to));}if(normalized.includes('/art-source/')&&String(file).endsWith('.webp'))return String(file).replace(/\.webp$/,'.png');return file;}
 const readFixture=(file,...args)=>fs.readFileSync(fixturePath(file),...args);
 const fixtureExists=file=>fs.existsSync(fixturePath(file));
 function imageInfo(b){
@@ -2615,7 +2616,7 @@ test('V50 slow-road recovery slows stride progression while squad members keep d
 
 test('V52 actual run artwork has separate authored leg phases and exact reproducible transparent atlases',()=>{
  const rows=JSON.parse(fs.readFileSync(path.join(__dirname,'gait-v52.json'),'utf8'));
- for(const row of rows){const data=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/combat-run-'+row.kind+'-v52.webp'));const info=imageInfo(data);assert.equal(info.width,1536);assert.equal(info.height,768);assert.equal(info.alpha,true);assert.equal(require('node:crypto').createHash('sha256').update(data).digest('hex'),row.sha256);assert.equal(row.authoredPhases,8);assert.ok(row.footDepthDifference.filter(x=>x>3).length>=2);assert.ok(row.footDepthDifference.filter(x=>x<-3).length>=2);assert.deepEqual(row.frameMap,Array.from({length:16},(_,i)=>i>>1));assert.ok(fs.existsSync(path.join(__dirname,'art-source/run-legs-'+row.kind+'-v52.png')));}
+ for(const row of rows){const data=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/combat-run-'+row.kind+'-v52.webp'));const info=imageInfo(data);assert.equal(info.width,1536);assert.equal(info.height,768);assert.equal(info.alpha,true);assert.equal(require('node:crypto').createHash('sha256').update(data).digest('hex'),row.sha256);assert.equal(row.authoredPhases,8);assert.ok(row.footDepthDifference.filter(x=>x>3).length>=2);assert.ok(row.footDepthDifference.filter(x=>x<-3).length>=2);assert.deepEqual(row.frameMap,Array.from({length:16},(_,i)=>i>>1));assert.ok(fs.existsSync(path.join(__dirname,'art-source/run-legs-'+row.kind+'-v52.png')));}
 });
 test('V56 renderer avoids whole-body hopping and clears articulated run layers for boss combat',()=>{
  const body={style:{},dataset:{}},dust={style:{}},node={style:{},dataset:{},querySelector:selector=>selector==='.toybot-v28-body'?body:selector==='.toybot-v28-footdust'?dust:null},root={style:{setProperty(){}}},entries=[{node,kind:'robot',id:0}];
@@ -2731,4 +2732,32 @@ test('V58 blade reaches newly accessible same-lane enemies but respects the oute
  assert.equal(tick({...s,lane:0}).pendingShots.length,0);
  const counter={...outside,ops:{...outside.ops,counterShots:1}};assert.equal(sim.attackRangeFor(counter),12.5);assert.ok(tick(counter).pendingShots.some(p=>p.target==='hazard'&&p.targetIndex===0&&p.range===12.5));
  assert.equal(sim.attackIntervalFor(s),7);assert.equal(sim.attackRangeFor({...s,mechClass:'pulse'}),Infinity);assert.equal(sim.attackRangeFor({...s,mechClass:'heavy'}),Infinity);
+});
+
+test('V59 retired deployment art retains exact historical fixtures without entering public output',()=>{
+ const crypto=require('node:crypto');assert.equal(retiredV59.files.length,23);
+ for(const row of retiredV59.files){const file=path.join(__dirname,row.historicalFixture),data=fs.readFileSync(file);assert.equal(data.length,row.bytes);assert.equal(crypto.createHash('sha256').update(data).digest('hex'),row.sha256);assert.equal(fs.existsSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',row.file)),false);}
+});
+
+test('V59 prelude ranks remain ordered through the exit with bounded reveal distance',()=>{
+ const stages=load('sortiesV39').SORTIES_V39,flow=load('flowV41');
+ for(const stage of stages){const road=levels.getLevel(stage.level,stage.key);for(const wave of [0,1,2]){const ranks=road.hazards.filter(h=>h.wave===wave);assert.ok(ranks.every(h=>h.reveal===[10,8,6][wave]&&h.progress<stage.end));assert.ok(ranks.every((h,i)=>i===0||h.progress>=ranks[i-1].progress));}assert.ok(Math.max(...road.hazards.map(h=>h.progress))>=stage.end-1);}
+ assert.equal(flow.enemyLeadV41({reveal:1}),4);assert.equal(flow.enemyLeadV41({reveal:99}),14);
+});
+
+test('V59 image decode failure clears the failed cache entry and retry actually reloads',async()=>{
+ const old=global.Image,items=[];let decodes=0;
+ global.Image=class{set src(value){if(value)items.push(this);}decode(){return decodes++===0?Promise.reject(new Error('decode failed')):Promise.resolve();}};
+ const images=load('loading'),release=images.retainImagePreloads();
+ try{const first=images.preloadImages(['decode-retry-v59'],'high');items[0].onload();assert.equal((await first)[0].status,'rejected');const next=images.preloadImages(['decode-retry-v59'],'high');assert.equal(items.length,2);items[1].onload();assert.equal((await next)[0].status,'fulfilled');assert.equal(images.imageLoadingStatsV44().active,0);}finally{release();global.Image=old;}
+});
+
+
+test('V59 mission radio translates the complete sentence before removing localized speaker names',()=>{
+ const crew=load('crewV45'),locale=load('locale'),text=load('sortiesV39').SORTIES_V39[0].intro;
+ assert.equal(crew.radioTextV59(text,t=>locale.translateText(t,'en')),'Beacon filaments are scattered on the conveyor. Clear the haulers and rescue our first friends.');
+ for(const {id}of locale.LANGUAGES){if(id!=='zh'&&id!=='en')locale.registerTranslations(id,load('locale.'+id).default);
+  for(const stage of load('sortiesV39').SORTIES_V39)for(const line of [stage.intro,stage.mid]){const inputs=[],result=crew.radioTextV59(line,t=>{inputs.push(t);return locale.translateText(t,id);});assert.deepEqual(inputs,[line]);assert.ok(result.trim());if(id==='en')assert.ok(!/[\u3400-\u9fff]/.test(result),result);}
+ }
+ assert.equal(load('training').TRAINING_LESSONS[5].copy,'核心充满后主动释放，清场与闪避都能回能。');
 });

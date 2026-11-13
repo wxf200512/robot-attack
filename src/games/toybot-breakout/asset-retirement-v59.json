@@ -1,0 +1,151 @@
+{
+  "reason": "Superseded deployment assets; retain historical build/test fixtures outside public output",
+  "files": [
+    {
+      "file": "cockpit-console-v22.webp",
+      "bytes": 266604,
+      "sha256": "43283cf0b87f4acc57550e7502ae6dda75d71bf2fcf96b79945be84a226dc1b4",
+      "historicalFixture": "art-source/retired-v59/cockpit-console-v22.webp"
+    },
+    {
+      "file": "cockpit-v29.webp",
+      "bytes": 579326,
+      "sha256": "a3f7c542922a815a9903647d78f897348205f818a4c34e18849456e6612885d0",
+      "historicalFixture": "art-source/retired-v59/cockpit-v29.webp"
+    },
+    {
+      "file": "combat-run-blade-v52.webp",
+      "bytes": 118882,
+      "sha256": "6ad1fc4dd040a70e1d1b55b50d745225db2559a6fa2ae57fee71b2bfa0a0d3a9",
+      "historicalFixture": "art-source/retired-v59/combat-run-blade-v52.webp"
+    },
+    {
+      "file": "combat-run-heavy-v52.webp",
+      "bytes": 132082,
+      "sha256": "3c514e64470cf6b4c0f8911e3a1e8e11810a84e1f2303de1568eeab421750829",
+      "historicalFixture": "art-source/retired-v59/combat-run-heavy-v52.webp"
+    },
+    {
+      "file": "combat-run-pulse-v52.webp",
+      "bytes": 121876,
+      "sha256": "679545e798a9c001478fa673c2731a8abeff4244255c678eb592dfd9bcf36271",
+      "historicalFixture": "art-source/retired-v59/combat-run-pulse-v52.webp"
+    },
+    {
+      "file": "gate-v29.webp",
+      "bytes": 435584,
+      "sha256": "027e2c8cf8572dab80042c5137ab283a395754f1e4f4b3732078b4c8ec9635ff",
+      "historicalFixture": "art-source/retired-v59/gate-v29.webp"
+    },
+    {
+      "file": "home-mech-base-v1.webp",
+      "bytes": 169496,
+      "sha256": "23e2a181de92f19cfca14177a267cac00447b2e3e8a2a62094285d98a6094d80",
+      "historicalFixture": "art-source/retired-v59/home-mech-base-v1.webp"
+    },
+    {
+      "file": "mech-blade-arena-v36.webp",
+      "bytes": 635192,
+      "sha256": "449c891ab97a4eccf40c8310acddaccfe56b079ac41acae6d62c5e919e278f0e",
+      "historicalFixture": "art-source/retired-v59/mech-blade-arena-v36.webp"
+    },
+    {
+      "file": "mech-blade-attack-v35.webp",
+      "bytes": 363768,
+      "sha256": "f0c67377082002ab896203939b4028266cfeeff2ef97fd827667c71641ec11a2",
+      "historicalFixture": "art-source/retired-v59/mech-blade-attack-v35.webp"
+    },
+    {
+      "file": "mech-blade-run-v30.webp",
+      "bytes": 290168,
+      "sha256": "6fe8622a2f131470385ab17b5f223a4b38d9be8801dc2b0a2ca55cffd1728b76",
+      "historicalFixture": "art-source/retired-v59/mech-blade-run-v30.webp"
+    },
+    {
+      "file": "mech-heavy-arena-v36.webp",
+      "bytes": 659714,
+      "sha256": "90c6b8489c2b9c4bd60e8526e939a3f6fd223eeb1611bb759b7f9b41a1f24709",
+      "historicalFixture": "art-source/retired-v59/mech-heavy-arena-v36.webp"
+    },
+    {
+      "file": "mech-heavy-run-v30.webp",
+      "bytes": 347164,
+      "sha256": "f507e63756ec8f3391c013dccac1be78cd22424149b8d8d67dae70fba9792b56",
+      "historicalFixture": "art-source/retired-v59/mech-heavy-run-v30.webp"
+    },
+    {
+      "file": "mech-portraits-v28.webp",
+      "bytes": 857160,
+      "sha256": "9cf2ac11959ac2e25df239a03cf685ee545192c497097b7eea1178067fea61a9",
+      "historicalFixture": "art-source/retired-v59/mech-portraits-v28.webp"
+    },
+    {
+      "file": "mech-pulse-arena-v36.webp",
+      "bytes": 649468,
+      "sha256": "32f9fb37836726d9ebf9be87457ba0734ceb75b549acec1588eca7086005f98f",
+      "historicalFixture": "art-source/retired-v59/mech-pulse-arena-v36.webp"
+    },
+    {
+      "file": "mech-pulse-run-v30.webp",
+      "bytes": 258068,
+      "sha256": "a247a56d890f05257720c52073c182fc470dbe6075221d32221b9dff88e8e1ac",
+      "historicalFixture": "art-source/retired-v59/mech-pulse-run-v30.webp"
+    },
+    {
+      "file": "reactor-core-v22.webp",
+      "bytes": 137998,
+      "sha256": "efdbac8c7385caf7630d9473a43b1404e22a337ad23ff42a901bb0e4ddc1927d",
+      "historicalFixture": "art-source/retired-v59/reactor-core-v22.webp"
+    },
+    {
+      "file": "road-1-v37.webp",
+      "bytes": 12318,
+      "sha256": "2b1d48332d25e95831c8f2320588c95f00be4175586c8ef488985f1f73a0fbd6",
+      "historicalFixture": "art-source/retired-v59/road-1-v37.webp"
+    },
+    {
+      "file": "road-2-v37.webp",
+      "bytes": 4998,
+      "sha256": "2418830de11674b5efad84f2767a215a44f9ba2f541951cd7bd8b0906b393ef1",
+      "historicalFixture": "art-source/retired-v59/road-2-v37.webp"
+    },
+    {
+      "file": "road-3-v37.webp",
+      "bytes": 7324,
+      "sha256": "0174b92ce8ce970717aa86b72d61f93039913a1466c6823238e3208ec73d26ae",
+      "historicalFixture": "art-source/retired-v59/road-3-v37.webp"
+    },
+    {
+      "file": "road-4-v37.webp",
+      "bytes": 5344,
+      "sha256": "a914ba1036765e1adf0ed994e0ea9799caa2106d490d322b98c24d87b4606cdf",
+      "historicalFixture": "art-source/retired-v59/road-4-v37.webp"
+    },
+    {
+      "file": "road-5-v37.webp",
+      "bytes": 6088,
+      "sha256": "e78c7a1ccdf00d75b6b873ee9c30a02786110e75e547551b0dfad96eaea5eb20",
+      "historicalFixture": "art-source/retired-v59/road-5-v37.webp"
+    },
+    {
+      "file": "story-cover-v11.jpg",
+      "bytes": 20415,
+      "sha256": "d7a8f2d8dd832be181003a8e5a523f14dc3c48599690da7bf52c04bea8e25744",
+      "historicalFixture": "art-source/retired-v59/story-cover-v11.jpg"
+    },
+    {
+      "file": "ui-menu-hangar-v14.jpg",
+      "bytes": 81555,
+      "sha256": "e8de75adea24c642af9fe84ca136aae1f6e6fe13e630d74be32c36a636f3bf8a",
+      "historicalFixture": "art-source/retired-v59/ui-menu-hangar-v14.jpg"
+    }
+  ],
+  "deletedDuplicates": [
+    {
+      "file": "art-source/run-whole-heavy-1-v56.png",
+      "replacement": "art-source/run-whole-heavy-0-v56.png",
+      "bytes": 1601569,
+      "sha256": "2277041f6edbfef9c1331c9cfb1a79dc7ab32027e31eac679d0a5f2cad47f3ad"
+    }
+  ]
+}

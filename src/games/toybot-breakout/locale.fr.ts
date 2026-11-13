@@ -1173,6 +1173,10 @@ const messages: Readonly<Record<string, string>> = {
   "中文": "Chinois",
   "繁體中文": "Chinois traditionnel",
   "日本語": "Japonais",
-  "语言加载失败，请重试。": "La langue n'a pas pu être chargée. Veuillez réessayer."
+  "语言加载失败，请重试。": "La langue n'a pas pu être chargée. Veuillez réessayer.",
+  "准备出击": "Préparation du déploiement",
+  "资源加载失败，请重试。": "Échec du chargement. Réessayez.",
+  "重试加载": "Réessayer",
+
 };
 export default messages;

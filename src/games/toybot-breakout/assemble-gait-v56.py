@@ -7,7 +7,7 @@ manifest=[]
 for kind,skins in sources.items():
  out=Image.new('RGBA',(1536,768)); skinmeta=[]
  for tier,(name,cols,start) in enumerate(skins):
-  dest=A/f'run-whole-{kind}-{tier}-v56.png'
+  dest=A/f'run-whole-{kind}-{0 if kind=="heavy" else tier}-v56.png'
   im=Image.open(dest).convert('RGBA');rows=4;cw=im.width/cols;ch=im.height/rows
   cells=[im.crop((round((i%cols)*cw),round((start+i//cols)*ch),round((i%cols+1)*cw),round((start+i//cols+1)*ch))) for i in range(16)]
   # Reject the upgraded pulse frame with an erroneous extra left-hand cannon.

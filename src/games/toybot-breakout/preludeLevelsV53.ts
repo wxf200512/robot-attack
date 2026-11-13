@@ -11,7 +11,8 @@ export function buildPreludeLevelV53(base:LevelSpec,key:string):LevelSpec{
   const elite=spec.slot>=2&&i===perWave-1&&(wave===1||spec.slot===4&&wave===2);
   const specialist=i===6||i===14&&spec.slot>=1||i===20&&spec.slot>=3||i===28&&spec.level>=2&&spec.slot>=2;
   const kind:EnemyKind=elite?(theme.special as EnemyKind):specialist?(spec.slot===0?'drone':i===6?'sniper':spec.level>=2?'medic':'bomber'):'swarm';
-  hazards.push({progress:[10,spec.end/2,spec.end-8][wave]+Math.floor(i/6)*.65,lane:(i%2+spec.slot)%3,
+  const rank=Math.floor(i/6)/Math.max(1,Math.ceil(perWave/6)-1);
+  hazards.push({reveal:[10,8,6][wave],progress:[8,spec.end/2+2,spec.end-3][wave]+rank*[spec.end*.32,spec.end/2-6.5,2.5][wave],lane:(i%2+spec.slot)%3,
    hp:elite?Math.ceil((12+spec.level*2+spec.slot)*difficulty.eliteHpScale):specialist?Math.ceil((4+spec.level)*(1+difficulty.rank*.007)):1+Math.floor(spec.level/2),kind,horde:!elite&&!specialist,
    wave,slot:i,encounterId:'prelude-'+spec.slot+'-'+wave,elite,pattern:elite?theme.patterns[(spec.slot+wave)%3]:undefined,
    title:elite?theme.elites[wave]:undefined,eliteRole:!elite&&i===0?'energy':!elite&&i===12&&spec.slot>=2?'guard':!elite&&i===20&&spec.slot>=3?'commander':undefined});

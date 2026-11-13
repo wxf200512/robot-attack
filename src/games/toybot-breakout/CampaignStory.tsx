@@ -1,6 +1,6 @@
 import { lt } from './i18n';
 import { CrewPortraitV45 } from './CrewPortraitV45';
-import { speakerMetaV45, radioSpeakerV45, cleanRadioV45 } from './crewV45';
+import { speakerMetaV45, radioSpeakerV45, radioTextV59 } from './crewV45';
 import { useEffect, useRef, useState } from 'react';
 import { BOSS_NAMES } from './art';
 import { STORY_CHAPTERS } from './story';
@@ -19,7 +19,7 @@ export function StoryRadio({game,dispatch}:{game:CampaignState;dispatch:(action:
  const radio=game.narrative.radio;
  if(!radio||game.narrative.scene||!['running','battle'].includes(game.status))return null;
  const speaker=radio.speaker??radioSpeakerV45(radio.text),person=speakerMetaV45(speaker);
- return <aside className="campaign-radio has-crew-v45" key={radio.id} aria-label={lt("局内剧情通信")}><CrewPortraitV45 speaker={speaker} level={game.levelIndex} variant="radio"/><div className="campaign-radio-label"><span>{lt(speaker==='guardian'?BOSS_NAMES[game.levelIndex]:person.short)} / {lt(person.call)}</span><button type="button" aria-label={lt("关闭这条剧情通信")} onClick={()=>dispatch({type:'STORY_DISMISS_RADIO'})}>×</button></div><p>{lt(cleanRadioV45(radio.text))}</p><i style={{width:radio.ticks/75*100+'%'}}/></aside>;
+ return <aside className="campaign-radio has-crew-v45" key={radio.id} aria-label={lt("局内剧情通信")}><CrewPortraitV45 speaker={speaker} level={game.levelIndex} variant="radio"/><div className="campaign-radio-label"><span>{lt(speaker==='guardian'?BOSS_NAMES[game.levelIndex]:person.short)} / {lt(person.call)}</span><button type="button" aria-label={lt("关闭这条剧情通信")} onClick={()=>dispatch({type:'STORY_DISMISS_RADIO'})}>×</button></div><p>{radioTextV59(radio.text,lt)}</p><i style={{width:radio.ticks/75*100+'%'}}/></aside>;
 }
 export function StoryMission({game}:{game:CampaignState}){
  const n=game.narrative;

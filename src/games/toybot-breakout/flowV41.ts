@@ -24,7 +24,7 @@ export const copyFlowV41=(f:FlowV41):FlowV41=>({...f,lessons:[...f.lessons],intr
 export const pressureV41=(s:GameState)=>s.breatherTicks>0||s.progress>=86?'recover':s.progress<18?'scout':s.progress<28||s.progress>=43&&s.progress<50||s.progress>=62&&s.progress<72?'build':'surge';
 export const PRESSURE_NAMES_V41={recover:'回收喘息',scout:'外围侦察',build:'分批接近',surge:'集中清场'};
 // Rear ranks enter later, but every rank uses this same lead for rendering and targeting.
-export const enemyLeadV41=(h:HazardSpec)=>h.horde&&!h.eliteRole?Math.max(10,14-Math.floor((h.slot??0)/6)*2):14;
+export const enemyLeadV41=(h:HazardSpec)=>h.reveal!==undefined?Math.max(4,Math.min(14,h.reveal)):h.horde&&!h.eliteRole?Math.max(10,14-Math.floor((h.slot??0)/6)*2):14;
 export const enemyVisibleV41=(s:GameState,h:HazardSpec)=>s.progress>=h.progress-enemyLeadV41(h)&&s.progress<h.progress;
 export function protectComboV41(s:GameState,kind:'move'|'defense'){
  if(s.combo<=0||s.comboTicks<=0)return false;

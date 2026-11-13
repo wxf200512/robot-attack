@@ -2,7 +2,7 @@
 
 > 2026-11-11用户确认固定V56开发基线，后续仅做局部优化与修复。固定提交、标签与范围见[BASELINE_V56.md](./BASELINE_V56.md)。
 
-当前源码为 V58（怪潮数量与近战刀距小幅调整），保留 V56 全身动作基线、V53关卡与V55九语言。正式提测ZIP仍是V55，不能代表V56—V58更新。本文说明当前实现，历史版本文档用于追溯。交付文件、实测范围与未验收事项见 [ACCEPTANCE_STATUS.md](./ACCEPTANCE_STATUS.md)；集成方从 [INTEGRATION_HANDOFF.md](./INTEGRATION_HANDOFF.md) 开始。根目录与游戏目录 AGENTS.md 的工程和权限约束保持有效。
+当前源码为 V59（本地收尾、加载保护与怪潮节奏优化），保留 V56 全身动作基线、V53关卡与V55九语言。最新提测包为V59，以最终目录release-report.json的sourceCommit及SHA256为准；本地流程与待验收条件见[LOCAL_ACCEPTANCE_V59.md](./LOCAL_ACCEPTANCE_V59.md)。本文说明当前实现，历史版本文档用于追溯。交付文件、实测范围与未验收事项见 [ACCEPTANCE_STATUS.md](./ACCEPTANCE_STATUS.md)；集成方从 [INTEGRATION_HANDOFF.md](./INTEGRATION_HANDOFF.md) 开始。根目录与游戏目录 AGENTS.md 的工程和权限约束保持有效。
 
 ## 关卡和进度
 
@@ -17,6 +17,8 @@
 V57用户授权的局部优化及难度规则见[POLISH_V57.md](./POLISH_V57.md)：首领临近再出场，首页完成节点折叠，普通小怪标识减量；地区/小关推进会增加特殊单位、精英耐久和攻击压力，首领本体HP逐区2300→3200。安全排程和新敌人教学预警保留。
 
 V58调整见[TUNING_V58.md](./TUNING_V58.md)：每项前置/守护者前线行动各新增12名普通小怪；普通刀距10.5、反击/终结斩12.5、剑阵14。保留V57难度曲线与原有同屏、安全排程约束。
+
+V59保留数量、刀距、伤害和频率；前置小关分队逐批揭示，末波延续至终点附近，减少长时间空场。关键贴图解码就绪后才推进战斗，失败提供重试和返回首页；素材目录清理及本地验收见[LOCAL_ACCEPTANCE_V59.md](./LOCAL_ACCEPTANCE_V59.md)。
 
 ## 战斗与判定
 

@@ -36,13 +36,15 @@ export function soundPan(cue:AudioCue,state:GameState):number{
  if(SOUND_BANK[cue].bus==='signal'||cue==='damage'||cue==='shield'||cue==='shield-break'||cue==='armor-block')return 0;
  return Math.max(-.5,Math.min(.5,(SOUND_BANK[cue].bus==='weapon'?(state.lane-1)*.35:(state.impactX-50)/60)));
 }
-export const combatDuckV60=(priority:number)=>priority>=7?{weapon:.24,music:.15,hold:.5}:priority>=6?{weapon:.38,music:.22,hold:.28}:priority>=4?{weapon:.58,music:.3,hold:.14}:null;
+export const AUDIO_MIX_V64={weapon:.50,impact:.55,signal:.70,music:.75,musicScale:.85};
+// Routine armor/upgrade feedback never pumps the music bed. Only danger/core cues make space.
+export const combatDuckV60=(priority:number)=>priority>=7?{weapon:.18,music:.48,hold:.35}:priority>=6?{weapon:.24,music:.62,hold:.22}:priority>=4?{weapon:.38,music:AUDIO_MIX_V64.music,hold:.12}:null;
 export function createCombatMixer(ctx:BaseAudioContext,volume:number){
  const weapon=ctx.createGain(),impact=ctx.createGain(),signal=ctx.createGain(),compressor=ctx.createDynamicsCompressor(),limiter=ctx.createDynamicsCompressor(),master=ctx.createGain(),music=ctx.createGain(),musicVolume=ctx.createGain();
- weapon.gain.value=.8;impact.gain.value=1;signal.gain.value=.85;
+ weapon.gain.value=AUDIO_MIX_V64.weapon;impact.gain.value=AUDIO_MIX_V64.impact;signal.gain.value=AUDIO_MIX_V64.signal;
  compressor.threshold.value=-14;compressor.knee.value=14;compressor.ratio.value=4;compressor.attack.value=.003;compressor.release.value=.1;
  limiter.threshold.value=-3;limiter.knee.value=0;limiter.ratio.value=20;limiter.attack.value=.001;limiter.release.value=.07;
- weapon.connect(compressor);impact.connect(compressor);signal.connect(compressor);compressor.connect(master);master.connect(limiter);limiter.connect(ctx.destination);master.gain.value=volume*.9;music.gain.value=.4;musicVolume.gain.value=.55*.65;music.connect(musicVolume);musicVolume.connect(limiter);
+ weapon.connect(compressor);impact.connect(compressor);signal.connect(compressor);compressor.connect(master);master.connect(limiter);limiter.connect(ctx.destination);master.gain.value=volume*.9;music.gain.value=AUDIO_MIX_V64.music;musicVolume.gain.value=.55*AUDIO_MIX_V64.musicScale;music.connect(musicVolume);musicVolume.connect(limiter);
  return {weapon,impact,signal,master,music,musicVolume,nodes:[weapon,impact,signal,compressor,limiter,master,music,musicVolume]};
 }
 // Built only after a pointer/key gesture. Buffers and mixer are shared by all cues.
@@ -53,11 +55,11 @@ export function createGameAudio(){
  const syncMusic=()=>{if(music&&musicScene)music.setScene({...musicScene,paused:musicScene.paused||settings.muted||(settings.musicVolume??.55)===0});};
  let duckUntil=0,duckPriority=0;
  const last=new Map<string,number>();
- const silence=()=>{for(const voice of active){try{voice.source.stop();voice.source.disconnect();voice.nodes.forEach(node=>node.disconnect());}catch{/* Already ended. */}}active=[];last.clear();duckUntil=0;duckPriority=0;};
+ const silence=()=>{for(const voice of active){try{voice.source.stop();voice.source.disconnect();voice.nodes.forEach(node=>node.disconnect());}catch{/* Already ended. */}}active=[];last.clear();duckUntil=0;duckPriority=0;if(mixer&&context){mixer.weapon.gain.cancelScheduledValues(context.currentTime);mixer.weapon.gain.setValueAtTime(AUDIO_MIX_V64.weapon,context.currentTime);mixer.music.gain.cancelScheduledValues(context.currentTime);mixer.music.gain.setValueAtTime(AUDIO_MIX_V64.music,context.currentTime);}};
  const unlock=()=>{
   if(disposed||settings.muted||settings.volume===0&&(settings.musicVolume??.55)===0)return;
   try{
-   if(!context){const Ctor=window.AudioContext||(window as Window&{webkitAudioContext?:typeof AudioContext}).webkitAudioContext;if(!Ctor)return;context=new Ctor({latencyHint:'interactive'});mixer=createCombatMixer(context,settings.volume);buffer=makeCombatNoise(context);music=createMusicPlayer(context,mixer.music);samples=createSampleBankV63(context);mixer.musicVolume.gain.value=(settings.musicVolume??.55)*.65;}
+   if(!context){const Ctor=window.AudioContext||(window as Window&{webkitAudioContext?:typeof AudioContext}).webkitAudioContext;if(!Ctor)return;context=new Ctor({latencyHint:'interactive'});mixer=createCombatMixer(context,settings.volume);buffer=makeCombatNoise(context);music=createMusicPlayer(context,mixer.music);samples=createSampleBankV63(context);mixer.musicVolume.gain.value=(settings.musicVolume??.55)*AUDIO_MIX_V64.musicScale;}
    void samples?.warm();
    if(context.state!=='running')void context.resume().then(syncMusic).catch(()=>{});else syncMusic();
   }catch{silence();music?.dispose();music=null;samples?.dispose();samples=null;if(context)void context.close().catch(()=>{});context=null;mixer=null;buffer=null;}
@@ -75,9 +77,9 @@ export function createGameAudio(){
    const [voice]=active.splice(steal,1);try{voice.source.stop();}catch{/* Ended. */}
   }
   last.set(cue,now);last.set(group,now);
-  const duck=combatDuckV60(spec.priority);if(duck&&(now>=duckUntil||spec.priority>=duckPriority)){duckUntil=now+duck.hold;duckPriority=spec.priority;const gain=mixer.weapon.gain;gain.cancelScheduledValues(now);gain.setTargetAtTime(duck.weapon,now,.012);gain.setTargetAtTime(.8,now+duck.hold,.09);const bed=mixer.music.gain;bed.cancelScheduledValues(now);bed.setTargetAtTime(duck.music,now,.025);bed.setTargetAtTime(.4,now+duck.hold,.18);}
+  const duck=combatDuckV60(spec.priority);if(duck&&(now>=duckUntil||spec.priority>=duckPriority)){duckUntil=now+duck.hold;duckPriority=spec.priority;const gain=mixer.weapon.gain;gain.cancelScheduledValues(now);gain.setTargetAtTime(duck.weapon,now,.012);gain.setTargetAtTime(AUDIO_MIX_V64.weapon,now+duck.hold,.09);const bed=mixer.music.gain;bed.cancelScheduledValues(now);bed.setTargetAtTime(duck.music,now,.025);bed.setTargetAtTime(AUDIO_MIX_V64.music,now+duck.hold,.18);}
   const pitch=spec.vary===false?1:.97+Math.random()*.06;
   try{active.push(...(samples?.play(cue,mixer[spec.bus],now,pan,pitch,spec.priority)??scheduleCombatSound(context,mixer[spec.bus],buffer,spec,now,pan,pitch)));}catch{/* Audio loss must never interrupt combat. */}
  };
- return {unlock,play,sampleStatus(){return samples?.status()??null;},setMusic(next:MusicScene){musicScene=next;syncMusic();},musicStatus(){return music?.status()??null;},setSettings(next:PlayerSettings){settings={...next,volume:Number.isFinite(next.volume)?Math.max(0,Math.min(1,next.volume)):.45,musicVolume:next.musicVolume===undefined?.55:Number.isFinite(next.musicVolume)?Math.max(0,Math.min(1,next.musicVolume)):.55};if(settings.muted||settings.volume===0)silence();if(mixer&&context){mixer.master.gain.setTargetAtTime(settings.muted?0:settings.volume*.9,context.currentTime,.025);mixer.musicVolume.gain.setTargetAtTime(settings.muted?0:(settings.musicVolume??.55)*.65,context.currentTime,.06);}syncMusic();},suspend(){silence();music?.pause();if(context?.state==='running')void context.suspend().catch(()=>{});},dispose(){disposed=true;silence();samples?.dispose();samples=null;music?.dispose();music=null;mixer?.nodes.forEach(node=>node.disconnect());if(context)void context.close().catch(()=>{});context=null;mixer=null;buffer=null;}};
+ return {unlock,play,sampleStatus(){return samples?.status()??null;},setMusic(next:MusicScene){musicScene=next;syncMusic();},musicStatus(){return music?.status()??null;},setSettings(next:PlayerSettings){settings={...next,volume:Number.isFinite(next.volume)?Math.max(0,Math.min(1,next.volume)):.45,musicVolume:next.musicVolume===undefined?.55:Number.isFinite(next.musicVolume)?Math.max(0,Math.min(1,next.musicVolume)):.55};if(settings.muted||settings.volume===0)silence();if(mixer&&context){mixer.master.gain.setTargetAtTime(settings.muted?0:settings.volume*.9,context.currentTime,.025);mixer.musicVolume.gain.setTargetAtTime(settings.muted?0:(settings.musicVolume??.55)*AUDIO_MIX_V64.musicScale,context.currentTime,.06);}syncMusic();},suspend(){silence();music?.pause();if(context?.state==='running')void context.suspend().catch(()=>{});},dispose(){disposed=true;silence();samples?.dispose();samples=null;music?.dispose();music=null;mixer?.nodes.forEach(node=>node.disconnect());if(context)void context.close().catch(()=>{});context=null;mixer=null;buffer=null;}};
 }

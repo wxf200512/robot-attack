@@ -107,10 +107,10 @@ function Robot({ awakened=false, index, small = false, enemy = false, firing = f
   if (enemy&&bossArt===FURNACE_ART) return <div className="robot-boss-sprite" style={{backgroundImage:`url(${FURNACE_ART})`,backgroundSize:'400% 200%',backgroundPosition:atlasCell(weaponPhase%4,Math.floor(weaponPhase/4),4,2)}} aria-hidden="true"/>;
   if (enemy) return <div className="robot-boss-sprite" style={{ backgroundImage: `url(${bossArt})`, backgroundSize:(bossColumns*100)+'% 500%', backgroundPosition: (weaponPhase * 100 / (bossColumns-1)) + '% ' + (index * 25) + '%' }} aria-hidden="true" />;
 
-  const tier=awakened?4:motionTier(weaponLevel,armorLevel,coreLevel),row=combat?(tier?3:0)+(dodging?2:attacking?1:0):(tier?2:0);
+  const tier=awakened?4:motionTier(weaponLevel,armorLevel,coreLevel),row=combat?(tier?3:0)+(dodging?2:attacking?1:0):(tier?4:0);
   return <div className={`robot-player-art toybot-v28-mech class-${mechClass}${awakened?' is-reference-awakened':''}${small?' robot-small':''}${firing?' is-firing':''}`} style={{'--art-mirror':combat&&dodging&&dodgeDirection<0?-1:1} as React.CSSProperties} aria-hidden="true">
     <span className="toybot-v28-footdust"/>
-    <span className="toybot-v28-body" style={{backgroundImage:`url(${combat?ARENA_ART_V36[mechClass]:RUN_ART[mechClass]})`,backgroundSize:combat?'800% 600%':'800% 400%',backgroundPosition:atlasCell(motionFrame,row,8,combat?6:4)}}><i className="run-lower-v56"/><i className="run-upper-v56"/></span>
+    <span className="toybot-v28-body" style={{backgroundImage:`url(${combat?ARENA_ART_V36[mechClass]:RUN_ART[mechClass]})`,backgroundSize:combat?'800% 600%':'800% 800%',backgroundPosition:atlasCell(motionFrame,row,8,combat?6:8)}}><i className="run-lower-v56"/><i className="run-upper-v56"/></span>
 
   </div>;
 }

@@ -1,0 +1,47 @@
+[
+  {
+    "kind": "pulse",
+    "file": "combat-run-pulse-v64.webp",
+    "frames": 32,
+    "rows": 8,
+    "bytes": 1103092,
+    "sha256": "e85deb392ab1db77b8327485603611111c21a64130818946f864e2aaae556325",
+    "source": "combat-run-pulse-v56.webp",
+    "sourceCells": [
+      0,
+      2,
+      3
+    ],
+    "method": "full-silhouette optical inbetweening, mirrored lower gait only, fixed right-hand aim, no runtime joint reconstruction"
+  },
+  {
+    "kind": "heavy",
+    "file": "combat-run-heavy-v64.webp",
+    "frames": 32,
+    "rows": 8,
+    "bytes": 1315364,
+    "sha256": "e0bf22167065685fdbff00a1d549de49cc38bcb7c8b861ed42ab046c9e8599a3",
+    "source": "combat-run-heavy-v56.webp",
+    "sourceCells": [
+      0,
+      2,
+      3
+    ],
+    "method": "full-silhouette optical inbetweening, mirrored lower gait only, fixed right-hand aim, no runtime joint reconstruction"
+  },
+  {
+    "kind": "blade",
+    "file": "combat-run-blade-v64.webp",
+    "frames": 32,
+    "rows": 8,
+    "bytes": 1109906,
+    "sha256": "32b24e52848ee3d37ee693ca25c01895e11f6b7ccb87db71b357dbedce1d73c0",
+    "source": "combat-run-blade-v56.webp",
+    "sourceCells": [
+      0,
+      2,
+      3
+    ],
+    "method": "full-silhouette optical inbetweening, mirrored lower gait only, fixed right-hand aim, no runtime joint reconstruction"
+  }
+]

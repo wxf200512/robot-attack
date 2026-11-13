@@ -5,11 +5,11 @@ const base='/games/toybot-breakout/music/';
 const edited=(id:MusicId,title:string,file:string,end:number):MusicTrack=>({id,title,url:base+file,bpm:0,introBars:0,loopBars:0,loopStartSeconds:0,loopEndSeconds:end});
 export const MUSIC_TRACKS:MusicTrack[]=[
  edited('road','钢翼突进','road-soft-v62.mp3',60),
- edited('boss-0','熔炉重锤','guardian-heavy-v62.mp3',64),
- edited('boss-1','蜂群追猎','guardian-orchestra-v62.mp3',60),
- edited('boss-2','钢铁壁垒','guardian-heavy-v62.mp3',64),
- edited('boss-3','极性跃迁','guardian-orchestra-v62.mp3',60),
- edited('boss-4','终局指令','guardian-heavy-v62.mp3',64),
+ edited('boss-0','熔炉重锤','boss-furnace-v64.mp3',64),
+ edited('boss-1','蜂群追猎','boss-queen-v64.mp3',60),
+ edited('boss-2','钢铁壁垒','boss-fortress-v64.mp3',64),
+ edited('boss-3','极性跃迁','boss-oracle-v64.mp3',60),
+ edited('boss-4','终局指令','boss-emperor-v64.mp3',64),
 ];
 export const musicTrack=(id:MusicId)=>MUSIC_TRACKS.find(track=>track.id===id)!;
 export const musicLoopStart=(track:MusicTrack)=>track.loopStartSeconds??track.introBars*240/track.bpm;

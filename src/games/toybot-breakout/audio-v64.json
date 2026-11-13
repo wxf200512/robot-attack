@@ -1,0 +1,265 @@
+{
+  "sfx": {
+    "file": "combat-samples-v64.wav",
+    "sha256": "2a24adf08900adc6c07f5905126e548b549d3710285b47e8856d8bf86426c870",
+    "cells": {
+      "pulse": {
+        "start": 0.0,
+        "duration": 0.1
+      },
+      "heavy": {
+        "start": 0.14997732426303856,
+        "duration": 0.22997732426303855
+      },
+      "blade": {
+        "start": 0.42993197278911566,
+        "duration": 0.2
+      },
+      "hit": {
+        "start": 0.6799092970521542,
+        "duration": 0.2
+      },
+      "hit-heavy": {
+        "start": 0.9298866213151927,
+        "duration": 0.38
+      },
+      "hit-blade": {
+        "start": 1.3598639455782313,
+        "duration": 0.38
+      },
+      "armor-hit": {
+        "start": 1.7898412698412698,
+        "duration": 0.2
+      },
+      "armor-break": {
+        "start": 2.0398185941043083,
+        "duration": 0.38
+      },
+      "armor-block": {
+        "start": 2.469795918367347,
+        "duration": 0.38
+      },
+      "destroy": {
+        "start": 2.8997732426303853,
+        "duration": 0.38
+      },
+      "elite-break": {
+        "start": 3.329750566893424,
+        "duration": 0.6499773242630386
+      },
+      "shield": {
+        "start": 4.029705215419501,
+        "duration": 0.38
+      },
+      "shield-break": {
+        "start": 4.4596825396825395,
+        "duration": 0.38
+      },
+      "damage": {
+        "start": 4.889659863945578,
+        "duration": 0.38
+      },
+      "dodge": {
+        "start": 5.319637188208617,
+        "duration": 0.2
+      },
+      "blade-finisher": {
+        "start": 5.569614512471655,
+        "duration": 0.38
+      },
+      "burst-pulse": {
+        "start": 5.999591836734694,
+        "duration": 0.6499773242630386
+      },
+      "burst-heavy": {
+        "start": 6.699546485260771,
+        "duration": 0.6499773242630386
+      },
+      "burst-blade": {
+        "start": 7.399501133786848,
+        "duration": 0.6499773242630386
+      }
+    },
+    "measurements": [
+      {
+        "cue": "pulse",
+        "peak": 0.36581364274024963,
+        "rms": 0.08853749185800552
+      },
+      {
+        "cue": "heavy",
+        "peak": 0.36106187105178833,
+        "rms": 0.10389170795679092
+      },
+      {
+        "cue": "blade",
+        "peak": 0.49494022130966187,
+        "rms": 0.08714734017848969
+      },
+      {
+        "cue": "hit",
+        "peak": 0.28620731830596924,
+        "rms": 0.05872395262122154
+      },
+      {
+        "cue": "hit-heavy",
+        "peak": 0.4454461932182312,
+        "rms": 0.06120353564620018
+      },
+      {
+        "cue": "hit-blade",
+        "peak": 0.31095391511917114,
+        "rms": 0.041878052055835724
+      },
+      {
+        "cue": "armor-hit",
+        "peak": 0.3860533535480499,
+        "rms": 0.05384578928351402
+      },
+      {
+        "cue": "armor-break",
+        "peak": 0.49494022130966187,
+        "rms": 0.0963432639837265
+      },
+      {
+        "cue": "armor-block",
+        "peak": 0.49494022130966187,
+        "rms": 0.06728324294090271
+      },
+      {
+        "cue": "destroy",
+        "peak": 0.3163193464279175,
+        "rms": 0.08146558701992035
+      },
+      {
+        "cue": "elite-break",
+        "peak": 0.49494022130966187,
+        "rms": 0.09038104861974716
+      },
+      {
+        "cue": "shield",
+        "peak": 0.3090355098247528,
+        "rms": 0.1059693694114685
+      },
+      {
+        "cue": "shield-break",
+        "peak": 0.40053126215934753,
+        "rms": 0.10528367012739182
+      },
+      {
+        "cue": "damage",
+        "peak": 0.49494022130966187,
+        "rms": 0.07672236859798431
+      },
+      {
+        "cue": "dodge",
+        "peak": 0.49494022130966187,
+        "rms": 0.07319748401641846
+      },
+      {
+        "cue": "blade-finisher",
+        "peak": 0.49494022130966187,
+        "rms": 0.06939604878425598
+      },
+      {
+        "cue": "burst-pulse",
+        "peak": 0.39798492193222046,
+        "rms": 0.10592175275087357
+      },
+      {
+        "cue": "burst-heavy",
+        "peak": 0.49494022130966187,
+        "rms": 0.1050131544470787
+      },
+      {
+        "cue": "burst-blade",
+        "peak": 0.49494022130966187,
+        "rms": 0.05730929598212242
+      }
+    ],
+    "sourceFiles": [
+      {
+        "file": "cz.wav",
+        "sha256": "4a8594b3cf3f2bfe49497c4a9ae6301b5c7000f21c7cbcb6650df8f594fce713"
+      },
+      {
+        "file": "mosin.wav",
+        "sha256": "ece6fff8f3b21aa8bc41943c0293d3fab6a553db33dd2427a388838324a39719"
+      }
+    ],
+    "author": "Vincent Sevedge",
+    "uploader": "Tabasco",
+    "page": "https://opengameart.org/content/gunshot-sounds",
+    "license": "CC-BY 3.0 (archive license)",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+    "changes": "first transient extraction, 170Hz highpass, 3.5kHz lowpass, short decay, reduced RMS; remaining cues derived from V63 CC0 masters"
+  },
+  "music": [
+    {
+      "id": "furnace",
+      "title": "熔炉重锤：低鼓与铜管",
+      "file": "boss-furnace-v64.mp3",
+      "seconds": 64,
+      "original": "boss-battle-theme.mp3",
+      "sourceStart": 25,
+      "tempo": 1,
+      "filter": "atempo=1,highpass=f=55,lowpass=f=6000,equalizer=f=170:t=q:w=1:g=2,loudnorm=I=-18:TP=-2:LRA=8",
+      "sha256": "0028cddc6f60d45588605b7e5c555f047d8bb91ea30436e62c4b74f234512b35",
+      "rms": 0.10152725521484632,
+      "peak": 0.5988489985466003
+    },
+    {
+      "id": "queen",
+      "title": "蜂群追猎：快速弦乐",
+      "file": "boss-queen-v64.mp3",
+      "seconds": 60,
+      "original": "hope.flac",
+      "sourceStart": 4,
+      "tempo": 1.02,
+      "filter": "atempo=1.02,highpass=f=55,lowpass=f=6000,equalizer=f=850:t=q:w=1:g=1,loudnorm=I=-18:TP=-2:LRA=8",
+      "sha256": "b85086661896d1d281f42e37a44c5703df257c3074c53cdfc473b8a96845f9b9",
+      "rms": 0.09561962997776358,
+      "peak": 0.44909632205963135
+    },
+    {
+      "id": "fortress",
+      "title": "钢铁壁垒：慢速重鼓",
+      "file": "boss-fortress-v64.mp3",
+      "seconds": 64,
+      "original": "boss-battle-theme.mp3",
+      "sourceStart": 65,
+      "tempo": 0.87,
+      "filter": "atempo=0.87,highpass=f=55,lowpass=f=6000,equalizer=f=140:t=q:w=1:g=3,lowpass=f=4200,loudnorm=I=-18:TP=-2:LRA=8",
+      "sha256": "69d2d4bf4ade9042107ef2dc2948c450f4ec5b73245b2d3d1c5fc30138dff1af",
+      "rms": 0.10453072497175649,
+      "peak": 0.6010127663612366
+    },
+    {
+      "id": "oracle",
+      "title": "极性跃迁：舒展管弦",
+      "file": "boss-oracle-v64.mp3",
+      "seconds": 60,
+      "original": "hope.flac",
+      "sourceStart": 12,
+      "tempo": 0.86,
+      "filter": "atempo=0.86,highpass=f=55,lowpass=f=6000,equalizer=f=1600:t=q:w=1:g=1,loudnorm=I=-18:TP=-2:LRA=8",
+      "sha256": "59e8c849017bdd430ef5578b312da5e0d229355a7032d883dfa65d7218d0fbe4",
+      "rms": 0.09173113486518078,
+      "peak": 0.39774271845817566
+    },
+    {
+      "id": "emperor",
+      "title": "终局指令：紧迫重奏",
+      "file": "boss-emperor-v64.mp3",
+      "seconds": 64,
+      "original": "boss-battle-theme.mp3",
+      "sourceStart": 97,
+      "tempo": 1.04,
+      "filter": "atempo=1.04,highpass=f=55,lowpass=f=6000,equalizer=f=650:t=q:w=1:g=1.5,loudnorm=I=-18:TP=-2:LRA=8",
+      "sha256": "362cee88ab59234257216cd0f9c7459ad7a9d446173891070c3680cad590764a",
+      "rms": 0.10390554191285811,
+      "peak": 0.6086164116859436
+    }
+  ],
+  "musicSources": "art-source/music-v62/sources.json"
+}

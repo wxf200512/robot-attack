@@ -1184,5 +1184,6 @@ const messages: Readonly<Record<string, string>> = {
   "钢铁壁垒": "鋼鐵壁壘",
   "极性跃迁": "極性躍遷",
   "终局指令": "終局指令",
+  "音频授权": "音訊授權",
 };
 export default messages;

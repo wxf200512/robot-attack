@@ -1184,4 +1184,5 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "钢铁壁垒": "Iron Bastion",
   "极性跃迁": "Polarity Shift",
   "终局指令": "Final Directive",
+  "音频授权": "Audio credits",
 };

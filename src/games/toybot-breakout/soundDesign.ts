@@ -1,4 +1,4 @@
-// Locally synthesized combat Foley; no remote audio, codec loading or autoplay.
+// Synthesized fallback Foley and UI cues. audio.ts prefers the licensed local sample atlas after gesture unlock.
 export type AudioCue='armor-break'|'armor-hit'|'armor-block'|'elite-break'|'perfect'|'pulse'|'heavy'|'blade'|'hit'|'hit-heavy'|'hit-blade'|'destroy'|'shield'|'shield-break'|'damage'|'warning'|'boss-warning'|'gate'|'upgrade'|'victory'|'defeat'|'dodge'|'evade'|'burst-pulse'|'burst-heavy'|'burst-blade'|'burst-ready'|'pulse-up'|'heavy-up'|'blade-up'|'blade-finisher'|'core-shot-pulse'|'core-shot-heavy'|'core-shot-blade';
 export type SoundLayer={wave:OscillatorType|'noise';from:number;to:number;duration:number;gain:number;delay?:number;filter?:BiquadFilterType;q?:number;attack?:number};
 export type SoundSpec={layers:SoundLayer[];priority:number;gap:number;bus:'weapon'|'impact'|'signal';vary?:boolean};

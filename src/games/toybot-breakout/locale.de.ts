@@ -1184,5 +1184,6 @@ const messages: Readonly<Record<string, string>> = {
   "钢铁壁垒": "Eisenbastion",
   "极性跃迁": "Polaritätswechsel",
   "终局指令": "Letzte Direktive",
+  "音频授权": "Audio-Lizenzen",
 };
 export default messages;

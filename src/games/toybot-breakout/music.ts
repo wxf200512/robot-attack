@@ -5,7 +5,7 @@ export function musicSceneFor(state:GameState,storyBlocked=false):MusicScene{
  const phase=state.status==='paused'?state.resumeStatus:state.status;
  const boss=phase==='boss-intro'||phase==='battle'||phase==='boss-shift';
  const stopped=phase==='defeat'||phase==='result'||phase==='boss-victory';
- return {track:stopped?null:boss?`boss-${Math.max(0,Math.min(4,state.levelIndex))}` as MusicId:'road',paused:state.status==='paused'||storyBlocked,runId:state.runId,levelIndex:state.levelIndex,volume:phase==='home'?.6:1,warmBoss:phase==='running'&&state.progress>=65};
+ return {track:stopped?null:boss?`boss-${Math.max(0,Math.min(4,state.levelIndex))}` as MusicId:'road',paused:state.status==='paused',runId:state.runId,levelIndex:state.levelIndex,volume:storyBlocked?.45:phase==='home'?.6:1,warmBoss:phase==='running'&&state.progress>=50};
 }
 export function musicPosition(track:MusicTrack,elapsed:number){
  const end=musicLoopEnd(track),start=musicLoopStart(track);

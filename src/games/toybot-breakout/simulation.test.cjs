@@ -1755,14 +1755,14 @@ test('music follows road and five boss scenes, blocks under story, and keeps int
   const s=initial(sector);assert.equal(music.musicSceneFor({...s,status:'running'}).track,'road');
   for(const status of ['boss-intro','battle','boss-shift'])assert.equal(music.musicSceneFor({...s,status}).track,'boss-'+sector);
   const paused=music.musicSceneFor({...s,status:'paused',resumeStatus:'battle'});assert.equal(paused.track,'boss-'+sector);assert.equal(paused.paused,true);
-  assert.equal(music.musicSceneFor({...s,status:'boss-intro'},true).paused,true);
+  assert.equal(music.musicSceneFor({...s,status:'boss-intro'},true).paused,false);
   for(const status of ['result','defeat','boss-victory'])assert.equal(music.musicSceneFor({...s,status}).track,null);
  }
 });
 test('every original music track exists as a compact MP3 with a valid intro and repeat region',()=>{
  let bytes=0;const seenMusic=new Set();assert.equal(tracks.MUSIC_TRACKS.length,6);assert.equal(new Set(tracks.MUSIC_TRACKS.map(t=>t.title)).size,6);
  for(const t of tracks.MUSIC_TRACKS){const file=path.resolve(__dirname,'../../../public'+t.url),data=readFixture(file);if(!seenMusic.has(t.url)){bytes+=data.length;seenMusic.add(t.url);}assert.ok(data[0]===255||data.toString('ascii',0,3)==='ID3');const frame=data[0]===255?0:10+((data[6]&127)<<21)+((data[7]&127)<<14)+((data[8]&127)<<7)+(data[9]&127);assert.equal(data[frame],255);assert.equal(data[frame+1]&224,224);assert.ok(data.length>100000);assert.ok(tracks.musicLoopEnd(t)>tracks.musicLoopStart(t)+20);assert.equal(tracks.musicLoopStart(t),0);assert.ok([60,64].includes(tracks.musicLoopEnd(t)));}
- assert.ok(bytes<3000000,'music payload should remain lightweight');
+ assert.ok(bytes<4000000,'six distinct 60-second music files stay below 4 MB');
 });
 test('loop timing preserves the one-time entrance and accounts for raw MP3 padding without shifting gapless decoders',()=>{
  for(const track of tracks.MUSIC_TRACKS){const start=tracks.musicLoopStart(track),end=tracks.musicLoopEnd(track);assert.equal(music.musicPosition(track,end),start);assert.ok(music.musicPosition(track,end*20)>=start);assert.ok(music.musicPosition(track,end*20)<end);assert.equal(music.musicTiming(track,end).delay,0);assert.equal(music.musicTiming(track,end+.08).delay,tracks.MUSIC_ENCODER_DELAY);}
@@ -1794,7 +1794,7 @@ test('music fetch errors remain isolated and a pending decode is invalidated on 
 test('music volume migrates independently of effects and critical feedback ducks the music bed',()=>{
  const settings=load('settings'),old=settings.normalizeSettings({muted:false,volume:.23,quality:'auto'});assert.equal(old.volume,.23);assert.equal(old.musicVolume,undefined);
  assert.equal(settings.normalizeSettings({...old,musicVolume:3}).musicVolume,1);assert.equal(settings.normalizeSettings({...old,musicVolume:NaN}).musicVolume,.55);
- const h=audioHarness();try{const e=load('audio').createGameAudio();e.unlock();e.setSettings({...old,musicVolume:.1});assert.ok(h.stats.gains.some(g=>g.gain.calls.some(c=>c[0]==='target'&&Math.abs(c[1]-.065)<.00001)));e.play('burst-heavy');assert.ok(h.stats.gains.some(g=>g.gain.calls.some(c=>c[0]==='target'&&c[1]===load('audio').combatDuckV60(7).music)));e.dispose();}finally{h.restore();}
+ const h=audioHarness();try{const e=load('audio').createGameAudio();e.unlock();e.setSettings({...old,musicVolume:.1});assert.ok(h.stats.gains.some(g=>g.gain.calls.some(c=>c[0]==='target'&&Math.abs(c[1]-.085)<.00001)));e.play('burst-heavy');assert.ok(h.stats.gains.some(g=>g.gain.calls.some(c=>c[0]==='target'&&c[1]===load('audio').combatDuckV60(7).music)));e.dispose();}finally{h.restore();}
 });
 
 test('decoded music seam repair removes discontinuity without changing the entrance or loop duration',()=>{
@@ -1876,7 +1876,7 @@ test('heavy stagger cannot extend a warning into a three-lane body trap on any s
 test('independent motion atlas runs sixteen frames and never runs in any boss phase',()=>{
  const art=load('visualArt'),s={...initial(),status:'running',roadTicks:0};
  const frames=new Set(Array.from({length:128},(_,i)=>art.artPose({...s,progress:i/10*sim.RUN_SPEED}).frame));
- assert.equal(frames.size,16);assert.equal(art.artPose(s).row,0);
+ assert.equal(frames.size,32);assert.equal(art.artPose(s).row,0);
  for(const status of ['boss-intro','battle','boss-shift','boss-victory']){
   const p=art.artPose({...s,status,fireCooldown:0});assert.equal(p.row,0);assert.equal(p.sheet,'arena');
  }
@@ -1970,7 +1970,7 @@ test('independent sprite atlases preserve transparency and calibrated action cel
  for(const m of meta){assert.equal(m.frames,64);assert.equal(m.measuredFrames,64);assert.ok(m.transparentFraction>.6);assert.ok(m.interpolatedFrames<=1);assert.ok(m.maxCoreXErrorPx<=5);const png=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/mech-'+m.class+'-motion-v30.png'));assert.equal(imageInfo(png).width,1024);assert.equal(imageInfo(png).height,1024);assert.equal(imageInfo(png).alpha,true);hashes.add(require('node:crypto').createHash('sha256').update(png).digest('hex'));}assert.equal(hashes.size,3);
 });
 
-test('all independent running cycles contain sixteen stable cells per equipment tier',()=>{const art=load('visualArt'),meta=JSON.parse(readFixture(path.resolve(__dirname,'run-registration-v30.json'),'utf8').replace(/^\uFEFF/,''));for(const m of meta){const s={...quietRoad(0),mechClass:m.class,fireCooldown:0};const poses=Array.from({length:200},(_,i)=>art.artPose({...s,progress:s.progress+i/10*sim.RUN_SPEED}));assert.equal(new Set(poses.map(p=>p.frame)).size,16);assert.ok(poses.every(p=>p.sheet==='run'));assert.equal(m.strideFrames,16);assert.ok(m.maxCoreXErrorPx<=1);const png=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/mech-'+m.class+'-run-v30.png'));assert.equal(imageInfo(png).width,1024);assert.equal(imageInfo(png).height,512);assert.equal(imageInfo(png).alpha,true);}});
+test('all independent running cycles contain sixteen stable cells per equipment tier',()=>{const art=load('visualArt'),meta=JSON.parse(readFixture(path.resolve(__dirname,'run-registration-v30.json'),'utf8').replace(/^\uFEFF/,''));for(const m of meta){const s={...quietRoad(0),mechClass:m.class,fireCooldown:0};const poses=Array.from({length:200},(_,i)=>art.artPose({...s,progress:s.progress+i/10*sim.RUN_SPEED}));assert.equal(new Set(poses.map(p=>p.frame)).size,32);assert.ok(poses.every(p=>p.sheet==='run'));assert.equal(m.strideFrames,16);assert.ok(m.maxCoreXErrorPx<=1);const png=readFixture(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized/mech-'+m.class+'-run-v30.png'));assert.equal(imageInfo(png).width,1024);assert.equal(imageInfo(png).height,512);assert.equal(imageInfo(png).alpha,true);}});
 
 test('five guardians own different animation assets and charge/move/attack/hit profiles',()=>{
  const art=load('hostileMotionV31');assert.equal(new Set(art.BOSS_MOTION_V31).size,5);assert.equal(new Set(art.BOSS_MOTION_PROFILES.map(p=>p.id)).size,5);
@@ -2573,7 +2573,7 @@ test('V47 production showcase atlases provide eight distinct equipment cells for
 test('V48 active combat assets share the new three class art and retain all run, arena and blade phases',()=>{
  const art=load('combatArtV48'),visual=load('visualArt'),arena=load('arenaMotionV36'),blade=load('bladeMotionV35');
  const manifest=JSON.parse(fs.readFileSync(path.join(__dirname,'combat-art-v48.json'),'utf8'));assert.equal(manifest.length,16);assert.ok(manifest.reduce((n,r)=>n+r.bytes,0)<6*1048576);
- for(const kind of ['pulse','heavy','blade']){assert.equal(visual.RUN_ART[kind],load('runArtV56').COMBAT_RUN_V56[kind]);assert.equal(arena.ARENA_ART_V36[kind],art.COMBAT_ARENA_V48[kind]);
+ for(const kind of ['pulse','heavy','blade']){assert.equal(visual.RUN_ART[kind],load('runArtV64').COMBAT_RUN_V64[kind]);assert.equal(arena.ARENA_ART_V36[kind],art.COMBAT_ARENA_V48[kind]);
   for(const clip of ['run','arena']){const row=manifest.find(r=>r.file==='combat-'+clip+'-'+kind+'-v48.webp');assert.equal(row.columns,8);assert.equal(row.frames,clip==='run'?32:48);assert.equal(row.distinctFrames,row.frames);const info=imageInfo(fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',row.file)));assert.equal(info.width,1536);assert.equal(info.height,clip==='run'?768:1152);assert.equal(info.alpha,true);}
  }
  assert.equal(blade.BLADE_ATTACK_V35,art.COMBAT_BLADE_V48);assert.equal(load('art').GATE_ART,art.COMBAT_UI_V48.gate);assert.equal(load('roadMotionV37').ROAD_TILES_V37.length,5);assert.equal(new Set(art.COMBAT_ROADS_V48).size,5);
@@ -2585,7 +2585,7 @@ test('V48 scene repaint uses independent new art for each class without changing
   const s={...(arena?battle():quietRoad(0)),mechClass:kind,bots:3,fireCooldown:0,weaponLevel:0};const before=JSON.stringify(s);
   const body={style:{},dataset:{}},node={style:{},querySelector:()=>body},root={style:{setProperty(){}}};
   renderer.paintMotion(root,s,.5,[{node,kind:'robot',id:0}],false,{width:390,height:750});
-  assert.ok(body.style.backgroundImage.includes('combat-'+(arena?'arena-':'run-')+kind+(arena?'-v48.webp':'-v56.webp')));assert.ok(!body.dataset.mechAction.includes(arena?'run':'side-step'));assert.equal(JSON.stringify(s),before);
+  assert.ok(body.style.backgroundImage.includes('combat-'+(arena?'arena-':'run-')+kind+(arena?'-v48.webp':'-v64.webp')));assert.ok(!body.dataset.mechAction.includes(arena?'run':'side-step'));assert.equal(JSON.stringify(s),before);
  }
 });
 
@@ -2595,7 +2595,7 @@ test('V50 road strides follow traveled distance and do not restart for firing or
  for(const mechClass of ['pulse','heavy','blade']){
   const base={...quietRoad(0),mechClass,fireCooldown:0,progress:10};const before=JSON.stringify(base),frames=new Set();
   for(let i=0;i<160;i++){const s={...base,progress:i*sim.RUN_SPEED*profiles.STRIDE_TICKS_V50[mechClass]/160};frames.add(sample(s).frame);}
-  assert.equal(frames.size,16);assert.equal(sample(base,.3).frame,sample({...base,roadTicks:9999},.3).frame);
+  assert.equal(frames.size,32);assert.equal(sample(base,.3).frame,sample({...base,roadTicks:9999},.3).frame);
   assert.deepEqual(sample(base,.3),sample({...base,status:'paused',resumeStatus:'running'},.3));
   assert.equal(sample(base,.8,0,true).frame,0);assert.equal(JSON.stringify(base),before);
  }
@@ -2620,7 +2620,7 @@ test('V52 actual run artwork has separate authored leg phases and exact reproduc
 });
 test('V56 renderer avoids whole-body hopping and clears articulated run layers for boss combat',()=>{
  const body={style:{},dataset:{}},dust={style:{}},node={style:{},dataset:{},querySelector:selector=>selector==='.toybot-v28-body'?body:selector==='.toybot-v28-footdust'?dust:null},root={style:{setProperty(){}}},entries=[{node,kind:'robot',id:0}];
- for(const mechClass of ['pulse','heavy','blade']){const s={...quietRoad(0),mechClass,fireCooldown:0,progress:10},before=JSON.stringify(s),positions=new Set();for(let i=0;i<64;i++){motion.paintMotion(root,{...s,progress:i*sim.RUN_SPEED/8},.3,entries);assert.equal(body.style.transform,'none');assert.equal(body.style.translate,'0 0px');assert.equal(dust.style.opacity,'0');positions.add(body.style.backgroundPosition);}assert.ok(positions.size>4);assert.match(body.style.backgroundImage,/-v56/);motion.paintMotion(root,{...battle(),mechClass,fireCooldown:0},.3,entries);assert.match(body.style.backgroundImage,/combat-arena/);assert.equal(body.style.transform,'none');assert.equal(JSON.stringify(s),before);}
+ for(const mechClass of ['pulse','heavy','blade']){const s={...quietRoad(0),mechClass,fireCooldown:0,progress:10},before=JSON.stringify(s),positions=new Set();for(let i=0;i<64;i++){motion.paintMotion(root,{...s,progress:i*sim.RUN_SPEED/8},.3,entries);assert.equal(body.style.transform,'none');assert.equal(body.style.translate,'0 0px');assert.equal(dust.style.opacity,'0');positions.add(body.style.backgroundPosition);}assert.ok(positions.size>4);assert.match(body.style.backgroundImage,/-v64/);motion.paintMotion(root,{...battle(),mechClass,fireCooldown:0},.3,entries);assert.match(body.style.backgroundImage,/combat-arena/);assert.equal(body.style.transform,'none');assert.equal(JSON.stringify(s),before);}
 });
 
 test('V56 shoulder counter-swing follows the stride without restarting on gunfire',()=>{
@@ -2638,10 +2638,10 @@ test('V56 shoulder counter-swing follows the stride without restarting on gunfir
  }
 });
 
-test('V56 current whole-body atlases have alpha, reproducible hashes and all class skins',()=>{
+test('V56 source whole-body atlases retain alpha, reproducible hashes and all class skins',()=>{
  const rows=JSON.parse(fs.readFileSync(path.join(__dirname,'gait-v56.json'),'utf8'));
  for(const row of rows){
-  assert.equal(load('visualArt').RUN_ART[row.kind],'/games/toybot-breakout/optimized/'+row.file);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(__dirname,'run-v64.json'),'utf8')).find(r=>r.kind===row.kind).source,row.file);
   const data=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',row.file)),info=imageInfo(data);
   assert.equal(info.width,1536);assert.equal(info.height,768);assert.equal(info.alpha,true);
   assert.equal(require('node:crypto').createHash('sha256').update(data).digest('hex'),row.sha256);
@@ -2766,7 +2766,7 @@ test('V59 mission radio translates the complete sentence before removing localiz
 test('V60 ordinary hits and horde breaks keep the music bed stable, damage ducks and recovers',()=>{
  const h=audioHarness();try{const a=load('audio'),e=a.createGameAudio();e.unlock();const mixerGains=h.stats.gains.slice();const targets=()=>mixerGains.flatMap(g=>g.gain.calls.filter(c=>c[0]==='target'));const before=targets().length;
  e.play('hit');h.stats.contexts[0].currentTime=.2;e.play('destroy');assert.equal(targets().length,before);
- h.stats.contexts[0].currentTime=.4;e.play('damage');assert.ok(targets().some(c=>c[1]===a.combatDuckV60(6).music));assert.ok(targets().some(c=>c[1]===.4&&c[2]>.4));e.dispose();
+ h.stats.contexts[0].currentTime=.4;e.play('damage');assert.ok(targets().some(c=>c[1]===a.combatDuckV60(6).music));assert.ok(targets().some(c=>c[1]===a.AUDIO_MIX_V64.music&&c[2]>.4));e.dispose();
  }finally{h.restore();}
 });
 test('V60 clutter reduction retains true breaks and core impacts without changing game data',()=>{
@@ -2789,7 +2789,7 @@ test('V60 lower priority upgrades do not undo an active damage duck',()=>{
 
 test('V62 edited masters match licensed provenance and explicit second-based loops',()=>{
  const crypto=require('node:crypto'),m=JSON.parse(fs.readFileSync(path.join(__dirname,'music-licensed-v62.json'),'utf8'));
- assert.equal(new Set(tracks.MUSIC_TRACKS.map(t=>t.url)).size,3);
+ assert.equal(new Set(tracks.MUSIC_TRACKS.map(t=>t.url)).size,6);
  for(const r of m.runtimeFiles){const bytes=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/music',r.file));assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),r.sha256);}
  for(const r of m.sources){assert.equal(r.license,'CC0 1.0');const bytes=fs.readFileSync(path.join(__dirname,'art-source/music-v62',r.original));assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),r.sha256);}
  assert.equal(tracks.musicLoopEnd(tracks.musicTrack('road')),60);assert.equal(tracks.musicLoopEnd(tracks.musicTrack('boss-0')),64);
@@ -2810,7 +2810,7 @@ test('V63 CC0 sample atlas matches source hashes and bounded exact PCM offsets',
 test('V63 sample loading coalesces and failed loads can retry without queued old hits',async()=>{
  const h=audioHarness();try{const ctx=new window.AudioContext(),bankModule=load('sampleBankV63');let calls=0;ctx.decodeAudioData=async()=>({duration:10});const bank=bankModule.createSampleBankV63(ctx,async()=>({ok:++calls>1,status:503,arrayBuffer:async()=>new ArrayBuffer(2)}));
  assert.equal(bank.play('pulse',ctx.destination,0,0,1,1),null);await bank.warm();assert.equal(bank.status().ready,false);await Promise.all([bank.warm(),bank.warm()]);assert.equal(calls,2);assert.equal(bank.status().hits,0);assert.equal(bank.ready('pulse'),true);assert.equal(bank.ready('warning'),false);
- const voices=bank.play('heavy',ctx.destination,4,.3,1,1);assert.equal(voices.length,1);assert.equal(voices[0].source.offset,load('sampleAtlasV63').SAMPLE_CELLS_V63.heavy.start);assert.ok(voices[0].end>4);bank.dispose();assert.equal(bank.play('heavy',ctx.destination,5,0,1,1),null);
+ const voices=bank.play('heavy',ctx.destination,4,.3,1,1);assert.equal(voices.length,1);assert.equal(voices[0].source.offset,load('sampleAtlasV64').SAMPLE_CELLS_V64.heavy.start);assert.ok(voices[0].end>4);bank.dispose();assert.equal(bank.play('heavy',ctx.destination,5,0,1,1),null);
  }finally{h.restore();}
 });
 test('V63 disposal invalidates a pending decode and aborts its fetch',async()=>{
@@ -2820,4 +2820,22 @@ test('V63 disposal invalidates a pending decode and aborts its fetch',async()=>{
 test('V63 real combat mixer selects one sample voice per volley and silence stops it',async()=>{
  const h=audioHarness(),oldFetch=global.fetch;try{global.fetch=async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer(2)});window.AudioContext.prototype.decodeAudioData=async()=>({duration:10});const engine=load('audio').createGameAudio();engine.unlock();await flushMusic();assert.equal(engine.sampleStatus().ready,true);const n=h.stats.started;engine.play('pulse');assert.equal(h.stats.started,n+1);assert.equal(engine.sampleStatus().hits,1);engine.setSettings({muted:true,volume:.45,quality:'auto'});assert.ok(h.stats.sources.at(-1).cancelled);engine.dispose();assert.equal(engine.sampleStatus(),null);
  }finally{global.fetch=oldFetch;h.restore();}
+});
+
+test('V64 current sampled weapons and five boss masters match provenance and independent files',()=>{
+ const crypto=require('node:crypto'),m=JSON.parse(fs.readFileSync(path.join(__dirname,'audio-v64.json'),'utf8')),sha=b=>crypto.createHash('sha256').update(b).digest('hex');
+ assert.equal(m.music.length,5);assert.equal(new Set(m.music.map(t=>t.sha256)).size,5);
+ for(const t of m.music){assert.equal(sha(fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/music',t.file))),t.sha256);assert.ok(t.peak<=.82);}
+ const sfx=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/sfx',m.sfx.file));assert.equal(sha(sfx),m.sfx.sha256);assert.ok(m.sfx.cells.pulse.duration<=.11);assert.ok(m.sfx.cells.heavy.duration<=.24);
+ assert.match(m.sfx.license,/CC-BY 3.0/);for(const r of m.sfx.sourceFiles)assert.equal(sha(fs.readFileSync(path.join(__dirname,'art-source/audio-v64',r.file))),r.sha256);
+ assert.ok(load('audio').AUDIO_MIX_V64.weapon<.6);assert.equal(load('audio').combatDuckV60(4).music,load('audio').AUDIO_MIX_V64.music);
+});
+test('V64 boss music remains audible under story and retains the selected sector theme through pause',()=>{
+ for(let i=0;i<5;i++){const s={...battle(),levelIndex:i,status:'boss-intro'},a=music.musicSceneFor(s,true);assert.equal(a.track,'boss-'+i);assert.equal(a.paused,false);assert.equal(a.volume,.45);assert.equal(music.musicSceneFor({...s,status:'battle'},false).volume,1);assert.equal(music.musicSceneFor({...s,status:'paused',resumeStatus:'battle'},true).paused,true);}
+});
+
+test('V64 intact run atlases expose thirty-two phases per skin and preserve right-hand aim',()=>{
+ const crypto=require('node:crypto'),meta=JSON.parse(fs.readFileSync(path.join(__dirname,'run-v64.json'),'utf8'));
+ for(const r of meta){const bytes=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/optimized',r.file));assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),r.sha256);const info=imageInfo(bytes);assert.equal(info.width,1536);assert.equal(info.height,1536);assert.equal(info.alpha,true);assert.equal(r.frames,32);assert.match(r.method,/no runtime joint reconstruction/);}
+ const source=fs.readFileSync(path.join(__dirname,'index.tsx'),'utf8');assert.ok(!source.includes('MechRigV64'));assert.ok(source.includes('run-upper-v56'));assert.ok(source.includes("combat?'800% 600%':'800% 800%'"));
 });

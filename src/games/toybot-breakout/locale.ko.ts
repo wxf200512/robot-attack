@@ -1184,5 +1184,6 @@ const messages: Readonly<Record<string, string>> = {
   "钢铁壁垒": "강철 요새",
   "极性跃迁": "극성 전환",
   "终局指令": "최후의 명령",
+  "音频授权": "오디오 크레딧",
 };
 export default messages;

@@ -13,7 +13,7 @@ export function roadStridePhaseV50(s:GameState,alpha=0,index=0){
 }
 export function roadStrideFrameV50(c:MotionContext){
  const phase=roadStridePhaseV50(c.s,c.t,c.index);
- return c.reduced?0:Math.min(15,Math.floor(phase*16));
+ return c.reduced?0:Math.min(31,Math.floor(phase*32));
 }
 export function roadBodyRegistrationV50(kind:MechClass,tier:number,frame:number){
  const [x,y]=RUN_REGISTRATION_V50[kind][tier?1:0][Math.max(0,Math.min(15,Math.floor(frame)))];

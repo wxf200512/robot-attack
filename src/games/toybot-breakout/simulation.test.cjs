@@ -1722,7 +1722,7 @@ test('audio voice limits preserve critical feedback and duck gunfire, without al
   const engine=audio.createGameAudio();engine.unlock();const ctx=h.stats.contexts[0];
   for(let i=0;i<80;i++){ctx.currentTime=i*.071;engine.play('core-shot-heavy');engine.play('heavy');}
   assert.equal(h.stats.buffers,1);assert.ok(h.stats.sources.filter(s=>!s.cancelled&&s.end>ctx.currentTime).length<=design.MAX_SOUND_VOICES);
-  engine.play('damage');assert.ok(h.stats.gains.some(n=>n.gain.calls.some(c=>c[0]==='target'&&c[1]===.2)));
+  engine.play('damage');assert.ok(h.stats.gains.some(n=>n.gain.calls.some(c=>c[0]==='target'&&c[1]===audio.combatDuckV60(6).weapon)));
   const count=h.stats.started;engine.play('burst-heavy');assert.ok(h.stats.started>count);assert.ok(h.stats.sources.some(s=>s.cancelled));assert.equal(h.stats.compressors.length,2);
   engine.suspend();assert.ok(h.stats.sources.filter(s=>s.end>ctx.currentTime).every(s=>s.cancelled));engine.unlock();engine.play('heavy');assert.ok(h.stats.started>count);engine.dispose();
  }finally{h.restore();}
@@ -1770,9 +1770,9 @@ test('loop timing preserves the one-time entrance and accounts for raw MP3 paddi
 test('music preloads only the selected guardian, never restarts an active theme, and resumes inside its loop',async()=>{
  const h=musicHarness();try{
   h.player.setScene(h.scene());await flushMusic();assert.equal(h.player.status().track,'road');assert.equal(h.requests.length,2);assert.deepEqual(new Set(h.player.status().cached),new Set(['road','boss-0']));
-  h.player.setScene(h.scene('boss-0'));await flushMusic();const count=h.stats.started,source=h.stats.sources.at(-1);assert.equal(source.loop,true);assert.ok(source.loopStart>10);assert.equal(h.player.status().track,'boss-0');
+  h.player.setScene(h.scene('boss-0'));await flushMusic();const count=h.stats.started,source=h.stats.sources.at(-1);assert.equal(source.loop,true);assert.ok(Math.abs(source.loopStart-tracks.musicLoopStart(tracks.musicTrack('boss-0'))-tracks.MUSIC_ENCODER_DELAY)<.0001);assert.equal(h.player.status().track,'boss-0');
   h.player.setScene(h.scene('boss-0'));await flushMusic();assert.equal(h.stats.started,count,'battle must not replay its entrance');
-  h.ctx.currentTime=67;h.player.setScene(h.scene('boss-0',true));const position=h.player.status().offset;assert.ok(position>=10&&position<50);assert.equal(h.player.status().playing,false);
+  h.ctx.currentTime=67;h.player.setScene(h.scene('boss-0',true));const position=h.player.status().offset;assert.ok(position>=tracks.musicLoopStart(tracks.musicTrack('boss-0'))&&position<tracks.musicLoopEnd(tracks.musicTrack('boss-0')));assert.equal(h.player.status().playing,false);
   h.ctx.currentTime=150;h.player.setScene(h.scene('boss-0'));await flushMusic();assert.ok(Math.abs(h.stats.sources.at(-1).offset-position-tracks.MUSIC_ENCODER_DELAY)<.0001);
   h.player.setScene(h.scene('boss-0',false,0,2));await flushMusic();assert.equal(h.stats.sources.at(-1).offset,tracks.MUSIC_ENCODER_DELAY,'a restarted run gets its entrance again');
   h.player.setScene(h.scene(null));assert.equal(h.player.status().playing,false);
@@ -1794,7 +1794,7 @@ test('music fetch errors remain isolated and a pending decode is invalidated on 
 test('music volume migrates independently of effects and critical feedback ducks the music bed',()=>{
  const settings=load('settings'),old=settings.normalizeSettings({muted:false,volume:.23,quality:'auto'});assert.equal(old.volume,.23);assert.equal(old.musicVolume,undefined);
  assert.equal(settings.normalizeSettings({...old,musicVolume:3}).musicVolume,1);assert.equal(settings.normalizeSettings({...old,musicVolume:NaN}).musicVolume,.55);
- const h=audioHarness();try{const e=load('audio').createGameAudio();e.unlock();e.setSettings({...old,musicVolume:.1});assert.ok(h.stats.gains.some(g=>g.gain.calls.some(c=>c[0]==='target'&&Math.abs(c[1]-.065)<.00001)));e.play('burst-heavy');assert.ok(h.stats.gains.some(g=>g.gain.calls.some(c=>c[0]==='target'&&c[1]===.09)));e.dispose();}finally{h.restore();}
+ const h=audioHarness();try{const e=load('audio').createGameAudio();e.unlock();e.setSettings({...old,musicVolume:.1});assert.ok(h.stats.gains.some(g=>g.gain.calls.some(c=>c[0]==='target'&&Math.abs(c[1]-.065)<.00001)));e.play('burst-heavy');assert.ok(h.stats.gains.some(g=>g.gain.calls.some(c=>c[0]==='target'&&c[1]===load('audio').combatDuckV60(7).music)));e.dispose();}finally{h.restore();}
 });
 
 test('decoded music seam repair removes discontinuity without changing the entrance or loop duration',()=>{
@@ -2760,4 +2760,29 @@ test('V59 mission radio translates the complete sentence before removing localiz
   for(const stage of load('sortiesV39').SORTIES_V39)for(const line of [stage.intro,stage.mid]){const inputs=[],result=crew.radioTextV59(line,t=>{inputs.push(t);return locale.translateText(t,id);});assert.deepEqual(inputs,[line]);assert.ok(result.trim());if(id==='en')assert.ok(!/[\u3400-\u9fff]/.test(result),result);}
  }
  assert.equal(load('training').TRAINING_LESSONS[5].copy,'核心充满后主动释放，清场与闪避都能回能。');
+});
+
+
+test('V60 ordinary hits and horde breaks keep the music bed stable, damage ducks and recovers',()=>{
+ const h=audioHarness();try{const a=load('audio'),e=a.createGameAudio();e.unlock();const mixerGains=h.stats.gains.slice();const targets=()=>mixerGains.flatMap(g=>g.gain.calls.filter(c=>c[0]==='target'));const before=targets().length;
+ e.play('hit');h.stats.contexts[0].currentTime=.2;e.play('destroy');assert.equal(targets().length,before);
+ h.stats.contexts[0].currentTime=.4;e.play('damage');assert.ok(targets().some(c=>c[1]===a.combatDuckV60(6).music));assert.ok(targets().some(c=>c[1]===.4&&c[2]>.4));e.dispose();
+ }finally{h.restore();}
+});
+test('V60 clutter reduction retains true breaks and core impacts without changing game data',()=>{
+ const polish=load('polishV60'),f=[{id:1,x:10,y:40,ticks:4,kind:'hit'},{id:2,x:30,y:40,ticks:4,kind:'armor',armorBreak:true},{id:3,x:55,y:40,ticks:8,kind:'elite',destroyed:true},{id:4,x:80,y:40,ticks:4,kind:'hit'}],before=JSON.stringify(f);
+ const v=polish.feedbackV60(f,false,true);assert.ok(v.length<=2);assert.ok(v.some(x=>x.destroyed));assert.ok(!v.some(x=>x.kind==='hit'));assert.equal(JSON.stringify(f),before);
+});
+test('V60 blade follow-through settles to neutral with one opaque body and no negative recovery overshoot',()=>{
+ const animation=load('animationTypes'),blade=load('bladeMotionV35'),ease=load('polishV60').smoothPhaseV60;
+ assert.equal(ease(-1),0);assert.equal(ease(2),1);assert.equal(ease(.5),.5);
+ const c=animation.motionContext({...battle(),mechClass:'blade'},0,0,false);c.remaining=5;c.elapsed=6;
+ const p=blade.bladeStrikeV35(c,1.7,3);assert.equal(p.clipFrame,15);assert.ok(Math.abs(p.recoil)<1e-10);assert.equal(p.sheet,'blade');
+});
+test('V60 stereo score is bounded, original and theme-specific',()=>{
+ const m=JSON.parse(fs.readFileSync(path.join(__dirname,'music-v60.json'),'utf8'));assert.equal(m.tracks.length,6);assert.equal(m.sampleRate,22050);assert.ok(m.tracks.every(t=>t.channels===2&&t.peak<=.8&&t.rms>.07&&t.rms<.15));assert.ok(m.tracks.reduce((n,t)=>n+t.bytes,0)<3000000);assert.equal(new Set(m.tracks.map(t=>t.bpm)).size,6);
+});
+
+test('V60 lower priority upgrades do not undo an active damage duck',()=>{
+ const h=audioHarness();try{const a=load('audio'),e=a.createGameAudio();e.unlock();e.play('damage');const n=h.stats.gains.flatMap(g=>g.gain.calls.filter(c=>c[0]==='target')).length;h.stats.contexts[0].currentTime=.05;e.play('upgrade');assert.equal(h.stats.gains.flatMap(g=>g.gain.calls.filter(c=>c[0]==='target')).length,n);h.stats.contexts[0].currentTime=.6;e.play('upgrade');assert.ok(h.stats.gains.flatMap(g=>g.gain.calls.filter(c=>c[0]==='target')).length>n);e.dispose();}finally{h.restore();}
 });

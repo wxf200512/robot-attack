@@ -7,18 +7,18 @@ const noise=(from:number,to:number,duration:number,gain:number,filter:BiquadFilt
 const shot=(layers:SoundLayer[]):SoundSpec=>({layers,priority:1,gap:70,bus:'weapon'});
 const impact=(layers:SoundLayer[],priority=2,gap=80):SoundSpec=>({layers,priority,gap,bus:'impact'});
 const signal=(layers:SoundLayer[],priority=4,gap=180):SoundSpec=>({layers,priority,gap,bus:'signal',vary:false});
-const pulse=[tone(940,280,.075,.2,'triangle'),tone(170,65,.065,.25),noise(4100,1600,.045,.12,'bandpass')];
-const heavy=[noise(2400,220,.22,.42),tone(105,38,.29,.43),noise(5200,1800,.045,.2,'highpass'),tone(220,75,.13,.18,'triangle',.025)];
-const blade=[noise(650,5200,.13,.3,'bandpass'),noise(5800,800,.09,.2,'bandpass',.045),tone(900,300,.12,.075,'triangle')];
+const pulse=[noise(2200,900,.036,.18,'bandpass'),tone(240,155,.045,.2,'triangle'),tone(92,64,.055,.16)];
+const heavy=[noise(1700,310,.14,.36),tone(125,47,.22,.36),noise(2900,1500,.025,.18,'bandpass'),tone(360,210,.055,.14,'triangle',.018)];
+const blade=[noise(850,3100,.095,.22,'bandpass'),noise(3400,1100,.085,.16,'bandpass',.035),tone(420,270,.07,.06,'triangle')];
 export const SOUND_BANK:Record<AudioCue,SoundSpec>={
  pulse:shot(pulse),heavy:shot(heavy),blade:shot(blade),
- 'pulse-up':shot([...pulse,tone(1500,500,.11,.1,'sine',.012)]),
+ 'pulse-up':shot([...pulse,tone(680,430,.07,.075,'sine',.008)]),
  'heavy-up':shot([...heavy,tone(64,27,.36,.2,'sine',.02)]),
  'blade-finisher':shot([noise(1000,6200,.16,.34,'bandpass'),noise(5800,600,.19,.24,'bandpass',.055),tone(150,45,.2,.23),tone(2300,800,.21,.13,'sine',.035)]),
- 'blade-up':shot([...blade,tone(2100,650,.17,.12,'sine',.03)]),
+ 'blade-up':shot([...blade,tone(1120,750,.09,.07,'sine',.025)]),
  hit:impact([noise(2600,600,.065,.27,'bandpass'),tone(260,90,.07,.2)]),
  'hit-heavy':impact([noise(1800,180,.13,.35),tone(125,42,.19,.33),noise(4200,1400,.05,.13,'highpass')]),
- 'hit-blade':impact([noise(4800,1200,.08,.25,'bandpass'),tone(1850,1050,.11,.16,'sine'),tone(190,65,.075,.15)]),
+ 'hit-blade':impact([noise(2600,950,.055,.25,'bandpass'),tone(740,620,.08,.12,'sine'),tone(190,85,.085,.22)]),
  'armor-break':impact([noise(4200,900,.16,.18,'bandpass'),tone(1350,280,.15,.16),tone(3000,1600,.08,.08,'sine',.03)],4,180),
  'armor-hit':impact([tone(2650,1840,.12,.14),tone(3910,2750,.085,.08,'sine',.008),noise(6200,2300,.045,.17,'highpass')]),
  destroy:impact([noise(2400,140,.3,.38),tone(110,32,.3,.35),noise(5800,700,.19,.17,'bandpass',.025)],3,110),

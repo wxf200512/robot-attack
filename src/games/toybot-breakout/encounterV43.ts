@@ -10,7 +10,7 @@ export function bossMoveV43(level:number,stage:number,cycle:number){
  const index=Math.max(0,cycle-1);
  return base[stage===2?orders[level][index%6]:index%base.length];
 }
-export const crowdV43=(s:GameState)=>s.enemyAttacks.length+s.threats.filter(t=>t.hp!==0).length>=5||s.pendingShots.length>=14;
+export const crowdV43=(s:GameState)=>s.enemyAttacks.length+s.threats.filter(t=>t.hp!==0).length>=5||s.pendingShots.length>=14||s.feedback.length>=5;
 export const assetStageV43=(status:GameState['status'],progress:number,workshop:boolean,story:boolean)=>({
  home:status==='home',workshop:status==='home'&&workshop,story:story||status==='running',
  road:status==='running',combat:status==='running'||['boss-intro','battle','boss-shift'].includes(status),

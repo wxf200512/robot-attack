@@ -1178,5 +1178,11 @@ const messages: Readonly<Record<string, string>> = {
   "资源加载失败，请重试。": "Falha ao carregar recursos. Tente novamente.",
   "重试加载": "Tentar carregar novamente",
 
+  "钢翼突进": "Avanço das asas de aço",
+  "熔炉重锤": "Martelo da forja",
+  "蜂群追猎": "Perseguição da colmeia",
+  "钢铁壁垒": "Bastião de ferro",
+  "极性跃迁": "Mudança de polaridade",
+  "终局指令": "Diretriz final",
 };
 export default messages;

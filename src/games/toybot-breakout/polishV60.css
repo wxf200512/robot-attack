@@ -1,0 +1,32 @@
+/* Local V60 polish: danger and silhouettes stay above decorative bloom. */
+.toybot-page .toybot-shell.reference-v29 .toybot-scene.damage-shield .robot-player-art,
+.toybot-page .toybot-shell.reference-v29 .toybot-scene.damage-armor .robot-player-art{animation:none!important}
+.toybot-page .toybot-shell.reference-v29 .toybot-damage-vignette.damage-shield,
+.toybot-page .toybot-shell.reference-v29 .toybot-damage-vignette.damage-armor{display:none}
+.toybot-page .toybot-shell.reference-v29 .toybot-damage-vignette{background:radial-gradient(ellipse at 50% 55%,transparent 58%,#a91d3659 100%);animation:v60-health-edge .45s ease-out both}
+.toybot-page .toybot-shell.reference-v29 .is-player-hit:not(.damage-shield):not(.damage-armor) .robot-player-art{animation:v60-health-recoil .28s ease-out both}
+@keyframes v60-health-edge{0%,100%{opacity:0}20%{opacity:.8}}
+@keyframes v60-health-recoil{0%{translate:0 0}30%{translate:0 3px}100%{translate:0 0}}
+.toybot-page .toybot-shell.reference-v29 .toybot-squad-hit{font-size:13px;text-shadow:0 2px 3px #091b29;max-width:55%;white-space:nowrap}
+.toybot-page .toybot-shell.reference-v29:has(.damage-shield) .toybot-squad-hit{color:#8de5fa}
+.toybot-page .toybot-shell.reference-v29:has(.damage-armor) .toybot-squad-hit{color:#ffce8a}
+.toybot-page .toybot-shell.reference-v29 .toybot-enemy-target{z-index:800;box-shadow:inset 0 0 0 1px #301409,0 2px 4px #08121d66}
+.toybot-page .toybot-shell.reference-v29 .toybot-boss-strike-lane{z-index:790;mix-blend-mode:normal}
+.toybot-page .toybot-shell.reference-v29.is-crowded-v43 .toybot-contact-vfx:not(.is-destroyed):not(.is-armor-break){opacity:.5;filter:none}
+.toybot-page .toybot-shell.reference-v29.is-crowded-v43 .pulse-impact-ring{display:none}
+.toybot-page .toybot-shell.reference-v29 .core-status small{font-size:11px;white-space:normal;line-height:1.35}
+.toybot-page .toybot-shell.reference-v29 .core-status{max-width:calc(100% - 24px);min-width:0;right:12px;left:12px;box-sizing:border-box}
+.toybot-page .toybot-shell.reference-v29.has-story-radio .core-status{top:132px}
+.toybot-page .toybot-shell.reference-v29 .toybot-upgrade-reveal{max-width:50%;pointer-events:none}
+.toybot-page .toybot-shell.reference-v29 button{touch-action:manipulation}
+.toybot-page .toybot-shell.reference-v29 button:focus-visible{outline:2px solid #b5f5f7;outline-offset:3px}
+.toybot-page .toybot-shell.reference-v29 button:disabled{cursor:not-allowed;filter:saturate(.35);opacity:.55}
+.toybot-page .toybot-shell.reference-v29 button[aria-pressed="true"]{outline:1px solid #8de7ef;outline-offset:-2px}
+.toybot-page .toybot-shell.reference-v29 .toybot-paused button,
+.toybot-page .toybot-shell.reference-v29 .toybot-result button{min-height:42px}
+@media(prefers-reduced-motion:reduce){.toybot-page .toybot-shell.reference-v29 .robot-player-art,.toybot-page .toybot-shell.reference-v29 .toybot-damage-vignette{animation:none!important}}
+
+.toybot-page .toybot-shell.reference-v29.in-boss-arena .core-status{top:92px}
+.toybot-page .toybot-shell.reference-v29.has-story-radio .core-status{top:176px}
+
+.toybot-page .toybot-shell.reference-v29 .cockpit-reactor.is-active:disabled{opacity:1;filter:none}

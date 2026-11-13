@@ -35,6 +35,7 @@ export function soundPan(cue:AudioCue,state:GameState):number{
  if(SOUND_BANK[cue].bus==='signal'||cue==='damage'||cue==='shield'||cue==='shield-break'||cue==='armor-block')return 0;
  return Math.max(-.5,Math.min(.5,(SOUND_BANK[cue].bus==='weapon'?(state.lane-1)*.35:(state.impactX-50)/60)));
 }
+export const combatDuckV60=(priority:number)=>priority>=7?{weapon:.24,music:.15,hold:.5}:priority>=6?{weapon:.38,music:.22,hold:.28}:priority>=4?{weapon:.58,music:.3,hold:.14}:null;
 export function createCombatMixer(ctx:BaseAudioContext,volume:number){
  const weapon=ctx.createGain(),impact=ctx.createGain(),signal=ctx.createGain(),compressor=ctx.createDynamicsCompressor(),limiter=ctx.createDynamicsCompressor(),master=ctx.createGain(),music=ctx.createGain(),musicVolume=ctx.createGain();
  weapon.gain.value=.8;impact.gain.value=1;signal.gain.value=.85;
@@ -48,8 +49,9 @@ export function createGameAudio(){
  let context:AudioContext|null=null,mixer:ReturnType<typeof createCombatMixer>|null=null,buffer:AudioBuffer|null=null,settings:PlayerSettings={muted:false,volume:.45,quality:'auto'},disposed=false,active:SoundVoice[]=[];
  let music:ReturnType<typeof createMusicPlayer>|null=null,musicScene:MusicScene|null=null;
  const syncMusic=()=>{if(music&&musicScene)music.setScene({...musicScene,paused:musicScene.paused||settings.muted||(settings.musicVolume??.55)===0});};
+ let duckUntil=0,duckPriority=0;
  const last=new Map<string,number>();
- const silence=()=>{for(const voice of active){try{voice.source.stop();voice.source.disconnect();voice.nodes.forEach(node=>node.disconnect());}catch{/* Already ended. */}}active=[];last.clear();};
+ const silence=()=>{for(const voice of active){try{voice.source.stop();voice.source.disconnect();voice.nodes.forEach(node=>node.disconnect());}catch{/* Already ended. */}}active=[];last.clear();duckUntil=0;duckPriority=0;};
  const unlock=()=>{
   if(disposed||settings.muted||settings.volume===0&&(settings.musicVolume??.55)===0)return;
   try{
@@ -70,7 +72,7 @@ export function createGameAudio(){
    const [voice]=active.splice(steal,1);try{voice.source.stop();}catch{/* Ended. */}
   }
   last.set(cue,now);last.set(group,now);
-  if(spec.priority>=3){const gain=mixer.weapon.gain;gain.cancelScheduledValues(now);gain.setTargetAtTime(spec.priority>=6?.2:.45,now,.006);gain.setTargetAtTime(.8,now+(spec.priority>=6?.22:.09),.055);const bed=mixer.music.gain;bed.cancelScheduledValues(now);bed.setTargetAtTime(spec.priority>=7?.09:.2,now,.015);bed.setTargetAtTime(.4,now+(spec.priority>=7?.65:.22),.12);}
+  const duck=combatDuckV60(spec.priority);if(duck&&(now>=duckUntil||spec.priority>=duckPriority)){duckUntil=now+duck.hold;duckPriority=spec.priority;const gain=mixer.weapon.gain;gain.cancelScheduledValues(now);gain.setTargetAtTime(duck.weapon,now,.012);gain.setTargetAtTime(.8,now+duck.hold,.09);const bed=mixer.music.gain;bed.cancelScheduledValues(now);bed.setTargetAtTime(duck.music,now,.025);bed.setTargetAtTime(.4,now+duck.hold,.18);}
   const pitch=spec.vary===false?1:.97+Math.random()*.06;
   try{active.push(...scheduleCombatSound(context,mixer[spec.bus],buffer,spec,now,pan,pitch));}catch{/* Audio loss must never interrupt combat. */}
  };

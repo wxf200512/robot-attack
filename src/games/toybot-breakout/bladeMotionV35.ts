@@ -1,3 +1,4 @@
+import { smoothPhaseV60 } from './polishV60';
 import { COMBAT_BLADE_V48 } from './combatArtV48';
 import { motionPose, type MotionContext } from './animationTypes';
 export const BLADE_ATTACK_V35=COMBAT_BLADE_V48;
@@ -6,8 +7,8 @@ export const BLADE_ATTACK_V35=COMBAT_BLADE_V48;
 export function bladeStrikeV35(c:MotionContext,windup:number,contact:number){
  const before=c.remaining<=windup;
  const recovery=Math.max(.3,Math.min(1.6,c.interval-windup-contact));
- const phase=before?(windup-c.remaining)/windup*4:c.elapsed<=contact?4+c.elapsed/contact*4:8+Math.min(1,(c.elapsed-contact)/recovery)*8;
+ const phase=before?smoothPhaseV60((windup-c.remaining)/windup)*4:c.elapsed<=contact?4+c.elapsed/contact*4:8+smoothPhaseV60((c.elapsed-contact)/recovery)*8;
  const frame=c.reduced?0:Math.max(0,Math.min(15,Math.floor(phase)));
  const base=motionPose(c,2,0,before?'blade-draw':'blade-cut');
- return {...base,sheet:'blade' as const,row:(c.tier?2:0)+Math.floor(frame/8),frame:frame%8,clipFrame:frame,recoil:c.reduced?0:-Math.sin(Math.PI*Math.min(1,phase/15))*1.4};
+ return {...base,sheet:'blade' as const,row:(c.tier?2:0)+Math.floor(frame/8),frame:frame%8,clipFrame:frame,recoil:c.reduced?0:-Math.sin(Math.PI*Math.min(1,phase/16))*1.4};
 }

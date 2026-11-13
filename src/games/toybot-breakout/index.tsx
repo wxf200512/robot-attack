@@ -92,6 +92,7 @@ import './combatV48.css';
 import './runFireV56.css';
 import './polishV57.css';
 import './readinessV59.css';
+import './polishV60.css';
 import { useAssetGateV59 } from './useAssetGateV59';
 import { encounterPresentationV57 } from './presentationV57';
 
@@ -988,7 +989,7 @@ const ToybotBreakout: React.FC<{previewGarage?:Garage;previewFrozen?:boolean;pre
                 aria-hidden="true"
               >
                 {game.mechClass === 'blade' ? <div className="toybot-melee-finisher" style={{ backgroundImage: 'url(' + BLADE_SLASH_ART + ')', backgroundPosition: '100% ' + Math.min(3, activeWeapon + Math.min(1, game.armorLevel) + Math.min(1, visualCore)) * 100 / 3 + '%' }} /> : <div className="toybot-impact-burst" />}
-                {(game.impactDamage>=3||game.impactTarget==='boss'||game.feedback.some(f=>f.id===game.feedbackSequence&&f.kind!=='hit'))&&<b className="toybot-hit-damage">−{lt(Number(game.impactDamage.toFixed(2)))}</b>}
+                {!crowdV43(game)&&(game.impactDamage>=3||game.impactTarget==='boss'||game.feedback.some(f=>f.id===game.feedbackSequence&&f.kind!=='hit'))&&<b className="toybot-hit-damage">−{lt(Number(game.impactDamage.toFixed(2)))}</b>}
               </div>
             )}
             {game.damageSequence > 0 && <div className="toybot-squad-hit" key={`squad-hit-${game.damageSequence}`} style={{ left: `${LANE_CENTERS[game.damageLane]}%` }} aria-hidden="true">{lt(game.damageKind === 'shield' ? '护盾格挡' : game.damageKind === 'armor' ? `装甲吸收 ${game.damageAbsorbed}` : game.damageKind === 'squad' ? `−${game.damageLoss} 台` : `−${game.damageLoss} HP`)}</div>}

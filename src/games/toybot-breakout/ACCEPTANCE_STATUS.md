@@ -1,3 +1,5 @@
+> V60当前增量：战斗信息降噪、局部受击、近战收刀缓动、特殊单位错峰和六首全新双声道音乐/打击混音。见[POLISH_V60.md](./POLISH_V60.md)。下方V59测试包不含本轮修改，迁移请以V60最终提交及报告为准。
+
 > 2026-11-13 V59最新本地交付：加载保护/重试、短关波次衔接、完整句子剧情翻译、部署素材清理；401项回归。最终提测目录为`C:/Users/18440/Documents/Codex/2026-10-30/qing/releases/toybot-v59-final-20261113/`，以其中release-report.json/verification-report.json为准。详见[LOCAL_ACCEPTANCE_V59.md](./LOCAL_ACCEPTANCE_V59.md)。手机真机、首次真人、主项目正式集成和Facebook仍为待验收；下列V55—V58记录保留为历史。
 
 > V58局部调参：每个前置小关及守护者前线各+12名小怪，近战普通刀距10.5、强化刀距12.5；保留V57难度与V56基线标签。验证范围见[TUNING_V58.md](./TUNING_V58.md)，旧V55 ZIP不包含本轮变化。

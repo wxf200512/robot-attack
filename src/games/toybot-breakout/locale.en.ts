@@ -1178,4 +1178,10 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "资源加载失败，请重试。": "Assets failed to load. Please retry.",
   "重试加载": "Retry loading",
 
+  "钢翼突进": "Steelwing Advance",
+  "熔炉重锤": "Forge Hammer",
+  "蜂群追猎": "Hive Pursuit",
+  "钢铁壁垒": "Iron Bastion",
+  "极性跃迁": "Polarity Shift",
+  "终局指令": "Final Directive",
 };

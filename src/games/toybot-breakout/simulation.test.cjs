@@ -747,7 +747,7 @@ test('audio events coalesce a squad volley and distinguish weapons, armor, damag
 // Lightweight Web Audio contract double; real DSP is separately rendered in a browser.
 function audioHarness(){
  const stats={created:0,started:0,closed:0,sources:[],contexts:[],gains:[],compressors:[],buffers:0};
- const parameter=()=>({value:0,calls:[],setValueAtTime(...v){this.calls.push(['set',...v]);},exponentialRampToValueAtTime(...v){this.calls.push(['ramp',...v]);},setTargetAtTime(...v){this.calls.push(['target',...v]);},cancelScheduledValues(...v){this.calls.push(['cancel',...v]);}});
+ const parameter=()=>({value:0,calls:[],setValueAtTime(...v){this.calls.push(['set',...v]);},exponentialRampToValueAtTime(...v){this.calls.push(['ramp',...v]);},linearRampToValueAtTime(...v){this.calls.push(['linear',...v]);},setTargetAtTime(...v){this.calls.push(['target',...v]);},cancelScheduledValues(...v){this.calls.push(['cancel',...v]);}});
  const node=()=>({connect(){},disconnect(){this.disconnected=true;}});
  class FakeAudio{
   constructor(options){stats.created++;stats.contexts.push(this);this.options=options;this.state='suspended';this.currentTime=0;this.sampleRate=8000;this.destination=node();}
@@ -1760,8 +1760,8 @@ test('music follows road and five boss scenes, blocks under story, and keeps int
  }
 });
 test('every original music track exists as a compact MP3 with a valid intro and repeat region',()=>{
- let bytes=0;assert.equal(tracks.MUSIC_TRACKS.length,6);assert.equal(new Set(tracks.MUSIC_TRACKS.map(t=>t.title)).size,6);
- for(const t of tracks.MUSIC_TRACKS){const file=path.resolve(__dirname,'../../../public'+t.url),data=readFixture(file);bytes+=data.length;assert.equal(data[0],255);assert.equal(data[1]&224,224);assert.ok(data.length>100000);assert.ok(tracks.musicLoopEnd(t)>tracks.musicLoopStart(t)+20);if(t.id!=='road')assert.ok(tracks.musicLoopStart(t)>6);}
+ let bytes=0;const seenMusic=new Set();assert.equal(tracks.MUSIC_TRACKS.length,6);assert.equal(new Set(tracks.MUSIC_TRACKS.map(t=>t.title)).size,6);
+ for(const t of tracks.MUSIC_TRACKS){const file=path.resolve(__dirname,'../../../public'+t.url),data=readFixture(file);if(!seenMusic.has(t.url)){bytes+=data.length;seenMusic.add(t.url);}assert.ok(data[0]===255||data.toString('ascii',0,3)==='ID3');const frame=data[0]===255?0:10+((data[6]&127)<<21)+((data[7]&127)<<14)+((data[8]&127)<<7)+(data[9]&127);assert.equal(data[frame],255);assert.equal(data[frame+1]&224,224);assert.ok(data.length>100000);assert.ok(tracks.musicLoopEnd(t)>tracks.musicLoopStart(t)+20);assert.equal(tracks.musicLoopStart(t),0);assert.ok([60,64].includes(tracks.musicLoopEnd(t)));}
  assert.ok(bytes<3000000,'music payload should remain lightweight');
 });
 test('loop timing preserves the one-time entrance and accounts for raw MP3 padding without shifting gapless decoders',()=>{
@@ -2785,4 +2785,19 @@ test('V60 stereo score is bounded, original and theme-specific',()=>{
 
 test('V60 lower priority upgrades do not undo an active damage duck',()=>{
  const h=audioHarness();try{const a=load('audio'),e=a.createGameAudio();e.unlock();e.play('damage');const n=h.stats.gains.flatMap(g=>g.gain.calls.filter(c=>c[0]==='target')).length;h.stats.contexts[0].currentTime=.05;e.play('upgrade');assert.equal(h.stats.gains.flatMap(g=>g.gain.calls.filter(c=>c[0]==='target')).length,n);h.stats.contexts[0].currentTime=.6;e.play('upgrade');assert.ok(h.stats.gains.flatMap(g=>g.gain.calls.filter(c=>c[0]==='target')).length>n);e.dispose();}finally{h.restore();}
+});
+
+test('V62 edited masters match licensed provenance and explicit second-based loops',()=>{
+ const crypto=require('node:crypto'),m=JSON.parse(fs.readFileSync(path.join(__dirname,'music-licensed-v62.json'),'utf8'));
+ assert.equal(new Set(tracks.MUSIC_TRACKS.map(t=>t.url)).size,3);
+ for(const r of m.runtimeFiles){const bytes=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/music',r.file));assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),r.sha256);}
+ for(const r of m.sources){assert.equal(r.license,'CC0 1.0');const bytes=fs.readFileSync(path.join(__dirname,'art-source/music-v62',r.original));assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),r.sha256);}
+ assert.equal(tracks.musicLoopEnd(tracks.musicTrack('road')),60);assert.equal(tracks.musicLoopEnd(tracks.musicTrack('boss-0')),64);
+});
+test('V62 road-to-boss fades overlap and intro-to-battle never restarts the master',async()=>{
+ const h=musicHarness();try{h.player.setScene(h.scene());await flushMusic();const road=h.stats.sources.at(-1),start=h.ctx.currentTime;h.player.setScene(h.scene('boss-0'));await flushMusic();const boss=h.stats.sources.at(-1);assert.equal(road.end,start+music.MUSIC_CROSSFADE_V62);assert.equal(boss.offset,tracks.MUSIC_ENCODER_DELAY);const n=h.stats.started;h.player.setScene({...h.scene('boss-0'),volume:.8});await flushMusic();assert.equal(h.stats.started,n);h.player.setScene(h.scene('boss-0',true));assert.equal(h.player.status().playing,false);h.player.setScene(h.scene('boss-0'));await flushMusic();assert.equal(h.player.status().track,'boss-0');h.player.setScene(h.scene(null));assert.equal(h.player.status().playing,false);}finally{h.player.dispose();h.engine.dispose();h.restore();}
+});
+
+test('V62 crossfade uses complementary linear gains instead of a near-silent exponential entrance',async()=>{
+ const h=musicHarness();try{h.player.setScene(h.scene());await flushMusic();h.ctx.currentTime=1;h.player.setScene(h.scene('boss-0'));await flushMusic();const ramps=h.stats.gains.flatMap(g=>g.gain.calls.filter(c=>c[0]==='linear'));assert.ok(ramps.some(c=>c[1]===0&&c[2]===1+music.MUSIC_CROSSFADE_V62));assert.ok(ramps.some(c=>c[1]===1&&c[2]===1+music.MUSIC_CROSSFADE_V62));}finally{h.player.dispose();h.engine.dispose();h.restore();}
 });

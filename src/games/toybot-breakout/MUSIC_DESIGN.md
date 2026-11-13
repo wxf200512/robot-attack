@@ -1,3 +1,5 @@
+> V62最新音频：接入3个CC0剪辑混音母带，普通关柔和、首领战厚重，使用实测60/64秒循环与0.65秒切换。见[MUSIC_INTEGRATION_V62.md](./MUSIC_INTEGRATION_V62.md)。旧V60包不含本轮音乐更新。
+
 > 当前音频已由V60六首双声道原创曲目替换，重制脚本为compose-music-v60.cjs；下方V26为历史记录。见[POLISH_V60.md](./POLISH_V60.md)。
 
 > 文档状态：历史设计与验收记录。当前玩法、素材和交付状态请先阅读 [CURRENT_REQUIREMENTS.md](./CURRENT_REQUIREMENTS.md) 与 [ACCEPTANCE_STATUS.md](./ACCEPTANCE_STATUS.md)。本页测试数量、资源路径及“尚未完成”仅描述对应历史版本；被后续版本替代的规则不作为当前缺项。

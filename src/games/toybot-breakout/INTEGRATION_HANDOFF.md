@@ -1,3 +1,5 @@
+> V62最新音频：接入3个CC0剪辑混音母带，普通关柔和、首领战厚重，使用实测60/64秒循环与0.65秒切换。见[MUSIC_INTEGRATION_V62.md](./MUSIC_INTEGRATION_V62.md)。旧V60包不含本轮音乐更新。
+
 > V60当前增量：战斗信息降噪、局部受击、近战收刀缓动、特殊单位错峰和六首全新双声道音乐/打击混音。见[POLISH_V60.md](./POLISH_V60.md)。下方V59测试包不含本轮修改，迁移请以V60最终提交及报告为准。
 
 > V59最新交付入口：[LOCAL_ACCEPTANCE_V59.md](./LOCAL_ACCEPTANCE_V59.md)。迁移必须包含useAssetGateV59.ts/readinessV59.css、九语言更新、波次揭示配置及完整句子通信翻译；发布目录只包含当前运行素材，历史校验素材保留在src内。以V59最终ZIP报告的sourceCommit为准；不再用V55旧包提测。

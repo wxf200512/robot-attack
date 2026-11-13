@@ -3,7 +3,7 @@
    Encoder is a development tool only; no runtime dependency or remote music. */
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),ts=require('typescript');
 const box={};vm.runInNewContext(fs.readFileSync(process.argv[2],'utf8'),box);
-const scope={exports:{}};new Function('exports',ts.transpileModule(fs.readFileSync(path.join(__dirname,'musicTracks.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(scope.exports);
+const scope={exports:{}};new Function('exports',ts.transpileModule(fs.readFileSync(path.join(__dirname,'art-source/retired-music-v62/tracks.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(scope.exports);
 const {MUSIC_TRACKS,musicLoopStart,musicLoopEnd}=scope.exports,SR=22050,TAU=2*Math.PI;
 const profiles=[
  {root:40,chords:[0,8,3,10],hook:[0,0,7,10,7,3,5,7],kick:[0,1.5,2,2.75],snare:[1,3],style:'road'},

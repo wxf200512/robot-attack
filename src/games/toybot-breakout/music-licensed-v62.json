@@ -1,0 +1,128 @@
+{
+  "sources": [
+    {
+      "id": "boss-battle-theme",
+      "artist": "Cleyton Kauffman",
+      "source": "https://opengameart.org/content/boss-battle-theme",
+      "download": "https://opengameart.org/sites/default/files/CleytonRX%20-%20Battle%20RPG%20Theme_1.mp3",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "original": "boss-battle-theme.mp3",
+      "bytes": 6859825,
+      "sha256": "207453cb5b4926c6b3e94a1627002b747e1001792e751c6eff473e210cc6cae4"
+    },
+    {
+      "id": "battle-theme",
+      "artist": "Wolfgang_",
+      "source": "https://opengameart.org/node/16611",
+      "download": "https://opengameart.org/sites/default/files/Battle.mp3",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "original": "battle-theme.mp3",
+      "bytes": 4646747,
+      "sha256": "dde7bd4f10bde031800ba8e22151fad591b7c13e1c9ae51920341b4e4ae37be5"
+    },
+    {
+      "id": "hope",
+      "artist": "MintoDog",
+      "source": "https://opengameart.org/content/hopeorchestral-battle-music",
+      "download": "https://opengameart.org/sites/default/files/hope_orchestral_battle_music_bpm165.flac",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "original": "hope.flac",
+      "bytes": 7592473,
+      "sha256": "5da6876e90fb07cd6e7a28fb03b436bbd1ada4d24b9f6cf6284a2104063c4cc3"
+    }
+  ],
+  "edits": [
+    {
+      "id": "road-soft",
+      "file": "battle-theme.mp3",
+      "start": 8,
+      "seconds": 60,
+      "filter": "highpass=f=55,lowpass=f=4800,equalizer=f=2600:t=q:w=0.8:g=-3.5,equalizer=f=180:t=q:w=0.8:g=1.2,loudnorm=I=-20:TP=-2:LRA=7",
+      "source": "battle-theme",
+      "purpose": "普通关：较柔和的管弦乐推进",
+      "loopSeconds": 60.0,
+      "channels": 2,
+      "sampleRate": 22050,
+      "peak": 0.43158429861068726,
+      "rms": 0.07320293292377363,
+      "boundaryDelta": 0.018102681264281273,
+      "output": "road-soft-loop.mp3",
+      "sha256": "78deba55e267f4a9ffa847e2b132aa90a82c4d696af1e4948d8e77317c9facb4",
+      "edits": [
+        "excerpt selection",
+        "equalization and lowpass",
+        "loudness processing",
+        "240ms overlap loop",
+        "stereo MP3 export"
+      ]
+    },
+    {
+      "id": "boss-rock",
+      "file": "boss-battle-theme.mp3",
+      "start": 25,
+      "seconds": 64,
+      "filter": "highpass=f=45,lowpass=f=6200,equalizer=f=3100:t=q:w=0.9:g=-3,loudnorm=I=-18:TP=-2:LRA=8",
+      "source": "boss-battle-theme",
+      "purpose": "首领战：摇滚与管弦乐混合",
+      "loopSeconds": 64.0,
+      "channels": 2,
+      "sampleRate": 22050,
+      "peak": 0.6135486960411072,
+      "rms": 0.10465115202933598,
+      "boundaryDelta": 0.0049082934856414795,
+      "output": "boss-rock-loop.mp3",
+      "sha256": "4ec2afd1ebdd9fcb943f8ec154d61a1c13feb228c1887038b36000a08029dc6b",
+      "edits": [
+        "excerpt selection",
+        "equalization and lowpass",
+        "loudness processing",
+        "240ms overlap loop",
+        "stereo MP3 export"
+      ]
+    },
+    {
+      "id": "boss-orchestra",
+      "file": "hope.flac",
+      "start": 0,
+      "seconds": 60,
+      "filter": "atempo=0.9,highpass=f=50,lowpass=f=5800,equalizer=f=2800:t=q:w=0.8:g=-2.5,loudnorm=I=-18.5:TP=-2:LRA=8",
+      "source": "hope",
+      "purpose": "首领战备选：明亮管弦乐，165 BPM放缓至约148.5",
+      "loopSeconds": 60.0,
+      "channels": 2,
+      "sampleRate": 22050,
+      "peak": 0.4832724332809448,
+      "rms": 0.09471315218425966,
+      "boundaryDelta": 0.02888798713684082,
+      "output": "boss-orchestra-loop.mp3",
+      "sha256": "090ce280217bdcf9708c951c22682b1ba0edacc58c64d9b02d2b2cb7f6dd860b",
+      "edits": [
+        "excerpt selection",
+        "equalization and lowpass",
+        "loudness processing",
+        "240ms overlap loop",
+        "stereo MP3 export"
+      ]
+    }
+  ],
+  "runtimeFiles": [
+    {
+      "file": "guardian-heavy-v62.mp3",
+      "bytes": 1025296,
+      "sha256": "4ec2afd1ebdd9fcb943f8ec154d61a1c13feb228c1887038b36000a08029dc6b"
+    },
+    {
+      "file": "guardian-orchestra-v62.mp3",
+      "bytes": 961349,
+      "sha256": "090ce280217bdcf9708c951c22682b1ba0edacc58c64d9b02d2b2cb7f6dd860b"
+    },
+    {
+      "file": "road-soft-v62.mp3",
+      "bytes": 961349,
+      "sha256": "78deba55e267f4a9ffa847e2b132aa90a82c4d696af1e4948d8e77317c9facb4"
+    }
+  ]
+}

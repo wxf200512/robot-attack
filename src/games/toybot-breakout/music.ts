@@ -27,6 +27,8 @@ export function prepareMusicBuffer(buffer:AudioBuffer,track:MusicTrack){
  return buffer;
 }
 
+export const MUSIC_CROSSFADE_V62=.65;
+
 type Handle={source:AudioBufferSourceNode;gain:GainNode;track:MusicId;key:string;started:number;offset:number};
 type Loading={controller:AbortController;promise:Promise<AudioBuffer>};
 export function createMusicPlayer(ctx:AudioContext,output:AudioNode,fetcher:typeof fetch=fetch){
@@ -37,7 +39,7 @@ export function createMusicPlayer(ctx:AudioContext,output:AudioNode,fetcher:type
  const stop=(handle:Handle,fade:number)=>{
   if(fading.size>=2)for(const old of fading){try{old.source.stop();}catch{/* Ended. */}release(old);}
   fading.add(handle);const now=ctx.currentTime;
-  handle.gain.gain.cancelScheduledValues(now);handle.gain.gain.setTargetAtTime(0,now,fade?fade/4:.001);
+  const level=handle.gain.gain.value;handle.gain.gain.cancelScheduledValues(now);handle.gain.gain.setValueAtTime(level,now);handle.gain.gain.linearRampToValueAtTime(0,now+Math.max(.001,fade));
   try{handle.source.stop(now+fade);}catch{release(handle);}
  };
  const pause=()=>{version++;if(live){saved={key:live.key,offset:musicPosition(musicTrack(live.track),live.offset+Math.max(0,ctx.currentTime-live.started))};stop(live,.025);live=null;}};
@@ -75,9 +77,9 @@ export function createMusicPlayer(ctx:AudioContext,output:AudioNode,fetcher:type
    source.buffer=buffer;source.loop=true;source.loopStart=timing.start;source.loopEnd=timing.end;
    const offset=saved?.key===keyFor(scene)?musicPosition(track,saved.offset):0;
    const handle={source,gain,track:scene.track!,key:keyFor(scene),started:now,offset};
-   gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(Math.max(.001,scene.volume),now+.28);
+   gain.gain.setValueAtTime(0,now);gain.gain.linearRampToValueAtTime(Math.max(0,scene.volume),now+MUSIC_CROSSFADE_V62);
    source.connect(gain);gain.connect(output);source.onended=()=>release(handle);source.start(now,Math.min(timing.end-.01,offset+timing.delay));
-   if(live)stop(live,.4);live=handle;saved=null;error=null;
+   if(live)stop(live,MUSIC_CROSSFADE_V62);live=handle;saved=null;error=null;
   }).catch(reason=>{if(!disposed&&ticket===version)error=String(reason);});
  };
  return {setScene,pause,status(){return {track:live?.track??null,playing:!!live,cached:[...cache.keys()],loading:[...loading.keys()],offset:live?musicPosition(musicTrack(live.track),live.offset+Math.max(0,ctx.currentTime-live.started)):saved?.offset??0,error};},dispose(){disposed=true;version++;for(const task of loading.values())task.controller.abort();loading.clear();if(live){try{live.source.stop();}catch{/* Ended. */}release(live);live=null;}for(const handle of fading){try{handle.source.stop();}catch{/* Ended. */}release(handle);}cache.clear();saved=null;}};

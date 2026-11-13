@@ -1,0 +1,35 @@
+[
+  {
+    "id": "boss-battle-theme",
+    "artist": "Cleyton Kauffman",
+    "source": "https://opengameart.org/content/boss-battle-theme",
+    "download": "https://opengameart.org/sites/default/files/CleytonRX%20-%20Battle%20RPG%20Theme_1.mp3",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "original": "boss-battle-theme.mp3",
+    "bytes": 6859825,
+    "sha256": "207453cb5b4926c6b3e94a1627002b747e1001792e751c6eff473e210cc6cae4"
+  },
+  {
+    "id": "battle-theme",
+    "artist": "Wolfgang_",
+    "source": "https://opengameart.org/node/16611",
+    "download": "https://opengameart.org/sites/default/files/Battle.mp3",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "original": "battle-theme.mp3",
+    "bytes": 4646747,
+    "sha256": "dde7bd4f10bde031800ba8e22151fad591b7c13e1c9ae51920341b4e4ae37be5"
+  },
+  {
+    "id": "hope",
+    "artist": "MintoDog",
+    "source": "https://opengameart.org/content/hopeorchestral-battle-music",
+    "download": "https://opengameart.org/sites/default/files/hope_orchestral_battle_music_bpm165.flac",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "original": "hope.flac",
+    "bytes": 7592473,
+    "sha256": "5da6876e90fb07cd6e7a28fb03b436bbd1ada4d24b9f6cf6284a2104063c4cc3"
+  }
+]

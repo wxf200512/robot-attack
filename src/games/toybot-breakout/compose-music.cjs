@@ -4,7 +4,7 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),ts=require('typescript');
 const encoderPath=process.argv[2];if(!encoderPath)throw new Error('Pass the temporary lamejs/lame.all.js encoder path.');
 const sandbox={};vm.runInNewContext(fs.readFileSync(encoderPath,'utf8'),sandbox);const lame=sandbox.lamejs;
-const moduleScope={exports:{}};new Function('exports',ts.transpileModule(fs.readFileSync(path.join(__dirname,'musicTracks.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(moduleScope.exports);
+const moduleScope={exports:{}};new Function('exports',ts.transpileModule(fs.readFileSync(path.join(__dirname,'art-source/retired-music-v62/tracks.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(moduleScope.exports);
 const {MUSIC_TRACKS,musicLoopStart,musicLoopEnd}=moduleScope.exports,SR=22050,TAU=Math.PI*2;
 const scores=[
  {tonic:40,chords:[[0,3,7],[8,12,15],[3,7,10],[10,14,17],[5,8,12],[8,12,15],[7,10,14],[10,14,17]],motif:[0,2,1,2,0,1,2,1],style:'road'},

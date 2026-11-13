@@ -1,3 +1,4 @@
+import { createSampleBankV63 } from './sampleBankV63';
 import type { GameState } from './simulation';
 import { attackIntervalFor, canShoot, effectiveWeapon } from './simulation';
 import type { PlayerSettings } from './settings';
@@ -46,6 +47,7 @@ export function createCombatMixer(ctx:BaseAudioContext,volume:number){
 }
 // Built only after a pointer/key gesture. Buffers and mixer are shared by all cues.
 export function createGameAudio(){
+ let samples:ReturnType<typeof createSampleBankV63>|null=null;
  let context:AudioContext|null=null,mixer:ReturnType<typeof createCombatMixer>|null=null,buffer:AudioBuffer|null=null,settings:PlayerSettings={muted:false,volume:.45,quality:'auto'},disposed=false,active:SoundVoice[]=[];
  let music:ReturnType<typeof createMusicPlayer>|null=null,musicScene:MusicScene|null=null;
  const syncMusic=()=>{if(music&&musicScene)music.setScene({...musicScene,paused:musicScene.paused||settings.muted||(settings.musicVolume??.55)===0});};
@@ -55,9 +57,10 @@ export function createGameAudio(){
  const unlock=()=>{
   if(disposed||settings.muted||settings.volume===0&&(settings.musicVolume??.55)===0)return;
   try{
-   if(!context){const Ctor=window.AudioContext||(window as Window&{webkitAudioContext?:typeof AudioContext}).webkitAudioContext;if(!Ctor)return;context=new Ctor({latencyHint:'interactive'});mixer=createCombatMixer(context,settings.volume);buffer=makeCombatNoise(context);music=createMusicPlayer(context,mixer.music);mixer.musicVolume.gain.value=(settings.musicVolume??.55)*.65;}
+   if(!context){const Ctor=window.AudioContext||(window as Window&{webkitAudioContext?:typeof AudioContext}).webkitAudioContext;if(!Ctor)return;context=new Ctor({latencyHint:'interactive'});mixer=createCombatMixer(context,settings.volume);buffer=makeCombatNoise(context);music=createMusicPlayer(context,mixer.music);samples=createSampleBankV63(context);mixer.musicVolume.gain.value=(settings.musicVolume??.55)*.65;}
+   void samples?.warm();
    if(context.state!=='running')void context.resume().then(syncMusic).catch(()=>{});else syncMusic();
-  }catch{silence();music?.dispose();music=null;if(context)void context.close().catch(()=>{});context=null;mixer=null;buffer=null;}
+  }catch{silence();music?.dispose();music=null;samples?.dispose();samples=null;if(context)void context.close().catch(()=>{});context=null;mixer=null;buffer=null;}
  };
  const play=(cue:AudioCue,pan=0)=>{
   if(disposed||settings.muted||settings.volume===0||!context||!mixer||!buffer||context.state!=='running'||document.hidden)return;
@@ -67,14 +70,14 @@ export function createGameAudio(){
   active=active.filter(voice=>voice.end>now);
   // Reserve headroom for warnings, shield breaks and damage even in a large squad.
   if(spec.priority>=7){const retained:SoundVoice[]=[];for(const voice of active){if(voice.priority<4){try{voice.source.stop();}catch{/* Ended. */}}else retained.push(voice);}active=retained;}
-  while(active.length+spec.layers.length>MAX_SOUND_VOICES){
+  while(active.length+(samples?.ready(cue)?1:spec.layers.length)>MAX_SOUND_VOICES){
    let steal=-1;active.forEach((voice,i)=>{if(voice.priority<spec.priority&&(steal<0||voice.priority<active[steal].priority))steal=i;});if(steal<0)return;
    const [voice]=active.splice(steal,1);try{voice.source.stop();}catch{/* Ended. */}
   }
   last.set(cue,now);last.set(group,now);
   const duck=combatDuckV60(spec.priority);if(duck&&(now>=duckUntil||spec.priority>=duckPriority)){duckUntil=now+duck.hold;duckPriority=spec.priority;const gain=mixer.weapon.gain;gain.cancelScheduledValues(now);gain.setTargetAtTime(duck.weapon,now,.012);gain.setTargetAtTime(.8,now+duck.hold,.09);const bed=mixer.music.gain;bed.cancelScheduledValues(now);bed.setTargetAtTime(duck.music,now,.025);bed.setTargetAtTime(.4,now+duck.hold,.18);}
   const pitch=spec.vary===false?1:.97+Math.random()*.06;
-  try{active.push(...scheduleCombatSound(context,mixer[spec.bus],buffer,spec,now,pan,pitch));}catch{/* Audio loss must never interrupt combat. */}
+  try{active.push(...(samples?.play(cue,mixer[spec.bus],now,pan,pitch,spec.priority)??scheduleCombatSound(context,mixer[spec.bus],buffer,spec,now,pan,pitch)));}catch{/* Audio loss must never interrupt combat. */}
  };
- return {unlock,play,setMusic(next:MusicScene){musicScene=next;syncMusic();},musicStatus(){return music?.status()??null;},setSettings(next:PlayerSettings){settings={...next,volume:Number.isFinite(next.volume)?Math.max(0,Math.min(1,next.volume)):.45,musicVolume:next.musicVolume===undefined?.55:Number.isFinite(next.musicVolume)?Math.max(0,Math.min(1,next.musicVolume)):.55};if(settings.muted||settings.volume===0)silence();if(mixer&&context){mixer.master.gain.setTargetAtTime(settings.muted?0:settings.volume*.9,context.currentTime,.025);mixer.musicVolume.gain.setTargetAtTime(settings.muted?0:(settings.musicVolume??.55)*.65,context.currentTime,.06);}syncMusic();},suspend(){silence();music?.pause();if(context?.state==='running')void context.suspend().catch(()=>{});},dispose(){disposed=true;silence();music?.dispose();music=null;mixer?.nodes.forEach(node=>node.disconnect());if(context)void context.close().catch(()=>{});context=null;mixer=null;buffer=null;}};
+ return {unlock,play,sampleStatus(){return samples?.status()??null;},setMusic(next:MusicScene){musicScene=next;syncMusic();},musicStatus(){return music?.status()??null;},setSettings(next:PlayerSettings){settings={...next,volume:Number.isFinite(next.volume)?Math.max(0,Math.min(1,next.volume)):.45,musicVolume:next.musicVolume===undefined?.55:Number.isFinite(next.musicVolume)?Math.max(0,Math.min(1,next.musicVolume)):.55};if(settings.muted||settings.volume===0)silence();if(mixer&&context){mixer.master.gain.setTargetAtTime(settings.muted?0:settings.volume*.9,context.currentTime,.025);mixer.musicVolume.gain.setTargetAtTime(settings.muted?0:(settings.musicVolume??.55)*.65,context.currentTime,.06);}syncMusic();},suspend(){silence();music?.pause();if(context?.state==='running')void context.suspend().catch(()=>{});},dispose(){disposed=true;silence();samples?.dispose();samples=null;music?.dispose();music=null;mixer?.nodes.forEach(node=>node.disconnect());if(context)void context.close().catch(()=>{});context=null;mixer=null;buffer=null;}};
 }

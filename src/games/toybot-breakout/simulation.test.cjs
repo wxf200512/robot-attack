@@ -754,9 +754,9 @@ function audioHarness(){
   createGain(){const n={...node(),gain:parameter()};stats.gains.push(n);return n;}
   createDynamicsCompressor(){const n={...node(),threshold:parameter(),knee:parameter(),ratio:parameter(),attack:parameter(),release:parameter()};stats.compressors.push(n);return n;}
   createBuffer(channels,length,sampleRate){stats.buffers++;const data=new Float32Array(length);return {length,sampleRate,getChannelData:()=>data};}
-  source(){const n={...node(),frequency:parameter(),start(at,offset){stats.started++;this.at=at;this.offset=offset??0;},stop(at){if(at===undefined){this.cancelled=true;this.onended?.();}else this.end=at;}};stats.sources.push(n);return n;}
+  source(){const n={...node(),frequency:parameter(),start(at,offset,duration){stats.started++;this.at=at;this.offset=offset??0;this.duration=duration;},stop(at){if(at===undefined){this.cancelled=true;this.onended?.();}else this.end=at;}};stats.sources.push(n);return n;}
   createOscillator(){return this.source();}
-  createBufferSource(){return this.source();}
+  createBufferSource(){const source=this.source();source.playbackRate=parameter();return source;}
   createBiquadFilter(){return {...node(),frequency:parameter(),Q:parameter()};}
   createStereoPanner(){return {...node(),pan:parameter()};}
   resume(){this.state='running';return Promise.resolve();}suspend(){this.state='suspended';return Promise.resolve();}close(){stats.closed++;this.state='closed';return Promise.resolve();}
@@ -2800,4 +2800,24 @@ test('V62 road-to-boss fades overlap and intro-to-battle never restarts the mast
 
 test('V62 crossfade uses complementary linear gains instead of a near-silent exponential entrance',async()=>{
  const h=musicHarness();try{h.player.setScene(h.scene());await flushMusic();h.ctx.currentTime=1;h.player.setScene(h.scene('boss-0'));await flushMusic();const ramps=h.stats.gains.flatMap(g=>g.gain.calls.filter(c=>c[0]==='linear'));assert.ok(ramps.some(c=>c[1]===0&&c[2]===1+music.MUSIC_CROSSFADE_V62));assert.ok(ramps.some(c=>c[1]===1&&c[2]===1+music.MUSIC_CROSSFADE_V62));}finally{h.player.dispose();h.engine.dispose();h.restore();}
+});
+
+test('V63 CC0 sample atlas matches source hashes and bounded exact PCM offsets',()=>{
+ const crypto=require('node:crypto'),m=JSON.parse(fs.readFileSync(path.join(__dirname,'sfx-v63.json'),'utf8')),cells=load('sampleAtlasV63').SAMPLE_CELLS_V63,bytes=fs.readFileSync(path.resolve(__dirname,'../../../public/games/toybot-breakout/sfx/combat-samples-v63.wav'));
+ assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),m.sha256);assert.equal(bytes.toString('ascii',0,4),'RIFF');assert.ok(bytes.length<400000);assert.equal(Object.keys(cells).length,19);for(const c of Object.values(cells))assert.ok(c.start>=0&&c.duration>0&&c.duration<=.7&&(c.start+c.duration)*22050*2<=bytes.length-44);
+ for(const r of m.sourceFiles){assert.equal(r.license,'CC0 1.0');assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(__dirname,'art-source/sfx-v63',r.file))).digest('hex'),r.sha256);}
+});
+test('V63 sample loading coalesces and failed loads can retry without queued old hits',async()=>{
+ const h=audioHarness();try{const ctx=new window.AudioContext(),bankModule=load('sampleBankV63');let calls=0;ctx.decodeAudioData=async()=>({duration:10});const bank=bankModule.createSampleBankV63(ctx,async()=>({ok:++calls>1,status:503,arrayBuffer:async()=>new ArrayBuffer(2)}));
+ assert.equal(bank.play('pulse',ctx.destination,0,0,1,1),null);await bank.warm();assert.equal(bank.status().ready,false);await Promise.all([bank.warm(),bank.warm()]);assert.equal(calls,2);assert.equal(bank.status().hits,0);assert.equal(bank.ready('pulse'),true);assert.equal(bank.ready('warning'),false);
+ const voices=bank.play('heavy',ctx.destination,4,.3,1,1);assert.equal(voices.length,1);assert.equal(voices[0].source.offset,load('sampleAtlasV63').SAMPLE_CELLS_V63.heavy.start);assert.ok(voices[0].end>4);bank.dispose();assert.equal(bank.play('heavy',ctx.destination,5,0,1,1),null);
+ }finally{h.restore();}
+});
+test('V63 disposal invalidates a pending decode and aborts its fetch',async()=>{
+ const h=audioHarness();try{const ctx=new window.AudioContext();let finish,signal;ctx.decodeAudioData=()=>new Promise(r=>{finish=r;});const bank=load('sampleBankV63').createSampleBankV63(ctx,async(_,{signal:s})=>{signal=s;return {ok:true,arrayBuffer:async()=>new ArrayBuffer(2)};});const done=bank.warm();await flushMusic();bank.dispose();finish({duration:10});await done;assert.equal(signal.aborted,true);assert.equal(bank.status().ready,false);
+ }finally{h.restore();}
+});
+test('V63 real combat mixer selects one sample voice per volley and silence stops it',async()=>{
+ const h=audioHarness(),oldFetch=global.fetch;try{global.fetch=async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer(2)});window.AudioContext.prototype.decodeAudioData=async()=>({duration:10});const engine=load('audio').createGameAudio();engine.unlock();await flushMusic();assert.equal(engine.sampleStatus().ready,true);const n=h.stats.started;engine.play('pulse');assert.equal(h.stats.started,n+1);assert.equal(engine.sampleStatus().hits,1);engine.setSettings({muted:true,volume:.45,quality:'auto'});assert.ok(h.stats.sources.at(-1).cancelled);engine.dispose();assert.equal(engine.sampleStatus(),null);
+ }finally{global.fetch=oldFetch;h.restore();}
 });

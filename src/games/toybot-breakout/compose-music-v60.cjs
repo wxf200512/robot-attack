@@ -72,4 +72,3 @@ for(const [i,t]of MUSIC_TRACKS.entries()){
 }
 fs.writeFileSync(path.join(__dirname,'music-v60.json'),JSON.stringify({sampleRate:SR,bitrate:64,tracks:metrics},null,2)+'\n');
 if(process.argv[3]){const parts=renders.map(a=>({L:a.L.slice(0,SR*9),R:a.R.slice(0,SR*9)})),N=parts.reduce((n,a)=>n+a.L.length+SR*.4,0),b=Buffer.alloc(44+N*4);b.write('RIFF');b.writeUInt32LE(b.length-8,4);b.write('WAVEfmt ',8);b.writeUInt32LE(16,16);b.writeUInt16LE(1,20);b.writeUInt16LE(2,22);b.writeUInt32LE(SR,24);b.writeUInt32LE(SR*4,28);b.writeUInt16LE(4,32);b.writeUInt16LE(16,34);b.write('data',36);b.writeUInt32LE(N*4,40);let at=0;for(const a of parts){for(let j=0;j<a.L.length;j++){const fade=Math.min(1,(a.L.length-j)/(SR*.06));b.writeInt16LE(Math.round(a.L[j]*fade*32767),44+(at+j)*4);b.writeInt16LE(Math.round(a.R[j]*fade*32767),46+(at+j)*4);}at+=a.L.length+SR*.4;}fs.writeFileSync(process.argv[3],b);}
-
